@@ -9,13 +9,15 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import CategoryCard from '@/components/home/CategoryCard';
 import { useAuth } from '@/(pages)/(auth)/context/AuthContext';
+import { useEffect, useState } from 'react';
+import { fetchBusinesses, fetchCategories } from './(pages)/(business)/actions/backend';
 
 export default function Index() {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
 
-  // Service categories
-  const categories = [
+  // Service categories (default fallback)
+  const defaultCategories = [
     { id: 'barber', name: 'Barbers & Salons', icon: '✂️', count: 248, color: 'bg-blue-50' },
     { id: 'education', name: 'Coaching & Tutoring', icon: '📚', count: 157, color: 'bg-green-50' },
     { id: 'gaming', name: 'Gaming Lounges', icon: '🎮', count: 92, color: 'bg-yellow-50' },
@@ -24,8 +26,10 @@ export default function Index() {
     { id: 'therapy', name: 'Therapy & Counseling', icon: '🧠', count: 167, color: 'bg-pink-50' },
   ];
 
-  // Featured businesses
-  const featuredBusinesses = [
+  const [categories, setCategories] = useState(defaultCategories);
+
+  // Featured businesses (default fallback)
+  const [featuredBusinesses, setFeaturedBusinesses] = useState(() => [
     {
       id: 'biz-1',
       name: 'Style Studio',
@@ -50,7 +54,30 @@ export default function Index() {
       reviewCount: 85,
       image: 'https://images.unsplash.com/photo-1586182987320-4f376d39d787?q=80&w=600&auto=format&fit=crop',
     },
-  ];
+  ]);
+
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    Promise.all([fetchCategories(), fetchBusinesses()])
+      .then(([cats, businesses]) => {
+        if (!mounted) return;
+        if (Array.isArray(cats) && cats.length > 0) {
+          const mapped = cats.filter((c) => c !== 'All').map((c) => ({ id: String(c).toLowerCase(), name: String(c), icon: '📌', count: 0, color: 'bg-gray-50' }));
+          // REAL BACKEND WILL HAVE THIS UNCOMMENTED
+          // if (mapped.length) setCategories(mapped);
+        }
+
+        if (Array.isArray(businesses) && businesses.length > 0) {
+          const mapped = businesses.slice(0, 3).map((b: any) => ({ id: b.id, name: b.name, category: b.category ?? 'Unknown', rating: b.rating ?? 0, reviewCount: (b as any).reviewCount ?? 0, image: b.logo ?? '/assets/placeholder.svg' }));
+          setFeaturedBusinesses(mapped);
+        }
+      })
+      .catch((err) => console.error('Failed to load dummy data', err))
+      .finally(() => mounted && setLoading(false));
+    return () => { mounted = false; };
+  }, []);
 
   return (
     <Layout>

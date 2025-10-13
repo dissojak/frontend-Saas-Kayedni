@@ -5,7 +5,7 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import Providers from "@/components/Providers";
+import Providers from "./providers";
 import React from "react";
 
 const geistSans = Geist({
@@ -16,11 +16,6 @@ const geistSans = Geist({
 const zain = localFont({
   src: "../../public/fonts/Zain-Regular.ttf",
   variable: "--font-zain",
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
 });
 
 export const metadata: Metadata = {

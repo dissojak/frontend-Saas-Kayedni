@@ -1,4 +1,4 @@
-import type { TimeSlot } from './types';
+import type { TimeSlot } from '../../../../types/types';
 
 export const generateTimeSlots = (staffId: string): TimeSlot[] => {
   const slots: TimeSlot[] = [];

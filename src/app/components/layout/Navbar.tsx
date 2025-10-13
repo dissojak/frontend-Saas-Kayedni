@@ -82,23 +82,25 @@ const Navbar = () => {
           <div className="flex items-center space-x-4">
             {isAuthenticated ? (
               <>
-                <span className="hidden md:inline-block">
-                  <span className={`role-badge role-badge-${user.role}`}>{user.role}</span>
-                </span>
+                {user?.role && (
+                  <span className="hidden md:inline-block">
+                    <span className={`role-badge role-badge-${user.role}`}>{user.role}</span>
+                  </span>
+                )}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="relative rounded-full h-8 w-8 p-0">
                       <img
-                        src={user.avatar || `https://ui-avatars.com/api/?name=${user.name}`}
-                        alt="Profile"
+                        src={user?.avatar || (user?.name ? `https://ui-avatars.com/api/?name=${user.name}` : "/assets/placeholder.svg")}
+                        alt={user?.name ?? "Profile"}
                         className="h-8 w-8 rounded-full object-cover"
                       />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-56">
                     <div className="p-2">
-                      <p className="font-medium">{user.name}</p>
-                      <p className="text-sm text-gray-500">{user.email}</p>
+                      <p className="font-medium">{user?.name ?? "User"}</p>
+                      <p className="text-sm text-gray-500">{user?.email ?? ""}</p>
                     </div>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={() => redirect("/profile")}>
@@ -150,14 +152,14 @@ const Navbar = () => {
               {!isAuthenticated && (
                 <>
                   <Link
-                    to="/login"
+                    href="/login"
                     className="text-gray-600 hover:text-primary py-2 font-medium"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     Login
                   </Link>
                   <Link
-                    to="/register"
+                    href="/register"
                     className="text-primary py-2 font-medium"
                     onClick={() => setMobileMenuOpen(false)}
                   >

@@ -1,4 +1,4 @@
-import type { Business, Staff, Service } from './types';
+import type { Business, Staff, Service } from '../types/types';
 
 export const mockBusinesses: Business[] = [
   {
@@ -98,4 +98,14 @@ export const mockServices: Service[] = [
     duration: 60,
     price: 45,
   },
+];
+
+export const mockCategories: string[] = [
+  'All',
+  'Barber',
+  'Education',
+  'Gaming',
+  'Fitness',
+  'Spa',
+  'Therapy',
 ];
