@@ -1,26 +1,146 @@
 @import "tailwindcss";
+@config "../../tailwind.config.ts";
 
+/* If you use tailwindcss-animate, keep this and ensure it's installed */
+/* @plugin "tailwindcss-animate"; */
+
+/* Design tokens (HSL components for better theming) */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: 0 0% 100%;
+  --foreground: 240 6% 10%;
+
+  --card: 0 0% 100%;
+  --card-foreground: 240 6% 10%;
+
+  --popover: 0 0% 100%;
+  --popover-foreground: 240 6% 10%;
+
+  --primary: 270 100% 52%;
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 265 60% 95%;
+  --secondary-foreground: 270 80% 35%;
+
+  --muted: 265 40% 96%;
+  --muted-foreground: 270 20% 45%;
+
+  --accent: 270 80% 95%;
+  --accent-foreground: 270 80% 25%;
+
+  --destructive: 0 85% 55%;
+  --destructive-foreground: 0 0% 100%;
+
+  --border: 270 30% 90%;
+  --input: 270 30% 90%;
+  --ring: 270 100% 52%;
+
+  --radius: 0.5rem;
+
+  --sidebar-background: 0 0% 98%;
+  --sidebar-foreground: 240 6% 10%;
+  --sidebar-primary: 270 100% 52%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 265 60% 95%;
+  --sidebar-accent-foreground: 270 80% 35%;
+  --sidebar-border: 270 30% 90%;
+  --sidebar-ring: 270 100% 52%;
 }
 
+/* Prefer class-based dark mode for next-themes */
+.dark {
+  --background: 240 6% 10%;
+  --foreground: 0 0% 100%;
+
+  --card: 240 6% 12%;
+  --card-foreground: 0 0% 100%;
+
+  --popover: 240 6% 12%;
+  --popover-foreground: 0 0% 100%;
+
+  --primary: 270 100% 66%;
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 270 30% 25%;
+  --secondary-foreground: 0 0% 100%;
+
+  --muted: 270 20% 30%;
+  --muted-foreground: 270 20% 70%;
+
+  --accent: 270 30% 25%;
+  --accent-foreground: 270 10% 85%;
+
+  --destructive: 0 70% 40%;
+  --destructive-foreground: 0 0% 100%;
+
+  --border: 270 20% 30%;
+  --input: 270 20% 30%;
+  --ring: 270 100% 66%;
+
+  --sidebar-background: 240 6% 10%;
+  --sidebar-foreground: 270 30% 90%;
+  --sidebar-primary: 270 100% 66%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 270 30% 25%;
+  --sidebar-accent-foreground: 270 30% 90%;
+  --sidebar-border: 270 30% 25%;
+  --sidebar-ring: 270 100% 66%;
+}
+
+/* Expose tokens as Tailwind colors and fonts */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+
+  /* Optional radius token (use via utilities like rounded-[var(--radius)]) */
+  --radius: var(--radius);
+
+  /* Sidebar tokens (use via var(...) in your CSS or make utilities if needed) */
+  --sidebar-background: hsl(var(--sidebar-background));
+  --sidebar-foreground: hsl(var(--sidebar-foreground));
+  --sidebar-primary: hsl(var(--sidebar-primary));
+  --sidebar-primary-foreground: hsl(var(--sidebar-primary-foreground));
+  --sidebar-accent: hsl(var(--sidebar-accent));
+  --sidebar-accent-foreground: hsl(var(--sidebar-accent-foreground));
+  --sidebar-border: hsl(var(--sidebar-border));
+  --sidebar-ring: hsl(var(--sidebar-ring));
+
+  /* Fonts: if using next/font set these vars in layout, or fallback here */
+  --font-sans: var(--font-geist-sans, "Zain", Inter, ui-sans-serif, system-ui, sans-serif);
+  --font-mono: var(--font-geist-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Base element defaults */
+*, ::before, ::after {
+  border-color: hsl(var(--border));
 }
-
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-family: var(--font-sans);
+  font-feature-settings: "rlig" 1, "calt" 1;
 }
