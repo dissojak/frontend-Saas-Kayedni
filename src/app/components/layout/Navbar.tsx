@@ -17,7 +17,7 @@ const navLinks: Record<Exclude<UserRole, null>, { path: string; label: string }[
   client: [
     { path: "/", label: "Home" },
     { path: "/businesses", label: "Find Services" },
-    { path: "/bookings", label: "My Bookings" },
+    { path: "/client/bookings", label: "My Bookings" },
   ],
   business: [
     { path: "/business/dashboard", label: "Dashboard" },
@@ -62,7 +62,7 @@ const Navbar = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <Link href="/" className="flex items-center space-x-2">
-              <span className="text-2xl font-bold text-primary">BookSphere</span>
+              <span className="text-2xl font-bold text-primary">Bookify</span>
             </Link>
 
             {/* Desktop Navigation */}

@@ -19,7 +19,7 @@ const zain = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Bookify-SaaS",
+  title: "Bookify",
   description: "Bookify is a Saas platform for easy booking management!",
 };
 
