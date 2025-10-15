@@ -1,4 +1,4 @@
-import type { Booking as GlobalBooking } from '@/global/types';
+import type { Booking as GlobalBooking } from '@global/types';
 
 export type TimeSlot = {
   id: string;

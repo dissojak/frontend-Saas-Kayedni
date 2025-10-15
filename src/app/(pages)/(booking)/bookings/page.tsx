@@ -2,10 +2,10 @@
 
 import React from 'react';
 import { useRouter } from 'next/navigation';
-import Layout from '@/components/layout/Layout';
+import Layout from '@components/layout/Layout';
 import { useAuth } from '@/(pages)/(auth)/context/AuthContext';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Button } from '@components/ui/button';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@components/ui/tabs';
 import useBookingsData from './hooks/useBookingsData';
 import UpcomingList from './components/UpcomingList';
 import PastList from './components/PastList';

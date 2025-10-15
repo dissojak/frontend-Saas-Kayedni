@@ -2,12 +2,12 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Button } from '@components/ui/button';
+import { Input } from '@components/ui/input';
+import { Label } from '@components/ui/label';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@components/ui/card';
+import { Tabs, TabsList, TabsTrigger } from '@components/ui/tabs';
+import { Checkbox } from '@components/ui/checkbox';
 import type { RegisterViewProps } from '../types';
 
 export default function RegisterView({

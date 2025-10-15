@@ -2,7 +2,7 @@
 import React from "react";
 import BusinessCard from "./BusinessCard";
 import type { Business } from "../types/business";
-import { Button } from "@/components/ui/button";
+import { Button } from "@components/ui/button";
 
 const BusinessList: React.FC<{ businesses: Business[]; onClearFilters?: () => void }>
   = ({ businesses, onClearFilters }) => {

@@ -1,7 +1,7 @@
 
 import React from "react";
-import Layout from "@/components/layout/Layout";
-import AdminDashboard from "@/components/dashboard/AdminDashboard";
+import Layout from "@components/layout/Layout";
+import AdminDashboard from "@components/dashboard/admin/AdminDashboard";
 
 const AdminDashboardPage = () => {
   return (

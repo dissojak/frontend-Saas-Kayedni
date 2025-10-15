@@ -1,9 +1,9 @@
 "use client";
 
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@components/ui/card';
+import { Separator } from '@components/ui/separator';
+import { Button } from '@components/ui/button';
 
 type Props = {
   service: any;

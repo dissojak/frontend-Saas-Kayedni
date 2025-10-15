@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@components/ui/button";
 import type { Business } from "@/(pages)/(business)/businesses/types/business";
 
 const BusinessHeader: React.FC<{ business: Business; onBook?: () => void }> = ({ business, onBook }) => {

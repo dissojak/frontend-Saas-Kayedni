@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { useToast } from '@/global/hooks/use-toast';
+import { useToast } from '@global/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/(pages)/(auth)/context/AuthContext';
 import { useBooking } from '../../../context/BookingContext';

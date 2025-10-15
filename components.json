@@ -10,11 +10,12 @@
     "cssVariables": true,
     "prefix": ""
   },
+  "components": "src/components",
   "aliases": {
-    "components": "@/components",
-    "utils": "@/lib/utils",
-    "ui": "@/components/ui",
-    "lib": "@/lib",
-    "hooks": "@/hooks"
+    "@components": "@components",
+    "utils": "@global/lib/utils",
+    "ui": "@components/ui",
+    "lib": "@global/lib",
+    "hooks": "@global/hooks"
   }
 }

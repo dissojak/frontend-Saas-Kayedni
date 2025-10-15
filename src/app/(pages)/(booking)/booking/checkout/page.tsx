@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import Layout from '@/components/layout/Layout';
+import Layout from '@components/layout/Layout';
 import BookingSummary from './components/BookingSummary';
 import ContactForm from './components/ContactForm';
 import PaymentSummary from './components/PaymentSummary';

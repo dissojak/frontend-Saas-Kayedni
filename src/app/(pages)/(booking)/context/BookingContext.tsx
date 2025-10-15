@@ -1,6 +1,6 @@
 "use client";
 import React, { createContext, useContext, ReactNode } from 'react';
-import type { BookingContextType } from '../../../global/types';
+import type { BookingContextType } from '@global/types';
 import { useBookingImplementation } from './booking/useBookingImplementation';
 
 const BookingContext = createContext<BookingContextType | undefined>(undefined);

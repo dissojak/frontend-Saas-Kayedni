@@ -2,8 +2,8 @@
 
 import React from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@components/ui/card';
+import { Button } from '@components/ui/button';
 import type { Booking } from '../types';
 
 type Props = {

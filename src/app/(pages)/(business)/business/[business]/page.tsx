@@ -2,11 +2,11 @@
 
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import Layout from "@/components/layout/Layout";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar } from "@/components/ui/calendar";
+import Layout from "@components/layout/Layout";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@components/ui/tabs";
+import { Button } from "@components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@components/ui/card";
+import { Calendar } from "@components/ui/calendar";
 import { useBooking } from "@/(pages)/(booking)/context/BookingContext";
 
 import useBusinessDetail from "./hooks/useBusinessDetail";

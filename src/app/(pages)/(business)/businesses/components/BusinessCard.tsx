@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@components/ui/card";
+import { Button } from "@components/ui/button";
 import { getLogo, formatRating } from "../utils/format";
 import type { Business } from "../types/business";
 import { useRouter } from "next/navigation";

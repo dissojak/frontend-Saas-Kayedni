@@ -4,9 +4,11 @@ import React, { useEffect, useState } from 'react';
 import type { AuthContextType, User } from './types';
 import { loadStoredUser, storeUser } from './utils';
 import { fakeLogin, fakeRegister } from './actions';
+import { useRouter } from 'next/navigation';
 
 export function useAuthImplementation() {
   const [user, setUser] = useState<User | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     const stored = loadStoredUser();
@@ -28,6 +30,7 @@ export function useAuthImplementation() {
   const logout = () => {
     setUser(null);
     storeUser(null);
+    router.push('/');
   };
 
   const api = { user, isAuthenticated: !!user, login, logout, register } as AuthContextType;

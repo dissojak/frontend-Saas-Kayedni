@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import Layout from "@/components/layout/Layout";
+import Layout from "@components/layout/Layout";
 // fallback: if you already have businesses in BookingContext you can still use it.
 import { useBooking } from "@/(pages)/(booking)/context/BookingContext";
 import useBusinessFilter from "./hooks/useBusinessFilter";

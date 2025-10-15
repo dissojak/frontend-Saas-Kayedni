@@ -4,10 +4,10 @@ import React from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 
-import Layout from '@/components/layout/Layout';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import CategoryCard from '@/components/home/CategoryCard';
+import Layout from '@components/layout/Layout';
+import { Button } from '@components/ui/button';
+import { Card, CardContent } from '@components/ui/card';
+import CategoryCard from '../components/home/CategoryCard';
 import { useAuth } from '@/(pages)/(auth)/context/AuthContext';
 import { useEffect, useState } from 'react';
 import { fetchBusinesses, fetchCategories } from './(pages)/(business)/actions/backend';

@@ -2,10 +2,10 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import Providers from "./global/providers";
+import { Toaster } from "@components/ui/toaster";
+import { Toaster as Sonner } from "@components/ui/sonner";
+import { TooltipProvider } from "@components/ui/tooltip";
+import Providers from "@global/providers";
 import React from "react";
 
 const geistSans = Geist({
