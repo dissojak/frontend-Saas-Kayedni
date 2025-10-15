@@ -1,9 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import type { BookingContextType, Business, Staff, Service, Booking, TimeSlot } from '../../../../types/types';
+import type { BookingContextType, Business, Staff, Service, Booking, TimeSlot } from '../../../../global/types';
 import { generateTimeSlots } from './utils';
-import { mockBusinesses, mockStaff, mockServices } from '../../../../data';
+import { mockBusinesses, mockStaff, mockServices } from '../../../../global/data';
 
 export function useBookingImplementation(): BookingContextType {
   const [businesses] = useState<Business[]>(mockBusinesses);

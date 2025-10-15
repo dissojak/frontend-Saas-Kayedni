@@ -1,47 +1,28 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
+import Link from 'next/link';
 
 export default function Custom404() {
-  const [homeUrl, setHomeUrl] = useState(
-    process.env.NODE_ENV === "production" ? "https://stoonproduction.com" : "/", // fallback until window is available
-  );
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const origin = window.location.origin.replace("admin.", "");
-      setHomeUrl(origin);
-    }
-  }, []);
-
+  // Simpler, project-consistent 404: link to the app root and provide contact info
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-gray-100 via-gray-200 to-gray-300 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-6">
-      <div className="relative mb-10 mt-40 ">
-        <div className="absolute -top-20 -left-20 w-64 h-64 bg-teal-400 rounded-full opacity-30 animate-pulse"></div>
-        <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-purple-500 rounded-full opacity-30 animate-pulse"></div>
-        <h1 className="text-9xl font-extrabold text-teal-600 dark:text-teal-400 z-10">404</h1>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-primary/5 via-primary/3 to-white dark:from-slate-900 dark:via-slate-800 p-6">
+      <div className="relative mb-8">
+        <div className="mb-6">
+          <h1 className="text-7xl md:text-9xl font-extrabold text-primary">404</h1>
+        </div>
+        <p className="text-xl md:text-2xl font-semibold text-muted-foreground">Page not found</p>
       </div>
 
-      <h2 className="text-4xl font-bold text-gray-800 dark:text-gray-100 mb-4">
-        Oops! Page Not Found
-      </h2>
-      <p className="text-lg text-gray-600 dark:text-gray-300 mb-8 max-w-md text-center">
-        The page you&apos;re looking for doesn&apos;t exist or may have moved. Try heading back to
-        the home page.
-      </p>
+      <div className="max-w-xl text-center">
+        <h2 className="text-2xl font-bold mb-2">We couldn't find that page.</h2>
+        <p className="text-gray-600 mb-6">The link may be broken or the page may have been removed. Try going back to the home page or contact support.</p>
 
-      <Link href={homeUrl}>
-        <span className="inline-block bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition-all duration-300 transform hover:-translate-y-1 hover:scale-105 cursor-pointer">
-          Go Home
-        </span>
-      </Link>
+        <div className="flex justify-center gap-4">
+          <Link href="/" className="inline-block bg-primary text-white font-semibold py-2 px-6 rounded shadow hover:opacity-95">Home</Link>
+          <Link href="/contact" className="inline-block border border-primary text-primary font-semibold py-2 px-6 rounded hover:bg-primary/5">Contact</Link>
+        </div>
 
-      <div className="mt-12 text-gray-400 dark:text-gray-500 text-sm">
-        If you think this is an error, contact us at{" "}
-        <a href="mailto:contact@stoonproduction.com" className="underline hover:text-teal-600">
-          contact@stoonproduction.com
-        </a>
+        <p className="text-sm text-gray-500 mt-6">If you think this is an error, email <a href="mailto:contact@bookify.com" className="underline">contact@bookify.com</a></p>
       </div>
     </div>
   );

@@ -10,7 +10,6 @@ import BusinessList from "./components/BusinessList";
 import SearchFilter from "./components/SearchFilter";
 import type { Business } from "./types/business";
 import { fetchCategories } from "../actions/backend";
-import { useSearchParams } from "next/navigation";
 
 const BusinessesPage: React.FC = () => {
   const bookingCtx = useBooking?.();
@@ -30,7 +29,6 @@ const BusinessesPage: React.FC = () => {
     };
   }, []);
 
-  const searchParams = useSearchParams();
 
   const {
     searchTerm,
@@ -43,14 +41,12 @@ const BusinessesPage: React.FC = () => {
   // If a ?category=... query param exists, try to set the initial selected category
   useEffect(() => {
     if (!categories) return;
-    const catParam = searchParams?.get?.("category");
+    // read from window.location.search on the client to avoid SSR/suspense issues
+    const catParam = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('category') : null;
     if (!catParam) return;
     const match = categories.find((c) => String(c).toLowerCase() === String(catParam).toLowerCase());
-    if (match) {
-      setSelectedCategory(match as any);
-    }
-    // only run when categories change or the url param changes
-  }, [categories, searchParams]);
+    if (match) setSelectedCategory(match as any);
+  }, [categories]);
 
   return (
     <Layout>

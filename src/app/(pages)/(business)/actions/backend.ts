@@ -1,5 +1,5 @@
 import type { Business } from "../businesses/types/business";
-import { mockBusinesses, mockStaff, mockServices, mockCategories } from "../../../data";
+import { mockBusinesses, mockStaff, mockServices, mockCategories } from "../../../global/data";
 
 /**
  * Simulated backend call to fetch businesses.

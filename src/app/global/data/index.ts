@@ -1,4 +1,4 @@
-import type { Business, Staff, Service } from '../types/types';
+import type { Business, Staff, Service } from '@/global/types';
 
 export const mockBusinesses: Business[] = [
   {
