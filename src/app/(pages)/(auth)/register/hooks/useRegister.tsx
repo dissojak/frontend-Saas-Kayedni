@@ -24,20 +24,33 @@ export function useRegister() {
       setError("Passwords do not match");
       return;
     }
+    if (!acceptedTerms) {
+      setError("Please accept the terms and conditions");
+      return;
+    }
     setLoading(true);
     try {
       const payload = { name, email, password, role };
       const res = await callBackendRegister(payload);
+      
       if (res.success && res.user) {
-        // If AuthContext exists, use it to persist the user (dummy)
+        // Registration successful - user needs to activate via email
+        // Update auth context
         await auth.register?.(
-          res.user.name ?? res.user.email,
+          res.user.name,
           res.user.email,
           password,
           res.user.role,
         );
-        console.log("Registered user:", res.user);
-        router.push("/");
+        
+        console.log("Registration successful:", res.user);
+        console.log("Message:", res.message);
+        
+        // Show success message to user
+        alert(res.message || "Registration successful! Please check your email to activate your account.");
+        
+        // Redirect to login page
+        router.push("/login");
       } else {
         setError(res.message ?? "Registration failed");
       }

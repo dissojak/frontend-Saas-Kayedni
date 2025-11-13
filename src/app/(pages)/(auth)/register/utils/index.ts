@@ -1,29 +1,52 @@
-import { AuthResponse } from '../../types';
+import { AuthResponse, roleMapping, reverseRoleMapping } from '../../types';
 import type { RegisterPayload } from '../types';
+import { signupAPI } from '../../api/auth.api';
 
 /**
- * Placeholder for backend registration call. If you have a backend, replace
- * the implementation to POST to your API. For now it fakes a successful response.
+ * Call backend registration endpoint with proper role mapping
  */
 export async function callBackendRegister(payload: RegisterPayload): Promise<AuthResponse> {
-  // Simulate network latency
-  await new Promise((r) => setTimeout(r, 400));
-  console.log('Simulated backend response');
+  try {
+    // Basic client-side validation
+    if (!payload.email || !payload.password || !payload.name) {
+      return { 
+        success: false, 
+        message: 'Missing required fields' 
+      };
+    }
 
-  // Basic client-side validation example
-  if (!payload.email || !payload.password || !payload.name) {
-    return { success: false, message: 'Missing required fields' };
-  }
+    // Map frontend role to backend role format
+    const backendRole = roleMapping[payload.role];
 
-  // If there's no backend, return a fake success and user object
-  return {
-    success: true,
-    message: 'Registered (fake)',
-    user: {
-      id: Date.now().toString(),
+    // Call the backend API
+    const backendResponse = await signupAPI({
       name: payload.name,
       email: payload.email,
-      role: payload.role,
-    },
-  };
+      password: payload.password,
+      role: backendRole,
+    });
+
+    // Map backend role to frontend role
+    const frontendRole = reverseRoleMapping[backendResponse.role];
+
+    // Registration successful - user needs to activate account via email
+    return {
+      success: true,
+      message: backendResponse.message,
+      user: {
+        id: backendResponse.userId.toString(),
+        name: backendResponse.name,
+        email: backendResponse.email,
+        role: frontendRole,
+        token: backendResponse.token || undefined,
+        refreshToken: backendResponse.refreshToken || undefined,
+      },
+    };
+  } catch (error) {
+    console.error('Registration error:', error);
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'An error occurred during registration',
+    };
+  }
 }

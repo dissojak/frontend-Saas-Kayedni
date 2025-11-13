@@ -22,22 +22,15 @@ export function useLogin() {
     try {
       const payload: LoginPayload = { email, password, role };
       const result = await callBackendLogin(payload);
-      if (result.success) {
-        if (result.user) {
-          await auth.login(email, password, role);
-        } else {
-          await auth.login(email, password, role);
-        }
-       router.push("/");
-        return;
-      }
-
-      if (result.message === 'no-backend') {
+      
+      if (result.success && result.user) {
+        // Login successful with backend
         await auth.login(email, password, role);
         router.push("/");
         return;
       }
 
+      // Login failed - show error message
       setError(result.message || 'Login failed');
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
