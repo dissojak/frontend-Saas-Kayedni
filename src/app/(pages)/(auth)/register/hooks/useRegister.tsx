@@ -17,6 +17,9 @@ export function useRegister() {
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [registered, setRegistered] = useState(false);
+  const [registrationMessage, setRegistrationMessage] = useState<string | null>(null);
+  const [registeredEmail, setRegisteredEmail] = useState<string | null>(null);
 
   async function onSubmit() {
     setError(null);
@@ -34,23 +37,10 @@ export function useRegister() {
       const res = await callBackendRegister(payload);
       
       if (res.success && res.user) {
-        // Registration successful - user needs to activate via email
-        // Update auth context
-        await auth.register?.(
-          res.user.name,
-          res.user.email,
-          password,
-          res.user.role,
-        );
-        
-        console.log("Registration successful:", res.user);
-        console.log("Message:", res.message);
-        
-        // Show success message to user
-        alert(res.message || "Registration successful! Please check your email to activate your account.");
-        
-        // Redirect to login page
-        router.push("/login");
+        // Registration successful — do NOT auto-login. User must verify email first.
+        setRegistered(true);
+        setRegisteredEmail(res.user.email ?? null);
+        setRegistrationMessage(res.message ?? 'Registration successful. Please check your email to activate your account.');
       } else {
         setError(res.message ?? "Registration failed");
       }
@@ -76,6 +66,9 @@ export function useRegister() {
     setAcceptedTerms,
     loading,
     error,
+    registered,
+    registrationMessage,
+    registeredEmail,
     onSubmit,
   } as const;
 }

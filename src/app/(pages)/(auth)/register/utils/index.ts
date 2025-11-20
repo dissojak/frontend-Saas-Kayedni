@@ -1,4 +1,4 @@
-import { AuthResponse, roleMapping, reverseRoleMapping } from '../../types';
+import { AuthResponse, roleMapping, reverseRoleMapping, BackendUserRole } from '../../types';
 import type { RegisterPayload } from '../types';
 import { signupAPI } from '../../api/auth.api';
 
@@ -9,9 +9,9 @@ export async function callBackendRegister(payload: RegisterPayload): Promise<Aut
   try {
     // Basic client-side validation
     if (!payload.email || !payload.password || !payload.name) {
-      return { 
-        success: false, 
-        message: 'Missing required fields' 
+      return {
+        success: false,
+        message: 'Missing required fields',
       };
     }
 
@@ -26,21 +26,46 @@ export async function callBackendRegister(payload: RegisterPayload): Promise<Aut
       role: backendRole,
     });
 
-    // Map backend role to frontend role
-    const frontendRole = reverseRoleMapping[backendResponse.role];
+    const status = backendResponse.status;
+    const data = backendResponse.data || {};
 
-    // Registration successful - user needs to activate account via email
+    // If backend created the user but requires activation (common pattern uses 403 or 202)
+    if (status === 403 || status === 202) {
+      return {
+        success: true,
+        message: data.message || 'Account created. Please verify your email to activate your account.',
+        user: {
+          id: (data.userId ?? data.id ?? '')?.toString?.() ?? '',
+          name: data.name ?? payload.name,
+          email: data.email ?? payload.email,
+          role: reverseRoleMapping[(data.role as BackendUserRole) ?? 'CLIENT'] ?? payload.role,
+        },
+        error: undefined,
+      };
+    }
+
+    // Successful immediate activation/creation
+    if (status >= 200 && status < 300) {
+  const frontendRole = reverseRoleMapping[(data.role as BackendUserRole) ?? 'CLIENT'];
+      return {
+        success: true,
+        message: data.message,
+        user: {
+          id: data.userId?.toString?.() ?? (data.id?.toString?.() ?? ''),
+          name: data.name,
+          email: data.email,
+          role: frontendRole,
+          token: data.token || undefined,
+          refreshToken: data.refreshToken || undefined,
+        },
+      };
+    }
+
+    // Other non-success statuses
     return {
-      success: true,
-      message: backendResponse.message,
-      user: {
-        id: backendResponse.userId.toString(),
-        name: backendResponse.name,
-        email: backendResponse.email,
-        role: frontendRole,
-        token: backendResponse.token || undefined,
-        refreshToken: backendResponse.refreshToken || undefined,
-      },
+      success: false,
+      message: data.message || `Signup failed with status ${status}`,
+      error: data.error || undefined,
     };
   } catch (error) {
     console.error('Registration error:', error);

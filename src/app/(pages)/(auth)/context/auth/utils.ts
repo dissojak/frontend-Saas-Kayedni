@@ -29,12 +29,24 @@ export function storeUser(u: User | null) {
   }
 }
 
-export function makeFakeUser(name: string, email: string, role: User['role']) {
+// Note: makeFakeUser removed — the application now requires backend-provided user data.
+// If you need a dev-only fallback, implement it explicitly in a development-only file.
+
+/**
+ * Normalize a user object received from the backend into the frontend `User` shape.
+ * If the backend does not provide an avatar, fall back to the generated avatar URL.
+ */
+export function buildUserFromDb(dbUser: Partial<User> & { id?: string | number; avatar?: string | null } & Record<string, any>) {
+  const name = dbUser.name ?? dbUser.email?.split('@')[0] ?? 'User';
+  const email = dbUser.email ?? '';
+  const role = (dbUser.role ?? 'client') as unknown as User['role'];
+  const id = dbUser.id === undefined ? `local-${email.split('@')[0]}` : String(dbUser.id);
+  const avatar = dbUser.avatar ? String(dbUser.avatar) : `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`;
   return {
-    id: `user-${Math.random().toString(36).substring(2, 9)}`,
+    id,
     name,
     email,
     role,
-    avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`,
+    avatar,
   } as User;
 }

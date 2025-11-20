@@ -66,15 +66,32 @@ export async function apiRequest<T = any>(
       throw new Error('Session expired. Please login again.');
     }
 
-    // Parse response
-    const data = await response.json();
+    // Safely parse response body. Some endpoints return an empty body (204 or no content),
+    // calling response.json() on an empty body throws `Unexpected end of JSON input`.
+    const text = await response.text();
+    let data: any = null;
+    if (text) {
+      try {
+        data = JSON.parse(text);
+      } catch (err) {
+        // If the response isn't valid JSON, log and handle based on status
+        console.warn('apiRequest: failed to parse JSON response', err, text);
+        if (!response.ok) {
+          throw new Error(`API Error: ${response.status}`);
+        }
+        // For successful non-JSON responses, return the raw text as the result
+        return text as unknown as T;
+      }
+    }
 
     // Handle error responses
     if (!response.ok) {
-      throw new Error(data.message || `API Error: ${response.status}`);
+      // Try to extract message from JSON payload when available
+      const message = data && (data.message || data.error);
+      throw new Error(message || `API Error: ${response.status}`);
     }
 
-    return data;
+    return data as T;
   } catch (error) {
     console.error('API Request Error:', error);
     throw error;

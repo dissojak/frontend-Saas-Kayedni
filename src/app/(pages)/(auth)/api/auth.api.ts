@@ -25,7 +25,7 @@ export interface LoginRequestPayload {
  * Signup - Register a new user
  * POST /api/v1/auth/signup
  */
-export async function signupAPI(payload: SignupRequestPayload): Promise<BackendAuthResponse> {
+export async function signupAPI(payload: SignupRequestPayload): Promise<{ status: number; data?: any }> {
   try {
     const response = await fetch(`${API_BASE_URL}/signup`, {
       method: 'POST',
@@ -35,13 +35,18 @@ export async function signupAPI(payload: SignupRequestPayload): Promise<BackendA
       body: JSON.stringify(payload),
     });
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.message || 'Signup failed');
+    const text = await response.text();
+    let data: any = undefined;
+    if (text) {
+      try {
+        data = JSON.parse(text);
+      } catch (err) {
+        // non-JSON response
+        data = text;
+      }
     }
 
-    return data;
+    return { status: response.status, data };
   } catch (error) {
     console.error('Signup API Error:', error);
     throw error;

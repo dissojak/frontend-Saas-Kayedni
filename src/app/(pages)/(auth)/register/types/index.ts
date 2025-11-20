@@ -11,4 +11,7 @@ export interface RegisterViewProps extends BaseAuthViewProps {
   setConfirmPassword: (v: string) => void;
   acceptedTerms: boolean;
   setAcceptedTerms: (v: boolean) => void;
+  registered?: boolean;
+  registrationMessage?: string | null;
+  registeredEmail?: string | null;
 }
