@@ -1,5 +1,7 @@
-import React, { useState } from "react";
-import { redirect } from "next/navigation";
+"use client";
+
+import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@components/ui/button";
 import {
@@ -10,27 +12,27 @@ import {
   DropdownMenuTrigger,
 } from "@components/ui/dropdown-menu";
 import { useAuth, UserRole } from "@/(pages)/(auth)/context/AuthContext";
-import { Menu } from "lucide-react";
+import { Menu, Sun, Moon } from "lucide-react";
 
-// Role-specific navigation links
+// Role-specific navigation links (keys now use uppercase to match backend/user role values)
 const navLinks: Record<Exclude<UserRole, null>, { path: string; label: string }[]> = {
-  client: [
+  CLIENT: [
     { path: "/", label: "Home" },
     { path: "/businesses", label: "Find Services" },
     { path: "/client/bookings", label: "My Bookings" },
   ],
-  business: [
+  BUSINESS_OWNER: [
     { path: "/business/dashboard", label: "Dashboard" },
     { path: "/business/staff", label: "Staff" },
     { path: "/business/services", label: "Services" },
     { path: "/business/bookings", label: "Bookings" },
   ],
-  staff: [
+  STAFF: [
     { path: "/staff/dashboard", label: "Dashboard" },
     { path: "/staff/schedule", label: "My Schedule" },
     { path: "/staff/bookings", label: "Bookings" },
   ],
-  admin: [
+  ADMIN: [
     { path: "/admin/dashboard", label: "Dashboard" },
     { path: "/admin/businesses", label: "Businesses" },
     { path: "/admin/users", label: "Users" },
@@ -46,28 +48,62 @@ const defaultLinks = [
 
 const Navbar = () => {
   const { user, isAuthenticated, logout } = useAuth();
+  const router = useRouter();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isDark, setIsDark] = useState(false);
 
-  // Use user role links if authenticated, otherwise use default links
-  const links = user && user.role ? navLinks[user.role] : defaultLinks;
+  useEffect(() => {
+    // initialize theme from localStorage or existing html class
+    try {
+      const stored = localStorage.getItem("theme");
+      const prefersDark = stored === "dark" || (!stored && document.documentElement.classList.contains("dark"));
+      if (prefersDark) {
+        document.documentElement.classList.add("dark");
+        setIsDark(true);
+      } else {
+        document.documentElement.classList.remove("dark");
+        setIsDark(false);
+      }
+    } catch (e) {
+      console.warn("Failed to initialize theme:", e);
+    }
+  }, []);
 
-  const roleColor = user?.role
-    ? `text-${user.role} border-${user.role}`
-    : "text-primary border-primary";
+  const toggleTheme = () => {
+    try {
+      const html = document.documentElement;
+      const nowDark = !html.classList.contains("dark");
+      if (nowDark) {
+        html.classList.add("dark");
+        localStorage.setItem("theme", "dark");
+        setIsDark(true);
+      } else {
+        html.classList.remove("dark");
+        localStorage.setItem("theme", "light");
+        setIsDark(false);
+      }
+    } catch (e) {
+      console.warn("Failed to toggle theme:", e);
+    }
+  };
+
+  // Use the user.role (now uppercase) to look up navLinks; fall back to defaultLinks.
+  const roleKey = user?.role ? String(user.role).toUpperCase() as keyof typeof navLinks : null;
+  const links = roleKey && navLinks[roleKey] ? navLinks[roleKey] : defaultLinks;
 
   return (
     <nav className="bg-white shadow-sm sticky top-0 z-50">
       <div className="container mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-4">
             <Link href="/" className="flex items-center space-x-2">
               <span className="text-2xl font-bold text-primary">Bookify</span>
             </Link>
 
             {/* Desktop Navigation */}
             <div className="hidden md:flex space-x-6 ml-10">
-              {links.map((link) => (
+              {links.map((link) => 
                 <Link
                   key={link.path}
                   href={link.path}
@@ -75,17 +111,19 @@ const Navbar = () => {
                 >
                   {link.label}
                 </Link>
-              ))}
+              )}
             </div>
           </div>
 
           <div className="flex items-center space-x-4">
             {isAuthenticated ? (
               <>
-                {user?.role && (
-                  <span className="hidden md:inline-block">
-                    <span className={`role-badge role-badge-${user.role}`}>{user.role}</span>
-                  </span>
+                {user && (
+                  <div className="hidden md:flex md:flex-col md:items-end md:text-right md:mr-2">
+                    {/* Show user name above a smaller role label */}
+                    <span className="text-sm font-medium leading-tight">{user.name ?? user.email?.split('@')[0]}</span>
+                    <span className={`text-xs text-gray-500 mt-0.5 role-badge role-badge-${String(user.role).toLowerCase()}`}>{user.role}</span>
+                  </div>
                 )}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -103,10 +141,10 @@ const Navbar = () => {
                       <p className="text-sm text-gray-500">{user?.email ?? ""}</p>
                     </div>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => redirect("/profile")}>
+                    <DropdownMenuItem onClick={() => router.push("/profile")}>
                       Profile
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => redirect("/settings")}>
+                    <DropdownMenuItem onClick={() => router.push("/settings")}>
                       Settings
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
@@ -116,14 +154,23 @@ const Navbar = () => {
               </>
             ) : (
               <div className="hidden md:block">
-                <Button variant="ghost" onClick={() => redirect("/login")}>
+                <Button variant="ghost" onClick={() => router.push("/login")}>
                   Login
                 </Button>
-                <Button onClick={() => redirect("/register")}>Sign Up</Button>
+                <Button onClick={() => router.push("/register")}>Sign Up</Button>
               </div>
             )}
 
             {/* Mobile menu button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleTheme}
+              title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+            >
+              {isDark ? <Sun /> : <Moon />}
+            </Button>
+
             <Button
               variant="ghost"
               size="icon"
