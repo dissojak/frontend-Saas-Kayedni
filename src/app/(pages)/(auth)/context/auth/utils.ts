@@ -37,9 +37,10 @@ export function storeUser(u: User | null) {
  * If the backend does not provide an avatar, fall back to the generated avatar URL.
  */
 export function buildUserFromDb(dbUser: Partial<User> & { id?: string | number; avatar?: string | null } & Record<string, any>) {
+  console.log("user :",dbUser);
   const name = dbUser.name ?? dbUser.email?.split('@')[0] ?? 'User';
   const email = dbUser.email ?? '';
-  const role = (dbUser.role ?? 'client') as unknown as User['role'];
+  const role = (dbUser.role ?? 'CLIENT') as unknown as User['role'];
   const id = dbUser.id === undefined ? `local-${email.split('@')[0]}` : String(dbUser.id);
   const avatar = dbUser.avatar ? String(dbUser.avatar) : `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`;
   return {

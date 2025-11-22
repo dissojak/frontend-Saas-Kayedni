@@ -31,12 +31,13 @@ export default function RegisterView({
   registeredEmail,
 }: Readonly<RegisterViewProps>) {
   const submitStyle = {
-    backgroundColor: role === 'client' ? undefined : undefined,
+  backgroundColor: role === 'CLIENT' ? undefined : undefined,
   } as React.CSSProperties;
 
   return (
   <div className="min-h-screen flex items-center justify-center px-4">
       <div className="max-w-5xl w-full rounded-2xl shadow-2xl overflow-hidden grid grid-cols-1 md:grid-cols-2">
+  {/* left side  */}
   <div className="hidden md:flex flex-col items-center justify-center p-10 bg-gradient-to-b from-[var(--color-primary)] to-[var(--color-accent)] text-white relative">
           <div className="flex flex-col items-center text-center max-w-xs">
             <div className="h-16 w-16 rounded-full bg-white/20 flex items-center justify-center mb-4">
@@ -47,6 +48,7 @@ export default function RegisterView({
           </div>
         </div>
 
+  {/* right side  */}
   <div className="bg-white relative p-8 md:p-12 flex items-center justify-center">
           <svg viewBox="0 0 80 400" className="hidden md:block absolute left-0 top-0 h-full w-20 -ml-10" preserveAspectRatio="none" aria-hidden>
             <path d="M80 0 C60 30 30 40 0 60 L0 340 C30 360 60 370 80 400 Z" fill="white" />
@@ -71,6 +73,27 @@ export default function RegisterView({
                   <div>
                     <h3 className="text-lg font-semibold">Create your account</h3>
                     <p className="text-sm text-gray-500">It only takes a couple of minutes.</p>
+                  </div>
+                </div>
+
+                {/* Role selector: keep UI subtle and stable — two pill buttons */}
+                <div className="mb-4 flex items-center gap-3">
+                  <span className="text-sm text-gray-600 mr-2">Account type</span>
+                  <div className="inline-flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setRole('CLIENT')}
+                      className={`px-3 py-1 rounded-full text-sm font-medium transition-colors focus:outline-none ${role === 'CLIENT' ? 'bg-[var(--color-primary)] text-white' : 'bg-transparent border border-gray-200 text-gray-700 hover:bg-gray-50'}`}
+                    >
+                      Personal
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setRole('BUSINESS_OWNER')}
+                      className={`px-3 py-1 rounded-full text-sm font-medium transition-colors focus:outline-none ${role === 'BUSINESS_OWNER' ? 'bg-[var(--color-primary)] text-white' : 'bg-transparent border border-gray-200 text-gray-700 hover:bg-gray-50'}`}
+                    >
+                      Business
+                    </button>
                   </div>
                 </div>
 
