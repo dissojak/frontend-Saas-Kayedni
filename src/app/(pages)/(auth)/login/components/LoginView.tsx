@@ -96,7 +96,6 @@ export default function LoginView({
               <Button type="submit" disabled={loading} className="flex-1 bg-[var(--color-primary)] text-white py-3 rounded-full">
                 {loading ? 'Signing in...' : 'Sign in'}
               </Button>
-              <Link href="/register" className="flex-1 py-3 rounded-full border border-gray-200 flex items-center justify-center text-sm text-gray-700">Sign up</Link>
             </div>
 
             {/* social buttons removed per design preference */}
