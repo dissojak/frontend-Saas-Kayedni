@@ -1,21 +1,22 @@
 // Backend uses uppercase roles: CLIENT, BUSINESS_OWNER, STAFF, ADMIN
 export type BackendUserRole = 'CLIENT' | 'BUSINESS_OWNER' | 'STAFF' | 'ADMIN';
-export type UserRole = 'client' | 'business' | 'staff' | 'admin';
+// Frontend will now use the same uppercase role values as the backend
+export type UserRole = 'CLIENT' | 'BUSINESS_OWNER' | 'STAFF' | 'ADMIN';
 
-// Map frontend roles to backend roles
+// Map frontend roles to backend roles (identity for most, kept explicit for clarity)
 export const roleMapping: Record<UserRole, BackendUserRole> = {
-  client: 'CLIENT',
-  business: 'BUSINESS_OWNER',
-  staff: 'STAFF',
-  admin: 'ADMIN',
+  CLIENT: 'CLIENT',
+  BUSINESS_OWNER: 'BUSINESS_OWNER',
+  STAFF: 'STAFF',
+  ADMIN: 'ADMIN',
 };
 
-// Map backend roles to frontend roles
+// Map backend roles to frontend roles (identity mapping)
 export const reverseRoleMapping: Record<BackendUserRole, UserRole> = {
-  CLIENT: 'client',
-  BUSINESS_OWNER: 'business',
-  STAFF: 'staff',
-  ADMIN: 'admin',
+  CLIENT: 'CLIENT',
+  BUSINESS_OWNER: 'BUSINESS_OWNER',
+  STAFF: 'STAFF',
+  ADMIN: 'ADMIN',
 };
 
 export interface BaseAuthPayload {

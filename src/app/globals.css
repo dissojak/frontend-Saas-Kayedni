@@ -44,6 +44,15 @@
   --sidebar-accent-foreground: 270 80% 35%;
   --sidebar-border: 270 30% 90%;
   --sidebar-ring: 270 100% 52%;
+
+  /* Brand color tokens (hex values) — mapped to the palettes added in tailwind.config.ts */
+  /* Primary brand (user indicated 'this' at black-pearl 900) */
+  --brand-primary: #034477;
+  /* Primary (dark-side) alternative (user indicated smalt-blue 500) */
+  --brand-primary-dark: #5c7c89;
+  /* Accent / secondary (user indicated vivid-tangerine 400) */
+  --brand-accent: #f58f7c;
+  --brand-primary-foreground: #ffffff;
 }
 
 /* Prefer class-based dark mode for next-themes */
@@ -106,8 +115,14 @@
   --color-muted: hsl(var(--muted));
   --color-muted-foreground: hsl(var(--muted-foreground));
 
-  --color-accent: hsl(var(--accent));
-  --color-accent-foreground: hsl(var(--accent-foreground));
+  /* Prefer explicit brand hex variables for primary and accent so components using
+    var(--color-primary) get the designer-selected shades. Falls back to existing
+    HSL token if needed elsewhere. */
+  --color-primary: var(--brand-primary);
+  --color-primary-foreground: var(--brand-primary-foreground, #fff);
+
+  --color-accent: var(--brand-accent);
+  --color-accent-foreground: var(--accent-foreground);
 
   --color-destructive: hsl(var(--destructive));
   --color-destructive-foreground: hsl(var(--destructive-foreground));

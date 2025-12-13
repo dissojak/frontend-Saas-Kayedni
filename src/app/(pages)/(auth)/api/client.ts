@@ -12,6 +12,9 @@ export interface ApiRequestOptions {
   body?: any;
   headers?: Record<string, string>;
   requiresAuth?: boolean;
+  // Controls fetch credentials mode. If not provided, fetch will not send credentials.
+  // Use 'include' when your backend relies on cookies for auth (not the default here).
+  credentials?: RequestCredentials;
 }
 
 /**
@@ -46,7 +49,9 @@ export async function apiRequest<T = any>(
   const requestOptions: RequestInit = {
     method,
     headers: requestHeaders,
-  };
+    // Only set credentials when explicitly provided in options
+    ...(options.credentials ? { credentials: options.credentials } : {}),
+  } as RequestInit;
 
   // Add body if present
   if (body) {
@@ -54,41 +59,57 @@ export async function apiRequest<T = any>(
   }
 
   try {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, requestOptions);
+    // Build final URL: allow callers to pass a full URL or a path
+    const url = endpoint.match(/^https?:\/\//i)
+      ? endpoint
+      : `${API_BASE_URL}${endpoint.startsWith('/') ? endpoint : '/' + endpoint}`;
 
-    // Handle 401 Unauthorized - token expired
-    if (response.status === 401) {
-      clearTokens();
-      // Redirect to login
-      if (typeof window !== 'undefined') {
-        window.location.href = '/login';
-      }
-      throw new Error('Session expired. Please login again.');
-    }
+    const response = await fetch(url, requestOptions);
 
-    // Safely parse response body. Some endpoints return an empty body (204 or no content),
-    // calling response.json() on an empty body throws `Unexpected end of JSON input`.
+    // Read response text once and attempt to parse JSON
     const text = await response.text();
     let data: any = null;
     if (text) {
       try {
         data = JSON.parse(text);
       } catch (err) {
-        // If the response isn't valid JSON, log and handle based on status
-        console.warn('apiRequest: failed to parse JSON response', err, text);
-        if (!response.ok) {
-          throw new Error(`API Error: ${response.status}`);
-        }
-        // For successful non-JSON responses, return the raw text as the result
-        return text as unknown as T;
+        // If JSON parse fails, keep raw text in `dataText` for messages
+        // and for successful non-JSON responses return the raw text below
       }
     }
 
-    // Handle error responses
+    // Handle 401 Unauthorized - token expired
+    if (response.status === 401) {
+      clearTokens();
+      // Redirect to login
+      if (typeof globalThis !== 'undefined') {
+        try { globalThis.location.href = '/login'; } catch (e) { /* ignore */ }
+      }
+      throw new Error((data && data.message) || 'Session expired. Please login again.');
+    }
+
+    // Handle 403 Forbidden - permission denied
+    if (response.status === 403) {
+      const message = (data && (data.message || data.error)) || text || `Forbidden (403)`;
+      console.warn('API Request Forbidden:', message);
+      const err = new Error(message);
+      // @ts-ignore
+      err.status = 403;
+      throw err;
+    }
+
+    // For non-JSON successful responses, return raw text
+    if (!data && response.ok && text) {
+      return text as unknown as T;
+    }
+
+    // Handle other error responses
     if (!response.ok) {
-      // Try to extract message from JSON payload when available
-      const message = data && (data.message || data.error);
-      throw new Error(message || `API Error: ${response.status}`);
+      const message = (data && (data.message || data.error)) || `API Error: ${response.status}`;
+      const err = new Error(message);
+      // @ts-ignore
+      err.status = response.status;
+      throw err;
     }
 
     return data as T;

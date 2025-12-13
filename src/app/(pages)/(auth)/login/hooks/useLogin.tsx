@@ -12,7 +12,7 @@ export function useLogin() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<UserRole>('client');
+  const [role, setRole] = useState<UserRole>('CLIENT');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
