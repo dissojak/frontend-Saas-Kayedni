@@ -17,7 +17,7 @@ export default function useBusinesses() {
         setBusinesses(data);
       })
       .catch((err) => {
-        console.error("Failed to fetch businesses (dummy):", err);
+        console.error("Failed to fetch businesses:", err);
         if (!mounted) return;
         setError(String(err));
       })

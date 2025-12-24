@@ -8,5 +8,7 @@ export function getLogo(b: Business) {
 
 export function formatRating(r?: number | string) {
   if (r == null || r === "") return "—";
-  return String(r);
+  const n = Number.parseFloat(String(r));
+  if (Number.isNaN(n)) return "—";
+  return n.toFixed(1);
 }

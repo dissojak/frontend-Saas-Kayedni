@@ -4,21 +4,26 @@ import React from "react";
 import { Button } from "@components/ui/button";
 import { Input } from "@components/ui/input";
 import { Label } from "@components/ui/label";
-import type { LoginViewProps } from "../types/index";
 import Link from "next/link";
 import Image from "next/image";
 
-export default function LoginView({
+interface ForgotPasswordViewProps {
+  email: string;
+  setEmail: (v: string) => void;
+  loading: boolean;
+  error: string | null;
+  success: boolean;
+  onSubmit: () => Promise<void>;
+}
+
+export default function ForgotPasswordView({
   email,
   setEmail,
-  password,
-  setPassword,
-  role,
-  setRole,
   loading,
   error,
+  success,
   onSubmit,
-}: Readonly<LoginViewProps>) {
+}: Readonly<ForgotPasswordViewProps>) {
   return (
     <div className="text-slate-100 ">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 ">
@@ -46,22 +51,22 @@ export default function LoginView({
               </div>
 
               <div className="space-y-4 max-w-lg">
-                <p className="text-4xl sm:text-5xl font-bold leading-tight">Welcome back.</p>
+                <p className="text-4xl sm:text-5xl font-bold leading-tight">Password reset.</p>
                 <p className="text-sm text-white/80">
-                  Keep bookings, clients, and staff in sync. Fast, focused, and ready for your next busy day.
+                  Don't worry, we'll help you reset your password and get back to booking. Enter your email and we'll send you a reset code.
                 </p>
                 <div className="flex flex-wrap gap-2 text-xs text-white/80">
-                  <span className="rounded-full bg-white/10 px-3 py-1">Live updates</span>
-                  <span className="rounded-full bg-white/10 px-3 py-1">Role-based control</span>
-                  <span className="rounded-full bg-white/10 px-3 py-1">Secure by design</span>
+                  <span className="rounded-full bg-white/10 px-3 py-1">Secure process</span>
+                  <span className="rounded-full bg-white/10 px-3 py-1">Fast recovery</span>
+                  <span className="rounded-full bg-white/10 px-3 py-1">Email verification</span>
                 </div>
               </div>
 
               <div className="flex items-center gap-3 text-xs text-white/75">
                 <div className="h-10 w-10 rounded-full bg-white/10 backdrop-blur flex items-center justify-center">★</div>
                 <div>
-                  <p className="font-semibold">Trusted by busy teams</p>
-                  <p className="text-white/60">Optimized for mobile and desktop, day or night.</p>
+                  <p className="font-semibold">Account recovery made easy</p>
+                  <p className="text-white/60">Your account security is our priority.</p>
                 </div>
               </div>
             </div>
@@ -70,23 +75,21 @@ export default function LoginView({
           {/* Form column */}
           <div className="bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-100">
             <div className="h-full p-8 sm:p-10 flex flex-col justify-center">
-              <div className="mb-8 flex items-center justify-between gap-4">
-                <div>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">Sign in</p>
-                  <h2 className="text-2xl font-semibold">Welcome to Bookify</h2>
-                </div>
-                <Link
-                  href="/register"
-                  className="hidden sm:inline-flex items-center gap-2 rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:border-slate-300 dark:border-slate-800 dark:text-slate-100 dark:hover:border-slate-700"
-                >
-                  New here?
-                  <span className="text-[var(--color-primary)]">Create account</span>
-                </Link>
+              <div className="mb-8">
+                <p className="text-sm text-slate-500 dark:text-slate-400">Reset password</p>
+                <h2 className="text-2xl font-semibold">Recover your account</h2>
               </div>
 
               {error && (
                 <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/70 dark:bg-red-900/30 dark:text-red-200" role="alert" aria-live="assertive">
                   {error}
+                </div>
+              )}
+
+              {success && (
+                <div className="mb-4 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700 dark:border-green-900/70 dark:bg-green-900/30 dark:text-green-200" role="alert" aria-live="assertive">
+                  <p className="font-medium">✓ Reset code sent successfully!</p>
+                  <p className="mt-1">Check your inbox and spam folder. Redirecting to reset password...</p>
                 </div>
               )}
 
@@ -98,7 +101,7 @@ export default function LoginView({
                 className="space-y-5"
               >
                 <div className="space-y-2">
-                  <Label htmlFor="email" className="text-sm font-medium">Email</Label>
+                  <Label htmlFor="email" className="text-sm font-medium">Email address</Label>
                   <Input
                     id="email"
                     value={email}
@@ -108,72 +111,29 @@ export default function LoginView({
                     required
                     className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-slate-900 shadow-sm transition focus:border-[var(--color-primary)] focus-visible:ring-[var(--color-primary)] dark:border-slate-800 dark:bg-slate-900 dark:text-white"
                   />
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="password" className="text-sm font-medium">Password</Label>
-                    <Link 
-                      href="/forgot-password" 
-                      className="text-sm text-[var(--color-primary)] hover:underline"
-                      onClick={() => {
-                        if (email) {
-                          localStorage.setItem('bookify_reset_email', email);
-                        }
-                      }}
-                    >
-                      Forgot?
-                    </Link>
-                  </div>
-                  <Input
-                    id="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    type="password"
-                    placeholder="••••••••"
-                    required
-                    className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-slate-900 shadow-sm transition focus:border-[var(--color-primary)] focus-visible:ring-[var(--color-primary)] dark:border-slate-800 dark:bg-slate-900 dark:text-white"
-                  />
-                </div>
-
-                <input type="hidden" name="role" value={role} />
-
-                <div className="flex flex-wrap items-center gap-3 text-sm text-slate-600 dark:text-slate-300">
-                  <span className="font-medium text-slate-800 dark:text-white">Sign in as</span>
-                  <button
-                    type="button"
-                    onClick={() => setRole("CLIENT")}
-                    className={`rounded-full border px-3 py-1 transition ${role === "CLIENT" ? "border-[var(--color-primary)] bg-[var(--color-primary)]/10 text-[var(--color-primary)]" : "border-slate-200 text-slate-600 hover:border-slate-300 dark:border-slate-800 dark:text-slate-300 dark:hover:border-slate-700"}`}
-                  >
-                    Client
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setRole("BUSINESS_OWNER")}
-                    className={`rounded-full border px-3 py-1 transition ${role === "BUSINESS_OWNER" ? "border-[var(--color-primary)] bg-[var(--color-primary)]/10 text-[var(--color-primary)]" : "border-slate-200 text-slate-600 hover:border-slate-300 dark:border-slate-800 dark:text-slate-300 dark:hover:border-slate-700"}`}
-                  >
-                    Business
-                  </button>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    We'll send a 6-digit reset code to this email address.
+                  </p>
                 </div>
 
                 <Button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || success}
                   className="w-full h-12 rounded-full bg-[var(--color-primary)] text-white font-semibold shadow-lg shadow-[var(--color-primary)]/30 transition hover:-translate-y-0.5 hover:shadow-xl hover:shadow-[var(--color-primary)]/35 disabled:opacity-70"
                 >
-                  {loading ? "Signing in..." : "Sign in"}
+                  {loading ? "Sending code..." : success ? "Code sent! ✓" : "Send reset code"}
                 </Button>
               </form>
 
               <div className="mt-8 flex flex-col gap-3 text-sm text-slate-500 dark:text-slate-400">
                 <div className="flex items-center gap-2">
                   <span className="h-1.5 w-8 rounded-full bg-[var(--color-primary)]/70" aria-hidden />
-                  Quick, responsive, and secure for every role.
+                  We protect your account with secure verification.
                 </div>
                 <div className="text-center">
-                  Don't have an account? {" "}
-                  <Link href="/register" className="font-semibold text-[var(--color-primary)] hover:underline">
-                    Create account
+                  Remember your password? {" "}
+                  <Link href="/login" className="font-semibold text-[var(--color-primary)] hover:underline">
+                    Sign in
                   </Link>
                 </div>
               </div>

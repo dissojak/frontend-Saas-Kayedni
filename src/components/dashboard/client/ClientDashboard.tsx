@@ -98,7 +98,11 @@ export default function ClientDashboard() {
                       <h3 className="font-semibold">{business.name}</h3>
                       <div className="flex items-center">
                         <span className="text-yellow-500 mr-1">★</span>
-                        <span className="text-sm">{business.rating}</span>
+                        <span className="text-sm">
+                          {typeof business.rating === 'number'
+                            ? business.rating.toFixed(1)
+                            : (business.rating ? String(business.rating) : '—')}
+                        </span>
                         <span className="text-sm text-gray-500 ml-2">{business.category}</span>
                       </div>
                     </div>

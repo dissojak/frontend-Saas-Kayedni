@@ -4,6 +4,7 @@ import React from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent } from '@components/ui/card';
 import { Button } from '@components/ui/button';
+import { createBusinessSlug } from '@global/lib/businessSlug';
 import type { Booking } from '../types';
 
 type Props = {
@@ -22,12 +23,14 @@ export default function PastList({ items, getService, getBusinessName, getStaffN
     <div className="space-y-4">
       {items.map((booking) => {
         const service = getService(booking.serviceId);
+        const businessName = getBusinessName(booking.businessId);
+        const businessSlug = createBusinessSlug(businessName, booking.businessId);
         return (
           <Card key={booking.id} className="overflow-hidden">
             <CardContent className="p-6">
               <div className="flex flex-col md:flex-row justify-between">
                 <div className="mb-4 md:mb-0">
-                  <h3 className="font-bold text-lg">{getBusinessName(booking.businessId)}</h3>
+                  <h3 className="font-bold text-lg">{businessName}</h3>
                   <p>{service.name} with {getStaffName(booking.staffId)}</p>
                   <div className="flex flex-col md:flex-row md:items-center mt-2 md:space-x-4">
                     <p className="text-gray-600">{formatDate(booking.date)}</p>
@@ -41,7 +44,7 @@ export default function PastList({ items, getService, getBusinessName, getStaffN
                   <p className="text-lg font-semibold mb-2">${service.price.toFixed(2)}</p>
                   <div className="flex space-x-3">
                     {booking.status === 'completed' && <Button variant="outline" size="sm">Leave Review</Button>}
-                    <Button variant="secondary" size="sm" onClick={() => router.push(`/business/${booking.businessId}`)}>Book Again</Button>
+                    <Button variant="secondary" size="sm" onClick={() => router.push(`/business/${businessSlug}`)}>Book Again</Button>
                   </div>
                 </div>
               </div>

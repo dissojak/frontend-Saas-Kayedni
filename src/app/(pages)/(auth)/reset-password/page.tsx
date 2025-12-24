@@ -1,12 +1,12 @@
-import LoginForm from './components/LoginForm';
+import ResetPasswordForm from './components/ResetPasswordForm';
 import AuthBackdrop from '../components/AuthBackdrop';
 
-export default function Login() {
+export default function ResetPassword() {
   return (
     <AuthBackdrop>
       <div className="h-[70vh] flex items-center justify-center min-h-screen">
         <div className="w-full max-w-6xl">
-          <LoginForm />
+          <ResetPasswordForm />
         </div>
       </div>
     </AuthBackdrop>

@@ -1,14 +1,12 @@
-'use client';
+"use client";
 
-import React from 'react';
-import Link from 'next/link';
-import { Button } from '@components/ui/button';
-import { Input } from '@components/ui/input';
-import { Label } from '@components/ui/label';
-// card components removed — using custom layout for fresha-like look
-import { Tabs, TabsList, TabsTrigger } from '@components/ui/tabs';
-import { Checkbox } from '@components/ui/checkbox';
-import type { RegisterViewProps } from '../types';
+import React from "react";
+import Link from "next/link";
+import { Button } from "@components/ui/button";
+import { Input } from "@components/ui/input";
+import { Label } from "@components/ui/label";
+import { Checkbox } from "@components/ui/checkbox";
+import type { RegisterViewProps } from "../types";
 
 export default function RegisterView({
   name,
@@ -31,124 +29,273 @@ export default function RegisterView({
   registeredEmail,
 }: Readonly<RegisterViewProps>) {
   const submitStyle = {
-  backgroundColor: role === 'CLIENT' ? undefined : undefined,
+    backgroundColor: role === "CLIENT" ? undefined : undefined,
   } as React.CSSProperties;
 
   return (
-  <div className="min-h-screen flex items-center justify-center px-4">
-      <div className="max-w-5xl w-full rounded-2xl shadow-2xl overflow-hidden grid grid-cols-1 md:grid-cols-2">
-  {/* left side  */}
-  <div className="hidden md:flex flex-col items-center justify-center p-10 bg-gradient-to-b from-[var(--color-primary)] to-[var(--color-accent)] text-white relative">
-          <div className="flex flex-col items-center text-center max-w-xs">
-            <div className="h-16 w-16 rounded-full bg-white/20 flex items-center justify-center mb-4">
-              <svg className="h-8 w-8 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 2l3 7h7l-5.5 4 2 7L12 16l-6.5 4 2-7L2 9h7l3-7z"/></svg>
+    <div>
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="grid grid-cols-1 md:grid-cols-[0.95fr_1.05fr] rounded-[32px] overflow-hidden shadow-[0_25px_80px_rgba(15,23,42,0.25)] bg-white/70 backdrop-blur-xl border border-white/60 dark:bg-slate-950/70 dark:border-slate-800">
+          {/* Form column (light) */}
+          <div className="relative bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-100">
+            <div className="absolute inset-y-0 right-[-1.4rem] hidden md:block pointer-events-none">
+              <svg
+                viewBox="0 0 120 800"
+                className="h-full w-16 text-white dark:text-slate-950"
+                preserveAspectRatio="none"
+                aria-hidden
+              >
+                <path
+                  d="M0 0 C55 80 55 160 0 240 C55 320 55 400 0 480 C55 560 55 640 0 720 L0 800 L120 800 L120 0 Z"
+                  fill="currentColor"
+                />
+              </svg>
             </div>
-            <h2 className="text-2xl font-bold">Create your account</h2>
-            <p className="mt-3 text-sm text-white/90">Create an account to manage bookings and services quickly.</p>
-          </div>
-        </div>
 
-  {/* right side  */}
-  <div className="bg-white relative p-8 md:p-12 flex items-center justify-center">
-          <svg viewBox="0 0 80 400" className="hidden md:block absolute left-0 top-0 h-full w-20 -ml-10" preserveAspectRatio="none" aria-hidden>
-            <path d="M80 0 C60 30 30 40 0 60 L0 340 C30 360 60 370 80 400 Z" fill="white" />
-          </svg>
-
-          <div className="relative z-10 max-w-md w-full flex flex-col justify-center h-full">
-            {registered ? (
-              <div className="bg-white p-6 rounded-md shadow-sm text-center">
-                <div className="h-12 w-12 rounded-md bg-[var(--color-primary)] mx-auto flex items-center justify-center text-white font-bold mb-4">B</div>
-                <h3 className="text-lg font-semibold">Check your email</h3>
-                <p className="mt-2 text-sm text-gray-600">{registrationMessage ?? 'Please check your email and follow the link to verify your account before you can login.'}</p>
-                {registeredEmail && <p className="mt-2 text-sm text-gray-500">Sent to <strong>{registeredEmail}</strong></p>}
-                <div className="mt-6 flex justify-center gap-3">
-                  <Link href="/login" className="inline-flex items-center px-4 py-2 rounded-full bg-[var(--color-primary)] text-white">Go to Login</Link>
-                  <Link href="/" className="inline-flex items-center px-4 py-2 rounded-full border border-gray-200">Home</Link>
+            <div className="relative z-10 h-full p-8 sm:p-10 flex flex-col justify-center">
+              <div className="mb-8 flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">Get started free</p>
+                  <h2 className="text-2xl font-semibold">Create your Bookify account</h2>
                 </div>
+                <Link
+                  href="/login"
+                  className="hidden sm:inline-flex items-center gap-2 rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:border-slate-300 dark:border-slate-800 dark:text-slate-100 dark:hover:border-slate-700"
+                >
+                  Have one?
+                  <span className="text-[var(--color-primary)]">Sign in</span>
+                </Link>
               </div>
-            ) : (
-              <>
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="h-10 w-10 rounded-md bg-[var(--color-primary)] flex items-center justify-center text-white font-bold">B</div>
-                  <div>
-                    <h3 className="text-lg font-semibold">Create your account</h3>
-                    <p className="text-sm text-gray-500">It only takes a couple of minutes.</p>
+
+              {registered ? (
+                <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                  <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--color-primary)] text-white font-bold">
+                    B
+                  </div>
+                  <h3 className="text-lg font-semibold">Check your email</h3>
+                  <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
+                    {registrationMessage ?? "Please verify your email to activate your account."}
+                  </p>
+                  {registeredEmail && (
+                    <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+                      Sent to <strong>{registeredEmail}</strong>
+                    </p>
+                  )}
+                  <div className="mt-6 flex justify-center gap-3">
+                    <Link
+                      href="/login"
+                      className="inline-flex items-center px-4 py-2 rounded-full bg-[var(--color-primary)] text-white shadow-md"
+                    >
+                      Go to Login
+                    </Link>
+                    <Link
+                      href="/"
+                      className="inline-flex items-center px-4 py-2 rounded-full border border-slate-200 text-slate-700 hover:border-slate-300 dark:border-slate-800 dark:text-slate-200"
+                    >
+                      Home
+                    </Link>
                   </div>
                 </div>
+              ) : (
+                <>
+                  <div className="mb-5 flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                    <span className="h-2 w-2 rounded-full bg-emerald-400" aria-hidden />
+                    Free forever for individuals. Switch plans anytime.
+                  </div>
 
-                {/* Role selector: keep UI subtle and stable — two pill buttons */}
-                <div className="mb-4 flex items-center gap-3">
-                  <span className="text-sm text-gray-600 mr-2">Account type</span>
-                  <div className="inline-flex items-center gap-2">
+                  <div className="mb-4 flex flex-wrap items-center gap-3 text-sm text-slate-600 dark:text-slate-300">
+                    <span className="font-medium text-slate-800 dark:text-white">Account type</span>
                     <button
                       type="button"
-                      onClick={() => setRole('CLIENT')}
-                      className={`px-3 py-1 rounded-full text-sm font-medium transition-colors focus:outline-none ${role === 'CLIENT' ? 'bg-[var(--color-primary)] text-white' : 'bg-transparent border border-gray-200 text-gray-700 hover:bg-gray-50'}`}
+                      onClick={() => setRole("CLIENT")}
+                      className={`rounded-full border px-3 py-1 transition ${
+                        role === "CLIENT"
+                          ? "border-[var(--color-primary)] bg-[var(--color-primary)]/10 text-[var(--color-primary)]"
+                          : "border-slate-200 text-slate-600 hover:border-slate-300 dark:border-slate-800 dark:text-slate-300 dark:hover:border-slate-700"
+                      }`}
                     >
                       Personal
                     </button>
                     <button
                       type="button"
-                      onClick={() => setRole('BUSINESS_OWNER')}
-                      className={`px-3 py-1 rounded-full text-sm font-medium transition-colors focus:outline-none ${role === 'BUSINESS_OWNER' ? 'bg-[var(--color-primary)] text-white' : 'bg-transparent border border-gray-200 text-gray-700 hover:bg-gray-50'}`}
+                      onClick={() => setRole("BUSINESS_OWNER")}
+                      className={`rounded-full border px-3 py-1 transition ${
+                        role === "BUSINESS_OWNER"
+                          ? "border-[var(--color-primary)] bg-[var(--color-primary)]/10 text-[var(--color-primary)]"
+                          : "border-slate-200 text-slate-600 hover:border-slate-300 dark:border-slate-800 dark:text-slate-300 dark:hover:border-slate-700"
+                      }`}
                     >
                       Business
                     </button>
                   </div>
-                </div>
 
-                {error && (
-                  <div className="bg-red-50 text-red-600 p-3 rounded-md mb-4" role="alert" aria-live="assertive">
-                    {error}
-                  </div>
-                )}
+                  {error && (
+                    <div
+                      className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/70 dark:bg-red-900/30 dark:text-red-200"
+                      role="alert"
+                      aria-live="assertive"
+                    >
+                      {error}
+                    </div>
+                  )}
 
-                <form onSubmit={async (e) => { e.preventDefault(); await onSubmit(); }} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Full Name</Label>
-                    <Input id="name" name="name" type="text" placeholder="John Doe" value={name} onChange={(e) => setName(e.target.value)} required className="py-3 border-b border-gray-200 rounded-none focus:ring-0" />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input id="email" name="email" type="email" placeholder="mail@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required className="py-3 border-b border-gray-200 rounded-none focus:ring-0" />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
+                  <form
+                    onSubmit={async (e) => {
+                      e.preventDefault();
+                      await onSubmit();
+                    }}
+                    className="space-y-4"
+                  >
                     <div className="space-y-2">
-                      <Label htmlFor="password">Password</Label>
-                      <Input id="password" name="password" type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} className="py-3 border-b border-gray-200 rounded-none focus:ring-0" />
+                      <Label htmlFor="name">Full Name</Label>
+                      <Input
+                        id="name"
+                        name="name"
+                        type="text"
+                        placeholder="Alex Morgan"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        required
+                        className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-slate-900 shadow-sm transition focus:border-[var(--color-primary)] focus-visible:ring-[var(--color-primary)] dark:border-slate-800 dark:bg-slate-900 dark:text-white"
+                      />
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="confirmPassword">Confirm</Label>
-                      <Input id="confirmPassword" name="confirmPassword" type="password" placeholder="••••••••" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required className="py-3 border-b border-gray-200 rounded-none focus:ring-0" />
+                      <Label htmlFor="email">Email</Label>
+                      <Input
+                        id="email"
+                        name="email"
+                        type="email"
+                        placeholder="mail@example.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                        className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-slate-900 shadow-sm transition focus:border-[var(--color-primary)] focus-visible:ring-[var(--color-primary)] dark:border-slate-800 dark:bg-slate-900 dark:text-white"
+                      />
                     </div>
-                  </div>
 
-                  <div className="flex items-center space-x-2 mt-4">
-                    <input id="terms" type="checkbox" checked={acceptedTerms} onChange={(e) => setAcceptedTerms(e.target.checked)} className="h-4 w-4 rounded" />
-                    <Label htmlFor="terms" className="text-sm">
-                      I agree to the{' '}
-                      <Link href="/terms" className="text-[var(--color-primary)] hover:underline">Terms of Service</Link>{' '}
-                      and{' '}
-                      <Link href="/privacy" className="text-[var(--color-primary)] hover:underline">Privacy Policy</Link>
-                    </Label>
-                  </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="password">Password</Label>
+                        <Input
+                          id="password"
+                          name="password"
+                          type="password"
+                          placeholder="••••••••"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          required
+                          minLength={8}
+                          className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-slate-900 shadow-sm transition focus:border-[var(--color-primary)] focus-visible:ring-[var(--color-primary)] dark:border-slate-800 dark:bg-slate-900 dark:text-white"
+                        />
+                      </div>
 
-                  <div className="mt-4">
-                    <Button type="submit" disabled={loading} className="w-full bg-[var(--color-primary)] text-white py-3 rounded-full">
-                      {loading ? 'Creating Account...' : 'Create Account'}
+                      <div className="space-y-2">
+                        <Label htmlFor="confirmPassword">Confirm</Label>
+                        <Input
+                          id="confirmPassword"
+                          name="confirmPassword"
+                          type="password"
+                          placeholder="••••••••"
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          required
+                          className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-slate-900 shadow-sm transition focus:border-[var(--color-primary)] focus-visible:ring-[var(--color-primary)] dark:border-slate-800 dark:bg-slate-900 dark:text-white"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-3 pt-2">
+                      <Checkbox
+                        id="terms"
+                        checked={acceptedTerms}
+                        onCheckedChange={(checked) => setAcceptedTerms(Boolean(checked))}
+                        className="mt-1 border-slate-300 data-[state=checked]:bg-[var(--color-primary)] data-[state=checked]:text-white dark:border-slate-700"
+                      />
+                      <Label htmlFor="terms" className="text-sm leading-relaxed">
+                        I agree to the{" "}
+                        <Link href="/terms" className="text-[var(--color-primary)] hover:underline">
+                          Terms of Service
+                        </Link>{" "}
+                        and{" "}
+                        <Link
+                          href="/privacy"
+                          className="text-[var(--color-primary)] hover:underline"
+                        >
+                          Privacy Policy
+                        </Link>
+                      </Label>
+                    </div>
+
+                    <Button
+                      type="submit"
+                      disabled={loading}
+                      className="w-full h-12 rounded-full bg-[var(--color-primary)] text-white font-semibold shadow-lg shadow-[var(--color-primary)]/25 transition hover:-translate-y-0.5 hover:shadow-xl hover:shadow-[var(--color-primary)]/35 disabled:opacity-70"
+                      style={submitStyle}
+                    >
+                      {loading ? "Creating Account..." : "Create Account"}
                     </Button>
-                  </div>
-                </form>
+                  </form>
 
-                <div className="mt-6 text-center text-sm">
-                  Already have an account?{' '}
-                  <Link href="/login" className="text-[var(--color-primary)] font-medium hover:underline">Sign in</Link>
+                  <div className="mt-6 text-center text-sm text-slate-600 dark:text-slate-300">
+                    Already have an account?{" "}
+                    <Link
+                      href="/login"
+                      className="font-semibold text-[var(--color-primary)] hover:underline"
+                    >
+                      Sign in
+                    </Link>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Visual hero column */}
+          <div className="relative hidden md:block">
+            <div
+              className="absolute inset-0"
+              style={{
+                backgroundImage:
+                  "radial-gradient(circle at 80% 20%, rgba(56, 189, 248, 0.25), transparent 30%), radial-gradient(circle at 20% 20%, rgba(139, 92, 246, 0.25), transparent 28%), radial-gradient(circle at 40% 70%, rgba(236, 72, 153, 0.23), transparent 30%), radial-gradient(circle at 70% 80%, rgba(15, 23, 42, 0.65), rgba(15, 23, 42, 0.85) 36%)",
+              }}
+            />
+            <div className="absolute inset-0 bg-gradient-to-br from-[#0f172a] via-[#111827] to-[#1f2937] opacity-95" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_30%,rgba(255,255,255,0.08),transparent_30%)]" />
+            <div className="relative z-10 flex h-full flex-col justify-between p-10 text-white">
+              <div className="flex items-center gap-3">
+                <div className="h-11 w-11 rounded-xl bg-white/15 backdrop-blur flex items-center justify-center font-semibold">
+                  B
                 </div>
-              </>
-            )}
+                <div>
+                  <p className="text-xs uppercase tracking-[0.22em] text-white/60">Bookify OS</p>
+                  <h3 className="text-2xl font-semibold">Built for modern teams</h3>
+                </div>
+              </div>
+
+              <div className="space-y-4 max-w-lg">
+                <p className="text-4xl font-bold leading-tight">Design-forward onboarding.</p>
+                <p className="text-sm text-white/80">
+                  Crisp visuals, dark/light harmony, and frictionless steps so new users feel at
+                  home instantly.
+                </p>
+                <div className="flex flex-wrap gap-2 text-xs text-white/75">
+                  <span className="rounded-full bg-white/10 px-3 py-1">One-click verification</span>
+                  <span className="rounded-full bg-white/10 px-3 py-1">Guided roles</span>
+                  <span className="rounded-full bg-white/10 px-3 py-1">Secure by default</span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 text-xs text-white/70">
+                <div className="h-10 w-10 rounded-full bg-white/10 backdrop-blur flex items-center justify-center">
+                  ★
+                </div>
+                <div>
+                  <p className="font-semibold">Loved by operators</p>
+                  <p className="text-white/60">Fast to launch, delightful to use every day.</p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

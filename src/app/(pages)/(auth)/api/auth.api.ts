@@ -105,3 +105,67 @@ export async function activateAccountAPI(token: string): Promise<{ message: stri
     throw error;
   }
 }
+
+/**
+ * Forgot password - Send 6-digit reset code via email
+ * POST /api/v1/auth/forgot-password
+ */
+export interface ForgotPasswordRequestPayload {
+  email: string;
+}
+
+export async function forgotPasswordAPI(payload: ForgotPasswordRequestPayload): Promise<{ message: string }> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/forgot-password`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to send reset code');
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Forgot Password API Error:', error);
+    throw error;
+  }
+}
+
+/**
+ * Reset password - Verify reset code and update password
+ * POST /api/v1/auth/reset-password
+ */
+export interface ResetPasswordRequestPayload {
+  email: string;
+  resetCode: string;
+  newPassword: string;
+}
+
+export async function resetPasswordAPI(payload: ResetPasswordRequestPayload): Promise<{ message: string }> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/reset-password`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to reset password');
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Reset Password API Error:', error);
+    throw error;
+  }
+}

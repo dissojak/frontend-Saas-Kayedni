@@ -5,6 +5,7 @@ import { Button } from "@components/ui/button";
 import { getLogo, formatRating } from "../utils/format";
 import type { Business } from "../types/business";
 import { useRouter } from "next/navigation";
+import { createBusinessSlug } from "@global/lib/businessSlug";
 
 const BusinessCard: React.FC<{ business: Business }> = ({ business }) => {
   const router = useRouter();
@@ -23,7 +24,7 @@ const BusinessCard: React.FC<{ business: Business }> = ({ business }) => {
             <span>{formatRating(business.rating)}</span>
           </div>
         </div>
-        <Button className="w-full" onClick={() => router.push(`/business/${business.id}`)}>
+        <Button className="w-full" onClick={() => router.push(`/business/${createBusinessSlug(business.name, business.id)}`)}>
           View Details
         </Button>
       </CardContent>

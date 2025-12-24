@@ -121,13 +121,13 @@ const Navbar = () => {
                 {user && (
                   <div className="hidden md:flex md:flex-col md:items-end md:text-right md:mr-2">
                     {/* Show user name above a smaller role label */}
-                    <span className="text-sm font-medium leading-tight">{user.name ?? user.email?.split('@')[0]}</span>
+                    <span className="text-sm dark:text-black-light-800 font-medium leading-tight">{user.name ?? user.email?.split('@')[0]}</span>
                     <span className={`text-xs text-gray-500 mt-0.5 role-badge role-badge-${String(user.role).toLowerCase()}`}>{user.role}</span>
                   </div>
                 )}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="relative rounded-full h-8 w-8 p-0">
+                    <Button variant="ghost" className="relative rounded-full h-8 w-8 p-0 hover:bg-transparent">
                       <img
                         src={user?.avatar || (user?.name ? `https://ui-avatars.com/api/?name=${user.name}` : "/assets/placeholder.svg")}
                         alt={user?.name ?? "Profile"}

@@ -6,6 +6,9 @@ import {
   fetchStaffByBusinessId,
   fetchServicesByBusinessId,
   fetchAvailableSlots,
+  fetchBusinessImages,
+  fetchServicesByStaffId,
+  fetchStaffAvailability,
 } from "@/(pages)/(business)/actions/backend";
 
 export default function useBusinessDetail(businessId?: string | null) {
@@ -13,6 +16,9 @@ export default function useBusinessDetail(businessId?: string | null) {
   const [staff, setStaff] = useState<any[]>([]);
   const [services, setServices] = useState<any[]>([]);
   const [slots, setSlots] = useState<any[]>([]);
+  const [staffServices, setStaffServices] = useState<any[]>([]);
+  const [staffAvailability, setStaffAvailability] = useState<any[]>([]);
+  const [images, setImages] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -25,13 +31,15 @@ export default function useBusinessDetail(businessId?: string | null) {
       fetchStaffByBusinessId(businessId),
       fetchServicesByBusinessId(businessId),
       fetchAvailableSlots(businessId),
+      fetchBusinessImages(businessId),
     ])
-      .then(([b, s, sv, sl]) => {
+      .then(([b, s, sv, sl, imgs]) => {
         if (!mounted) return;
         setBusiness(b as Business | null);
         setStaff(s as any[]);
         setServices(sv as any[]);
         setSlots(sl as any[]);
+        setImages(imgs as any[]);
       })
       .catch((err) => {
         console.error("useBusinessDetail error:", err);
@@ -45,5 +53,39 @@ export default function useBusinessDetail(businessId?: string | null) {
     };
   }, [businessId]);
 
-  return { business, staff, services, slots, loading, error } as const;
+  // Expose a loader to fetch services by staff id
+  const loadServicesForStaff = async (staffId: string) => {
+    try {
+      const svcs = await fetchServicesByStaffId(staffId);
+      setStaffServices(svcs as any[]);
+    } catch {
+      setStaffServices([]);
+    }
+  };
+
+  const loadAvailabilityForStaff = async (staffId: string, from: string, to: string) => {
+    try {
+      const avail = await fetchStaffAvailability(staffId, from, to);
+      setStaffAvailability(avail as any[]);
+    } catch {
+      setStaffAvailability([]);
+    }
+  };
+
+  const clearStaffAvailability = () => setStaffAvailability([]);
+
+  return {
+    business,
+    staff,
+    services,
+    staffServices,
+    staffAvailability,
+    loadServicesForStaff,
+    loadAvailabilityForStaff,
+    clearStaffAvailability,
+    slots,
+    images,
+    loading,
+    error,
+  } as const;
 }
