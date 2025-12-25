@@ -220,7 +220,10 @@ export async function fetchStaffAvailability(
   to: string
 ): Promise<any[]> {
   try {
-    const response = await fetch(`${API_BASE_URL}/staff/${staffId}/availabilities?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`, {
+    const url = `${API_BASE_URL}/staff/${staffId}/availabilities?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`;
+    console.log(`[fetchStaffAvailability] URL:`, url);
+    
+    const response = await fetch(url, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -228,11 +231,14 @@ export async function fetchStaffAvailability(
     });
 
     if (!response.ok) {
+      console.log(`[fetchStaffAvailability] Response not ok, status: ${response.status}`);
       if (response.status === 404) return [];
       throw new Error('Failed to fetch staff availability');
     }
 
     const data = await response.json();
+    console.log(`[fetchStaffAvailability] Response data for ${from}-${to}:`, data);
+    
     return data.map((a: any) => ({
       id: a.id,
       date: a.date, // ISO LocalDate string
@@ -296,4 +302,314 @@ export async function fetchAvailableSlots(businessId: string) {
     });
   }
   return new Promise((resolve) => setTimeout(() => resolve(slots), 150));
+}
+
+/**
+ * Generate time slots for a staff member on a specific date
+ * @param staffId - The staff member ID
+ * @param date - The date (YYYY-MM-DD format)
+ * @param serviceDuration - Service duration in minutes
+ * @returns Array of time slots with availability status
+ */
+export async function fetchTimeSlotsForStaffDate(
+  staffId: string,
+  date: string,
+  serviceDuration: number = 30
+): Promise<any[]> {
+  try {
+    // Get staff availability for that specific day
+    const availabilities = await fetchStaffAvailability(staffId, date, date);
+    
+    console.log(`[fetchTimeSlotsForStaffDate] Got ${availabilities?.length || 0} availability records for date=${date}`);
+    
+    if (!availabilities || availabilities.length === 0) {
+      console.log(`[fetchTimeSlotsForStaffDate] No availability data for this date`);
+      return []; // No availability data for this date
+    }
+
+    const dayAvailability = availabilities[0];
+    console.log(`[fetchTimeSlotsForStaffDate] Day availability:`, JSON.stringify(dayAvailability));
+    
+    // If staff is not available (CLOSED, SICK, VACATION, FULL, etc.), return empty
+    if (dayAvailability.status !== 'AVAILABLE') {
+      console.log(`[fetchTimeSlotsForStaffDate] Staff not available - status: ${dayAvailability.status}`);
+      return [];
+    }
+
+    // Parse start and end times (format: "HH:mm:ss" or "HH:mm")
+    const startTime = dayAvailability.startTime; // e.g., "09:00:00"
+    const endTime = dayAvailability.endTime;     // e.g., "17:00:00"
+    
+    if (!startTime || !endTime) {
+      console.log(`[fetchTimeSlotsForStaffDate] Missing times for date ${date}:`, { startTime, endTime });
+      return [];
+    }
+
+    // Generate 15-minute time slots
+    const slots: any[] = [];
+    const [startHour, startMin] = startTime.split(':').map(Number);
+    const [endHour, endMin] = endTime.split(':').map(Number);
+    
+    const startMinutes = startHour * 60 + startMin;
+    const endMinutes = endHour * 60 + endMin;
+    
+    console.log(`[fetchTimeSlotsForStaffDate] Time range for ${date}:`, { 
+      startTime, endTime, 
+      startMinutes, endMinutes,
+      serviceDuration,
+      slotsCondition: `currentMinutes + ${serviceDuration} <= ${endMinutes}`,
+      firstSlotCondition: `${startMinutes} + ${serviceDuration} <= ${endMinutes} = ${startMinutes + serviceDuration <= endMinutes}`,
+      willGenerateSlots: (startMinutes + serviceDuration <= endMinutes)
+    });
+    
+    // Slot interval: 15 minutes
+    const SLOT_INTERVAL = 15;
+    
+    // Create slots from start to end
+    for (let currentMinutes = startMinutes; currentMinutes + serviceDuration <= endMinutes; currentMinutes += SLOT_INTERVAL) {
+      const slotHour = Math.floor(currentMinutes / 60);
+      const slotMin = currentMinutes % 60;
+      
+      const slotStartHour = Math.floor(currentMinutes / 60);
+      const slotStartMin = currentMinutes % 60;
+      const slotEndMin = currentMinutes + serviceDuration;
+      const slotEndHour = Math.floor(slotEndMin / 60);
+      const slotEndMinFinal = slotEndMin % 60;
+      
+      // Create Date objects for startTime and endTime
+      const slotDate = new Date(date + 'T00:00:00');
+      const slotStart = new Date(slotDate);
+      slotStart.setHours(slotStartHour, slotStartMin, 0, 0);
+      
+      const slotEnd = new Date(slotDate);
+      slotEnd.setHours(slotEndHour, slotEndMinFinal, 0, 0);
+      
+      slots.push({
+        id: `${staffId}-${date}-${String(slotHour).padStart(2, '0')}${String(slotMin).padStart(2, '0')}`,
+        startTime: slotStart,
+        endTime: slotEnd,
+        isAvailable: true, // Will be filtered after fetching bookings
+      });
+    }
+    
+    if (slots.length === 0) {
+      console.warn(`[fetchTimeSlotsForStaffDate] WARNING: No slots generated for ${date}!`, {
+        date,
+        startTime,
+        endTime,
+        startMinutes,
+        endMinutes,
+        serviceDuration,
+        loopCondition: `startMinutes(${startMinutes}) + serviceDuration(${serviceDuration}) <= endMinutes(${endMinutes})`,
+        conditionResult: (startMinutes + serviceDuration <= endMinutes)
+      });
+    } else {
+      console.log(`[fetchTimeSlotsForStaffDate] Generated ${slots.length} raw slots for ${date}`);
+    }
+    return slots;
+  } catch (error) {
+    console.error('fetchTimeSlotsForStaffDate error:', error);
+    return [];
+  }
+}
+
+/**
+ * Fetch existing bookings for a staff member on a specific date.
+ * Used to filter out occupied time slots.
+ */
+export async function fetchBookingsForStaffOnDate(
+  staffId: string,
+  date: string
+): Promise<any[]> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/bookings/staff/${staffId}/date/${date}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      // If 404 or no bookings, return empty array (not an error)
+      if (response.status === 404) {
+        return [];
+      }
+      throw new Error('Failed to fetch bookings');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('fetchBookingsForStaffOnDate error:', error);
+    return [];
+  }
+}
+
+/**
+ * Generate time slots and filter out already booked ones.
+ * This is the main function for getting available slots.
+ */
+export async function fetchAvailableTimeSlotsForStaffDate(
+  staffId: string,
+  date: string,
+  serviceDuration: number = 30
+): Promise<any[]> {
+  try {
+    console.log(`[fetchAvailableTimeSlotsForStaffDate] Starting for staff=${staffId}, date=${date}, duration=${serviceDuration}`);
+    
+    // 1. Generate all possible slots from staff availability
+    const allSlots = await fetchTimeSlotsForStaffDate(staffId, date, serviceDuration);
+    
+    console.log(`[fetchAvailableTimeSlotsForStaffDate] Generated ${allSlots.length} raw slots`);
+    
+    if (allSlots.length === 0) {
+      console.log(`[fetchAvailableTimeSlotsForStaffDate] No slots generated - staff may not be available`);
+      return [];
+    }
+
+    // 2. Fetch existing bookings for this staff on this date
+    const existingBookings = await fetchBookingsForStaffOnDate(staffId, date);
+    console.log(`[fetchAvailableTimeSlotsForStaffDate] Found ${existingBookings.length} existing bookings`);
+
+    // 3. Filter out occupied slots
+    const availableSlots = allSlots.map(slot => {
+      const slotStart = slot.startTime instanceof Date ? slot.startTime : new Date(slot.startTime);
+      const slotEnd = slot.endTime instanceof Date ? slot.endTime : new Date(slot.endTime);
+
+      // Check if this slot overlaps with any existing booking
+      const isOccupied = existingBookings.some((booking: any) => {
+        // Parse booking times (format: "HH:mm:ss" or "HH:mm")
+        const [bookingStartH, bookingStartM] = booking.startTime.split(':').map(Number);
+        const [bookingEndH, bookingEndM] = booking.endTime.split(':').map(Number);
+        
+        const bookingStart = new Date(slotStart);
+        bookingStart.setHours(bookingStartH, bookingStartM, 0, 0);
+        
+        const bookingEnd = new Date(slotStart);
+        bookingEnd.setHours(bookingEndH, bookingEndM, 0, 0);
+
+        // Overlap: slot starts before booking ends AND slot ends after booking starts
+        return slotStart < bookingEnd && slotEnd > bookingStart;
+      });
+
+      return {
+        ...slot,
+        isAvailable: !isOccupied,
+      };
+    });
+
+    // Return only available slots for cleaner UI
+    const available = availableSlots.filter(slot => slot.isAvailable);
+    console.log(`[fetchAvailableTimeSlotsForStaffDate] Returning ${available.length} available slots (filtered from ${availableSlots.length})`);
+    return available;
+  } catch (error) {
+    console.error('fetchAvailableTimeSlotsForStaffDate error:', error);
+    return [];
+  }
+}
+
+/**
+ * Create a new booking via the backend API.
+ * All validation is done server-side.
+ */
+export interface CreateBookingRequest {
+  serviceId: number;
+  staffId: number;
+  clientId: number;
+  date: string; // YYYY-MM-DD
+  startTime: string; // HH:mm or HH:mm:ss
+  endTime: string; // HH:mm or HH:mm:ss
+  price: number;
+  notes?: string;
+}
+
+export interface BookingResponse {
+  id: number;
+  serviceId: number;
+  serviceName: string;
+  clientId: number;
+  clientName: string;
+  clientEmail: string;
+  clientType: string;
+  staffId: number;
+  staffName: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  status: string;
+  notes: string | null;
+  price: number;
+  createdAt: string;
+  updatedAt: string | null;
+}
+
+export async function createBooking(
+  request: CreateBookingRequest,
+  authToken?: string
+): Promise<BookingResponse> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  
+  if (authToken) {
+    headers['Authorization'] = `Bearer ${authToken}`;
+  }
+
+  const response = await fetch(`${API_BASE_URL}/bookings`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(request),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to create booking');
+  }
+
+  return await response.json();
+}
+
+/**
+ * Fetch bookings for the authenticated user.
+ */
+export async function fetchMyBookings(authToken: string): Promise<BookingResponse[]> {
+  const response = await fetch(`${API_BASE_URL}/bookings/my-bookings`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${authToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch bookings');
+  }
+
+  return await response.json();
+}
+
+/**
+ * Cancel a booking.
+ */
+export async function cancelBooking(
+  bookingId: number,
+  reason?: string,
+  authToken?: string
+): Promise<void> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  
+  if (authToken) {
+    headers['Authorization'] = `Bearer ${authToken}`;
+  }
+
+  const response = await fetch(`${API_BASE_URL}/bookings/${bookingId}/cancel`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ reason }),
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to cancel booking');
+  }
 }
