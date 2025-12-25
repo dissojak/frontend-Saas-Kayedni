@@ -1,21 +1,132 @@
 "use client";
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Layout from '@components/layout/Layout';
 import BookingSummary from './components/BookingSummary';
 import ContactForm from './components/ContactForm';
 import PaymentSummary from './components/PaymentSummary';
+import { apiGet } from '@/(pages)/(auth)/api/client';
 import useCheckout from './hooks/useCheckout';
-import { useBooking } from '../../context/BookingContext';
 import { useAuth } from '@/(pages)/(auth)/context/AuthContext';
 
-const BookingCheckoutPage = () => {
-  const { loading, submit } = useCheckout();
-  const { selectedBusiness, selectedService, selectedStaff, selectedDate, selectedTimeSlot } = useBooking();
-  const { user } = useAuth();
+type BookingData = {
+  business: any;
+  service: any;
+  staff: any;
+  date: string;
+  timeSlot: any;
+};
 
-  // Redirect handled inside the hook; if missing selections, don't render
-  if (!selectedBusiness || !selectedService || !selectedStaff || !selectedDate || !selectedTimeSlot) return null;
+const BookingCheckoutPage = () => {
+  const router = useRouter();
+  const { user } = useAuth();
+  const { loading, submit } = useCheckout();
+  const [bookingData, setBookingData] = useState<BookingData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [displayUser, setDisplayUser] = useState<any | null>(null);
+
+  // Load booking data from localStorage directly
+  useEffect(() => {
+    console.log('[Checkout] Page mounted, checking localStorage...');
+    try {
+      const stored = localStorage.getItem('bookingData');
+      console.log('[Checkout] localStorage.getItem result:', stored ? 'Found data' : 'No data');
+      
+      if (!stored) {
+        console.log('[Checkout] No booking data in localStorage, will redirect');
+        setIsLoading(false);
+        return;
+      }
+
+      const data = JSON.parse(stored);
+      console.log('[Checkout] Parsed booking data:', {
+        hasBusiness: !!data.business,
+        businessName: data.business?.name,
+        hasStaff: !!data.staff,
+        staffName: data.staff?.name,
+        hasService: !!data.service,
+        serviceName: data.service?.name,
+        hasDate: !!data.date,
+        hasTimeSlot: !!data.timeSlot,
+      });
+
+      // Validate all required fields exist
+      if (!data.business || !data.service || !data.staff || !data.date || !data.timeSlot) {
+        console.log('[Checkout] VALIDATION FAILED - Missing fields:', {
+          business: !data.business ? 'MISSING' : 'ok',
+          service: !data.service ? 'MISSING' : 'ok',
+          staff: !data.staff ? 'MISSING' : 'ok',
+          date: !data.date ? 'MISSING' : 'ok',
+          timeSlot: !data.timeSlot ? 'MISSING' : 'ok',
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      console.log('[Checkout] All validations passed, setting state');
+      setBookingData(data);
+      setSelectedDate(new Date(data.date));
+      setIsLoading(false);
+    } catch (err) {
+      console.error('[Checkout] Error loading booking data:', err);
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Ensure phone is present: if missing, fetch profile from backend
+  useEffect(() => {
+    const ensurePhone = async () => {
+      try {
+        if (user && !user.phone) {
+          const profile = await apiGet('/v1/auth/me', true);
+          const phone = profile?.phoneNumber ?? '';
+          if (phone) {
+            setDisplayUser({ ...user, phone });
+            return;
+          }
+        }
+        if (user) setDisplayUser(user);
+      } catch (err) {
+        console.warn('[Checkout] Failed to fetch /me profile for phone:', err);
+        if (user) setDisplayUser(user);
+      }
+    };
+    ensurePhone();
+  }, [user]);
+
+  // Redirect if data is invalid
+  useEffect(() => {
+    console.log('[Checkout] Checking redirect condition:', {
+      isLoading,
+      hasBookingData: !!bookingData,
+    });
+    
+    if (!isLoading && !bookingData) {
+      console.log('[Checkout] Conditions met for redirect - redirecting to /businesses');
+      router.push('/businesses');
+    } else if (!isLoading && bookingData) {
+      console.log('[Checkout] Data loaded successfully, not redirecting');
+    }
+  }, [bookingData, isLoading, router]);
+
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-8 flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-gray-500">Loading your booking details...</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (!bookingData || !selectedDate) {
+    return null;
+  }
 
   return (
     <Layout>
@@ -25,14 +136,14 @@ const BookingCheckoutPage = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
             <BookingSummary
-              business={selectedBusiness}
-              service={selectedService}
-              staff={selectedStaff}
+              business={bookingData.business}
+              service={bookingData.service}
+              staff={bookingData.staff}
               date={selectedDate}
-              timeSlot={selectedTimeSlot}
+              timeSlot={bookingData.timeSlot}
             />
 
-            <ContactForm user={user} />
+            <ContactForm user={displayUser ?? user} />
 
             <div>
               <div className="p-4 bg-white border rounded">
@@ -43,7 +154,7 @@ const BookingCheckoutPage = () => {
           </div>
 
           <div className="space-y-6">
-            <PaymentSummary service={selectedService} loading={loading} onConfirm={submit} />
+            <PaymentSummary service={bookingData.service} loading={loading} onConfirm={submit} />
           </div>
         </div>
       </div>

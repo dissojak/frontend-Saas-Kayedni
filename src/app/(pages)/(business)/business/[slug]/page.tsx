@@ -205,6 +205,31 @@ const BusinessDetailPage = () => {
 
   const handleContinueBooking = () => {
     if (!selectedService || !selectedStaff || !selectedDate || !selectedTimeSlot) return;
+    
+    // Store all booking data in localStorage to persist across navigation
+    const bookingData = {
+      business: business,
+      staff: selectedStaff,
+      service: selectedService,
+      date: selectedDate.toISOString(), // Store as ISO string
+      timeSlot: {
+        id: selectedTimeSlot.id,
+        staffId: selectedTimeSlot.staffId,
+        startTime: selectedTimeSlot.startTime instanceof Date ? selectedTimeSlot.startTime.toISOString() : selectedTimeSlot.startTime,
+        endTime: selectedTimeSlot.endTime instanceof Date ? selectedTimeSlot.endTime.toISOString() : selectedTimeSlot.endTime,
+        isAvailable: selectedTimeSlot.isAvailable,
+      },
+    };
+    
+    localStorage.setItem('bookingData', JSON.stringify(bookingData));
+    console.log('[page.tsx] Stored booking data:', {
+      business: bookingData.business?.name,
+      staff: bookingData.staff?.name,
+      service: bookingData.service?.name,
+      date: bookingData.date,
+      timeSlot: bookingData.timeSlot,
+    });
+    
     router.push("/booking/checkout");
   };
 
