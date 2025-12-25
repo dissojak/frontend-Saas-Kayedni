@@ -1,12 +1,22 @@
 import type { User } from './types';
 
 export const STORAGE_KEY = 'user';
+export const TOKEN_KEY = 'accessToken';
 
 export function loadStoredUser(): User | null {
   try {
     if (typeof window === 'undefined') return null;
     const s = localStorage.getItem(STORAGE_KEY);
     return s ? JSON.parse(s) as User : null;
+  } catch {
+    return null;
+  }
+}
+
+export function loadStoredToken(): string | null {
+  try {
+    if (typeof window === 'undefined') return null;
+    return localStorage.getItem(TOKEN_KEY);
   } catch {
     return null;
   }
@@ -40,6 +50,7 @@ export function buildUserFromDb(dbUser: Partial<User> & { id?: string | number; 
   console.log("user :",dbUser);
   const name = dbUser.name ?? dbUser.email?.split('@')[0] ?? 'User';
   const email = dbUser.email ?? '';
+  const phone = dbUser.phone ?? dbUser.phoneNumber ?? '';
   const role = (dbUser.role ?? 'CLIENT') as unknown as User['role'];
   const id = dbUser.id === undefined ? `local-${email.split('@')[0]}` : String(dbUser.id);
   const avatar = dbUser.avatar ? String(dbUser.avatar) : `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`;
@@ -47,6 +58,7 @@ export function buildUserFromDb(dbUser: Partial<User> & { id?: string | number; 
     id,
     name,
     email,
+    phone,
     role,
     avatar,
   } as User;

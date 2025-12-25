@@ -13,15 +13,15 @@ export default function ContactForm({ user }: Props) {
     <div>
       <div className="space-y-2">
         <Label htmlFor="name">Full Name</Label>
-        <Input id="name" defaultValue={user?.name} />
+          <Input id="name" value={user?.name ?? ''} disabled/>
       </div>
       <div className="space-y-2 mt-4">
         <Label htmlFor="email">Email</Label>
-        <Input id="email" type="email" defaultValue={user?.email} />
+          <Input id="email" type="email" value={user?.email ?? ''} disabled />
       </div>
       <div className="space-y-2 mt-4">
         <Label htmlFor="phone">Phone Number</Label>
-        <Input id="phone" type="tel" placeholder="Your phone number" />
+          <Input id="phone" type="tel" value={user?.phone ?? ''} disabled />
       </div>
     </div>
   );
