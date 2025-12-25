@@ -31,10 +31,10 @@ const BusinessDetailPage = () => {
     setSelectedDate,
     selectedTimeSlot,
     setSelectedTimeSlot,
-    availableSlots,
+    setSelectedBusiness,
   } = useBooking();
 
-  const { business, staff, services, staffServices, staffAvailability, loadServicesForStaff, loadAvailabilityForStaff, clearStaffAvailability, slots, images, loading } = useBusinessDetail(businessId ?? undefined);
+  const { business, staff, services, staffServices, staffAvailability, loadServicesForStaff, loadAvailabilityForStaff, clearStaffAvailability, loadTimeSlotsForDate, clearSlots, slots, slotsLoading, images, loading } = useBusinessDetail(businessId ?? undefined);
   
   // Redirect to correct slug URL if business is loaded but slug doesn't match
   useEffect(() => {
@@ -61,6 +61,7 @@ const BusinessDetailPage = () => {
     if (!selectedStaff?.id) {
       setSelectedService(null);
       clearStaffAvailability();
+      clearSlots();
       return;
     }
     const staffId = String(selectedStaff.id);
@@ -68,20 +69,38 @@ const BusinessDetailPage = () => {
     // Fetch availability for the next 30 days
     const today = new Date(); today.setHours(0,0,0,0);
     const to = new Date(today); to.setDate(today.getDate() + 30);
-    const fmt = (d: Date) => d.toISOString().slice(0,10);
+    // Format dates in local timezone (not UTC) to avoid date shifting
+    const fmt = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     loadAvailabilityForStaff(staffId, fmt(today), fmt(to));
     setSelectedService(null);
     setSelectedTimeSlot(null);
+    clearSlots();
   }, [selectedStaff]);
+
+  // When date or service changes, generate time slots
+  useEffect(() => {
+    if (!selectedStaff?.id || !selectedDate) {
+      console.log('[page.tsx] Skipping slot load - missing:', { staffId: selectedStaff?.id, date: selectedDate });
+      return;
+    }
+    const staffId = String(selectedStaff.id);
+    // Use service duration from selected service, or default to 30 minutes
+    const serviceDuration = selectedService?.duration || 30;
+    const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`;
+    console.log('[page.tsx] Loading slots for:', { staffId, date: dateStr, serviceDuration });
+    loadTimeSlotsForDate(staffId, selectedDate, serviceDuration);
+  }, [selectedStaff, selectedDate, selectedService]);
 
   // Page state (moved up so hooks order is stable)
   const [selectedTabId, setSelectedTabId] = useState<string>("about");
   const [hoveredTooltip, setHoveredTooltip] = useState<{ status: string; date: string; x: number; y: number } | null>(null);
+  const [hoveredDay, setHoveredDay] = useState<Date | null>(null);
 
   // Availability mapping for calendar modifiers (keep hooks above conditional returns to avoid hook order changes)
   const availabilityByStatus = useMemo(() => {
     const acc: Record<string, Date[]> = {
       AVAILABLE: [],
+      FULL: [],
       CLOSED: [],
       SICK: [],
       VACATION: [],
@@ -127,6 +146,7 @@ const BusinessDetailPage = () => {
   const statusLabel = (status: string) => {
     const labels: Record<string, string> = {
       AVAILABLE: "Available",
+      FULL: "Fully Booked",
       CLOSED: "Closed",
       SICK: "Sick",
       VACATION: "Vacation",
@@ -139,6 +159,7 @@ const BusinessDetailPage = () => {
   const statusDotClass = (status: string) => {
     const colors: Record<string, string> = {
       AVAILABLE: "bg-emerald-500",
+      FULL: "bg-orange-500",
       CLOSED: "bg-slate-400",
       SICK: "bg-rose-500",
       VACATION: "bg-amber-500",
@@ -170,18 +191,10 @@ const BusinessDetailPage = () => {
     );
   }
 
-  // Filter time slots for selected date (prefer slots from hook but fallback to availableSlots)
-  const sourceSlots = slots.length ? slots : availableSlots ?? [];
+  // Time slots are already filtered by date from loadTimeSlotsForDate
+  // Just filter to ensure isAvailable is true (should already be, but extra safety)
   const filteredTimeSlots = selectedDate && selectedStaff
-    ? sourceSlots.filter((slot: any) => {
-        const slotDate = new Date(slot.startTime);
-        return (
-          slotDate.getDate() === selectedDate.getDate() &&
-          slotDate.getMonth() === selectedDate.getMonth() &&
-          slotDate.getFullYear() === selectedDate.getFullYear() &&
-          slot.isAvailable
-        );
-      })
+    ? slots.filter((slot: any) => slot.isAvailable !== false)
     : [];
 
   const formatTimeSlot = (date: Date) => date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -278,7 +291,7 @@ const BusinessDetailPage = () => {
                         <h3 className="font-bold text-lg">{member.name}</h3>
                         <p className="text-gray-500 mb-2">{member.role}</p>
                         <p className="text-sm">{member.bio}</p>
-                        <Button className="w-full mt-4" onClick={() => { setSelectedStaff({ ...member, id: staffKey(member, idx) }); setSelectedTabId("booking"); }}>Book with {member.name.split(" ")[0]}</Button>
+                        <Button className="w-full mt-4" onClick={() => { setSelectedStaff(member); setSelectedTabId("booking"); }}>Book with {member.name.split(" ")[0]}</Button>
                       </CardContent>
                     </Card>
                   ))}
@@ -358,74 +371,106 @@ const BusinessDetailPage = () => {
                     </CardContent>
                   </Card>
 
-                  <Card className={selectedStaff && selectedService ? "" : "opacity-60 pointer-events-none"}>
+                  <Card className={selectedStaff ? "" : "opacity-60 pointer-events-none"}>
                     <CardHeader><h3 className="font-semibold">3. Select Date & Time</h3></CardHeader>
                     <CardContent>
+                      {!selectedStaff ? (
+                        <div className="flex flex-col items-center justify-center py-16 px-4">
+                          <div className="mb-4 text-5xl">📅</div>
+                          <h4 className="text-lg font-semibold text-gray-700 mb-2">Select a Staff Member First</h4>
+                          <p className="text-center text-gray-500 text-sm max-w-xs">Choose a staff member from the left to view their available dates and book an appointment</p>
+                        </div>
+                      ) : (
                       <div className="mb-4">
                         <Calendar
                           mode="single"
                           selected={selectedDate ?? undefined}
                           onSelect={(date) => {
+                            if (!selectedStaff) return; // Must select staff first
                             if (!date) {
                               setSelectedDate(null);
                               return;
                             }
                             const key = formatDateKey(date);
                             const status = statusByDate.get(key);
-                            if (status && status !== "AVAILABLE") return; // block selecting non-available
+                            // Block selecting non-available days (including FULL days)
+                            if (status && status !== "AVAILABLE") return;
                             setSelectedDate(date);
                           }}
                           disabled={disabledDays as any}
                           onDayMouseEnter={(day, _modifiers, e) => {
+                            if (!selectedStaff) return; // Only show tooltip if staff selected
                             const key = formatDateKey(day);
                             const status = statusByDate.get(key) ?? "UNAVAILABLE";
+                            // Show tooltip for ALL dates (available and non-available)
                             setHoveredTooltip({
                               status,
                               date: key,
                               x: e.clientX + 12,
                               y: e.clientY + 12,
                             });
+                            // Only apply hover highlight color for AVAILABLE dates
+                            if (status === "AVAILABLE") {
+                              setHoveredDay(day);
+                            }
                           }}
                           onDayMouseLeave={() => {
+                            setHoveredDay(null);
                             setHoveredTooltip(null);
                           }}
                           modifiers={{
                             available: availabilityByStatus.AVAILABLE || [],
+                            full: availabilityByStatus.FULL || [],
                             closed: availabilityByStatus.CLOSED || [],
                             sick: availabilityByStatus.SICK || [],
                             vacation: availabilityByStatus.VACATION || [],
                             dayOff: availabilityByStatus.DAY_OFF || [],
                             unavailable: availabilityByStatus.UNAVAILABLE || [],
+                            // Only apply hovered modifier to AVAILABLE dates
+                            hovered: hoveredDay && statusByDate.get(formatDateKey(hoveredDay)) === "AVAILABLE" ? [hoveredDay] : [],
                           }}
                           modifiersClassNames={{
-                            closed: "bg-slate-200 text-slate-500",
-                            sick: "bg-rose-100 text-rose-700",
-                            vacation: "bg-amber-100 text-amber-700",
-                            dayOff: "bg-blue-100 text-blue-700",
-                            unavailable: "bg-gray-200 text-gray-500",
-                            available: "bg-emerald-50 text-emerald-700",
+                            // Non-available statuses: prevent default button hover state from changing color
+                            full: "bg-orange-100 text-orange-700 hover:bg-orange-100",
+                            closed: "bg-slate-200 text-slate-500 hover:bg-slate-200",
+                            sick: "bg-rose-100 text-rose-700 hover:bg-rose-100",
+                            vacation: "bg-amber-100 text-amber-700 hover:bg-amber-100",
+                            dayOff: "bg-blue-100 text-blue-700 hover:bg-blue-100",
+                            unavailable: "bg-gray-200 text-gray-500 hover:bg-gray-200",
+                            // Only AVAILABLE gets a background color
+                            available: "bg-emerald-50 text-emerald-700 hover:bg-blue-400 hover:text-white",
+                            // Hovered (only for AVAILABLE dates) shows purple highlight
+                            hovered: "bg-purple-300 text-purple-800 font-semibold",
                           }}
                           className="rounded-md border p-3 pointer-events-auto"
                         />
                       </div>
+                      )}
 
                       {selectedDate && (
                         <div>
                           <h4 className="font-medium mb-2">Available Times</h4>
-                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                            {filteredTimeSlots.length > 0 ? filteredTimeSlots.map((slot: any, idx: number) => (
-                              <Button
-                                key={`slot-${idx}-${slot?.id ?? formatTimeSlot(slot.startTime)}`}
-                                variant={selectedTimeSlot?.id === slot.id ? "default" : "outline"}
-                                className={selectedTimeSlot?.id === slot.id ? "ring-2 ring-primary" : ""}
-                                onClick={() => setSelectedTimeSlot(slot)}
-                              >
-                                {formatTimeSlot(slot.startTime)}
-                              </Button>
-                            )) : (
-                              <p className="text-gray-500 col-span-full text-center py-2">No available slots on this date</p>
-                            )}
-                          </div>
+                          {slotsLoading ? (
+                            <div className="flex items-center justify-center py-4">
+                              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                              <span className="ml-2 text-gray-500">Loading slots...</span>
+                            </div>
+                          ) : (
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                              {filteredTimeSlots.length > 0 ? filteredTimeSlots.map((slot: any, idx: number) => (
+                                <Button
+                                  key={`slot-${idx}-${slot?.id ?? formatTimeSlot(slot.startTime)}`}
+                                  variant={selectedTimeSlot?.id === slot.id ? "default" : "outline"}
+                                  className={selectedTimeSlot?.id === slot.id ? "ring-2 ring-primary" : ""}
+                                  onClick={() => setSelectedTimeSlot(slot)}
+                                >
+                                  {formatTimeSlot(slot.startTime)}
+                                </Button>
+                              )) : (
+                                <p className="text-gray-500 col-span-full text-center py-2">No available slots on this date</p>
+                              )}
+                            </div>
+                          )}
                         </div>
                       )}
                     </CardContent>
