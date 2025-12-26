@@ -330,6 +330,10 @@ export async function fetchTimeSlotsForStaffDate(
     const dayAvailability = availabilities[0];
     console.log(`[fetchTimeSlotsForStaffDate] Day availability:`, JSON.stringify(dayAvailability));
     
+    // Extract the actual staffId from the availability response (this is the Staff entity ID)
+    const resolvedStaffId = dayAvailability.staffId || staffId;
+    console.log(`[fetchTimeSlotsForStaffDate] Using staffId from availability: ${resolvedStaffId}`);
+    
     // If staff is not available (CLOSED, SICK, VACATION, FULL, etc.), return empty
     if (dayAvailability.status !== 'AVAILABLE') {
       console.log(`[fetchTimeSlotsForStaffDate] Staff not available - status: ${dayAvailability.status}`);
@@ -386,6 +390,7 @@ export async function fetchTimeSlotsForStaffDate(
       
       slots.push({
         id: `${staffId}-${date}-${String(slotHour).padStart(2, '0')}${String(slotMin).padStart(2, '0')}`,
+        staffId: resolvedStaffId, // Add the resolved staffId to each slot
         startTime: slotStart,
         endTime: slotEnd,
         isAvailable: true, // Will be filtered after fetching bookings
@@ -466,8 +471,12 @@ export async function fetchAvailableTimeSlotsForStaffDate(
       return [];
     }
 
+    // Get the resolved staffId from the first slot (all slots have the same staffId)
+    const resolvedStaffId = allSlots[0]?.staffId || staffId;
+    console.log(`[fetchAvailableTimeSlotsForStaffDate] Using resolved staffId: ${resolvedStaffId}`);
+
     // 2. Fetch existing bookings for this staff on this date
-    const existingBookings = await fetchBookingsForStaffOnDate(staffId, date);
+    const existingBookings = await fetchBookingsForStaffOnDate(resolvedStaffId, date);
     console.log(`[fetchAvailableTimeSlotsForStaffDate] Found ${existingBookings.length} existing bookings`);
 
     // 3. Filter out occupied slots

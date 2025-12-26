@@ -33,7 +33,6 @@ export async function apiRequest<T = any>(
 
   // Build headers
   const requestHeaders: Record<string, string> = {
-    'Content-Type': 'application/json',
     ...headers,
   };
 
@@ -55,7 +54,12 @@ export async function apiRequest<T = any>(
 
   // Add body if present
   if (body) {
-    requestOptions.body = JSON.stringify(body);
+    if (typeof FormData !== 'undefined' && body instanceof FormData) {
+      requestOptions.body = body;
+    } else {
+      requestHeaders['Content-Type'] = 'application/json';
+      requestOptions.body = JSON.stringify(body);
+    }
   }
 
   try {

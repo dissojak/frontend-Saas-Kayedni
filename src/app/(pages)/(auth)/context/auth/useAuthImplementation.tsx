@@ -18,11 +18,15 @@ export function useAuthImplementation() {
     if (storedToken) setToken(storedToken);
   }, []);
 
+  const updateUser = (nextUser: User | null) => {
+    setUser(nextUser);
+    storeUser(nextUser);
+  };
+
   const login = async (email: string, password: string, role: User['role']) => {
     try {
       const u = await backendLogin(email, password, role);
-      setUser(u);
-      storeUser(u);
+      updateUser(u);
       // Load token after login (it's stored by the apiPost function)
       const newToken = loadStoredToken();
       setToken(newToken);
@@ -36,8 +40,7 @@ export function useAuthImplementation() {
   const register = async (name: string, email: string, password: string, role: User['role']) => {
     try {
       const u = await backendRegister(name, email, password, role);
-      setUser(u);
-      storeUser(u);
+      updateUser(u);
       // Load token after register
       const newToken = loadStoredToken();
       setToken(newToken);
@@ -49,12 +52,12 @@ export function useAuthImplementation() {
   };
 
   const logout = () => {
-    setUser(null);
+    updateUser(null);
     setToken(null);
     storeUser(null);
     router.push('/');
   };
 
-  const api = { user, token, isAuthenticated: !!user, login, logout, register } as AuthContextType;
+  const api = { user, token, isAuthenticated: !!user, login, logout, register, updateUser } as AuthContextType;
   return api;
 }

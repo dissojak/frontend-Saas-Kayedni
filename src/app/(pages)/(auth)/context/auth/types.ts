@@ -16,4 +16,5 @@ export interface AuthContextType {
   login: (email: string, password: string, role: UserRole) => Promise<User>;
   logout: () => void;
   register: (name: string, email: string, password: string, role: UserRole) => Promise<User>;
+  updateUser: (user: User | null) => void;
 }
