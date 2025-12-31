@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Layout from "@components/layout/Layout";
-import { Card, CardContent, CardHeader, CardTitle } from "@components/ui/card";
+import { Card, CardContent } from "@components/ui/card";
 import { Button } from "@components/ui/button";
 import { Badge } from "@components/ui/badge";
 import { Input } from "@components/ui/input";
@@ -38,11 +38,18 @@ export default function BusinessBookingsPage() {
   useEffect(() => {
     // Get businessId from localStorage (user's business)
     const userData = localStorage.getItem('user');
+    console.log('[Bookings Page] userData:', userData);
     if (userData) {
       const user = JSON.parse(userData);
+      console.log('[Bookings Page] Parsed user:', user);
+      console.log('[Bookings Page] businessId from user:', user.businessId);
       if (user.businessId) {
         setBusinessId(user.businessId);
+      } else {
+        console.warn('[Bookings Page] No businessId found in user object');
       }
+    } else {
+      console.warn('[Bookings Page] No user data in localStorage');
     }
   }, []);
 
@@ -57,18 +64,27 @@ export default function BusinessBookingsPage() {
   }, [bookings, searchTerm, statusFilter, sortBy]);
 
   const loadBookings = async () => {
-    if (!businessId) return;
+    if (!businessId) {
+      console.error('[Bookings Page] Cannot load bookings - no businessId');
+      return;
+    }
     
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+      console.log('[Bookings Page] Loading bookings for businessId:', businessId);
+      console.log('[Bookings Page] Using token:', token ? 'YES' : 'NO');
+      
       const from = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]; // 90 days ago
       const to = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]; // 90 days ahead
       
-      const data = await fetchBookingsForBusiness(businessId, from, to, token);
+      console.log('[Bookings Page] Date range:', from, 'to', to);
+      
+      const data = await fetchBookingsForBusiness(businessId, from, to, token || undefined);
+      console.log('[Bookings Page] Fetched bookings:', data);
       setBookings(data);
     } catch (error) {
-      console.error('Failed to load bookings:', error);
+      console.error('[Bookings Page] Failed to load bookings:', error);
     } finally {
       setLoading(false);
     }
@@ -108,7 +124,7 @@ export default function BusinessBookingsPage() {
 
   const handleStatusUpdate = async (bookingId: number, newStatus: string) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('token') || undefined;
       await updateBookingStatus(bookingId, newStatus, token);
       await loadBookings();
     } catch (error) {
@@ -120,8 +136,8 @@ export default function BusinessBookingsPage() {
     if (!confirm('Are you sure you want to cancel this booking?')) return;
     
     try {
-      const token = localStorage.getItem('token');
-      await cancelBooking(bookingId, token);
+      const token = localStorage.getItem('token') || undefined;
+      await cancelBooking(bookingId, undefined, token);
       await loadBookings();
     } catch (error) {
       console.error('Failed to cancel booking:', error);

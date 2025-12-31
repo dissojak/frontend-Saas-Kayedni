@@ -56,6 +56,12 @@ export function buildUserFromDb(dbUser: Partial<User> & { id?: string | number; 
   const id = rawId === undefined ? `local-${email.split('@')[0]}` : String(rawId);
   const avatarSource = dbUser.avatarUrl ?? dbUser.avatar ?? dbUser.profileImage ?? null;
   const avatar = avatarSource ? String(avatarSource) : `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`;
+  
+  // Include businessId for business owners
+  const businessId = dbUser.businessId ? String(dbUser.businessId) : undefined;
+  const businessName = dbUser.businessName ?? undefined;
+  const hasBusiness = dbUser.hasBusiness ?? undefined;
+  
   return {
     id,
     name,
@@ -63,5 +69,8 @@ export function buildUserFromDb(dbUser: Partial<User> & { id?: string | number; 
     phone,
     role,
     avatar,
+    businessId,
+    businessName,
+    hasBusiness,
   } as User;
 }

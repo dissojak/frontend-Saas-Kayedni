@@ -106,13 +106,19 @@ export async function fetchBusinessById(id: string): Promise<Business | null> {
 /**
  * Fetch staff members for a business from the real backend API
  */
-export async function fetchStaffByBusinessId(businessId: string): Promise<any[]> {
+export async function fetchStaffByBusinessId(businessId: string, authToken?: string): Promise<any[]> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  
+  if (authToken) {
+    headers['Authorization'] = `Bearer ${authToken}`;
+  }
+
   try {
     const response = await fetch(`${API_BASE_URL}/businesses/${businessId}/staffMembers`, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
     });
 
     if (!response.ok) {
@@ -125,13 +131,15 @@ export async function fetchStaffByBusinessId(businessId: string): Promise<any[]>
     const data = await response.json();
     // Map backend response (UserProfileResponse) to expected staff format
     return data.map((staff: any) => ({
-      id: String(staff.userId),
+      id: staff.userId,
       businessId: businessId,
       name: staff.name || staff.email,
       role: staff.role || 'Staff',
       avatar: staff.avatarUrl || staff.profilePicture || staff.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(staff.name || 'Staff')}&background=random`,
+      avatarUrl: staff.avatarUrl || staff.profilePicture || staff.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(staff.name || 'Staff')}&background=random`,
       bio: staff.bio || '',
       email: staff.email,
+      phoneNumber: staff.phoneNumber || staff.phone,
     }));
   } catch (error) {
     console.error('fetchStaffByBusinessId error:', error);
@@ -142,13 +150,19 @@ export async function fetchStaffByBusinessId(businessId: string): Promise<any[]>
 /**
  * Fetch services for a business from the real backend API
  */
-export async function fetchServicesByBusinessId(businessId: string): Promise<any[]> {
+export async function fetchServicesByBusinessId(businessId: string, authToken?: string): Promise<any[]> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  
+  if (authToken) {
+    headers['Authorization'] = `Bearer ${authToken}`;
+  }
+
   try {
     const response = await fetch(`${API_BASE_URL}/businesses/${businessId}/services`, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
     });
 
     if (!response.ok) {
@@ -161,13 +175,17 @@ export async function fetchServicesByBusinessId(businessId: string): Promise<any
     const data = await response.json();
     // Map backend response to expected service format
     return data.map((service: any) => ({
-      id: String(service.id),
+      id: service.id,
       businessId: businessId,
       name: service.name,
       description: service.description || '',
       price: service.price || 0,
       duration: service.durationMinutes || service.duration || 30,
+      durationMinutes: service.durationMinutes || service.duration || 30,
       category: service.categoryName || '',
+      imageUrl: service.imageUrl,
+      active: service.active !== false,
+      staffIds: service.staffIds || [],
     }));
   } catch (error) {
     console.error('fetchServicesByBusinessId error:', error);
@@ -688,6 +706,282 @@ export async function rescheduleBooking(
     return await response.json();
   } catch (error: any) {
     console.error('rescheduleBooking exception:', error);
+    throw error;
+  }
+}
+
+// ==========================================
+// BUSINESS MANAGEMENT API
+// ==========================================
+
+/**
+ * Fetch bookings for a business within a date range
+ */
+export async function fetchBookingsForBusiness(
+  businessId: string,
+  from?: string,
+  to?: string,
+  authToken?: string
+): Promise<any[]> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  
+  if (authToken) {
+    headers['Authorization'] = `Bearer ${authToken}`;
+  }
+
+  try {
+    let url = `${API_BASE_URL}/bookings/business/${businessId}`;
+    const params = new URLSearchParams();
+    if (from) params.append('from', from);
+    if (to) params.append('to', to);
+    if (params.toString()) url += `?${params.toString()}`;
+
+    console.log('[fetchBookingsForBusiness] URL:', url);
+    console.log('[fetchBookingsForBusiness] Headers:', { ...headers, Authorization: authToken ? 'Bearer ***' : 'none' });
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers,
+    });
+
+    console.log('[fetchBookingsForBusiness] Response status:', response.status);
+    console.log('[fetchBookingsForBusiness] Response ok:', response.ok);
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        console.warn('[fetchBookingsForBusiness] 404 - No bookings found');
+        return [];
+      }
+      const errorText = await response.text();
+      console.error('[fetchBookingsForBusiness] Error response:', errorText);
+      throw new Error('Failed to fetch bookings');
+    }
+
+    const data = await response.json();
+    console.log('[fetchBookingsForBusiness] Data received:', data);
+    return data;
+  } catch (error) {
+    console.error('[fetchBookingsForBusiness] error:', error);
+    return [];
+  }
+}
+
+/**
+ * Update booking status
+ */
+export async function updateBookingStatus(
+  bookingId: number,
+  status: string,
+  authToken?: string
+): Promise<void> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  
+  if (authToken) {
+    headers['Authorization'] = `Bearer ${authToken}`;
+  }
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/bookings/${bookingId}/status`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify({ status }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || 'Failed to update booking status');
+    }
+  } catch (error: any) {
+    console.error('updateBookingStatus exception:', error);
+    throw error;
+  }
+}
+
+/**
+ * Add staff to business by email
+ */
+export async function addStaffToBusinessByEmail(
+  businessId: string,
+  email: string,
+  authToken?: string
+): Promise<any> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  
+  if (authToken) {
+    headers['Authorization'] = `Bearer ${authToken}`;
+  }
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/businesses/${businessId}/staff`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ email }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || 'Failed to add staff');
+    }
+
+    return await response.json();
+  } catch (error: any) {
+    console.error('addStaffToBusinessByEmail exception:', error);
+    throw error;
+  }
+}
+
+/**
+ * Remove staff from business
+ */
+export async function removeStaffFromBusiness(
+  businessId: string,
+  staffId: number,
+  authToken?: string
+): Promise<void> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  
+  if (authToken) {
+    headers['Authorization'] = `Bearer ${authToken}`;
+  }
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/businesses/${businessId}/staff/${staffId}`, {
+      method: 'DELETE',
+      headers,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || 'Failed to remove staff');
+    }
+  } catch (error: any) {
+    console.error('removeStaffFromBusiness exception:', error);
+    throw error;
+  }
+}
+
+/**
+ * Create a new service
+ */
+export async function createService(
+  businessId: string,
+  data: {
+    name: string;
+    description: string;
+    durationMinutes: number;
+    price: number;
+    imageUrl?: string;
+    staffIds?: number[];
+  },
+  authToken?: string
+): Promise<any> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  
+  if (authToken) {
+    headers['Authorization'] = `Bearer ${authToken}`;
+  }
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/businesses/${businessId}/services`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || 'Failed to create service');
+    }
+
+    return await response.json();
+  } catch (error: any) {
+    console.error('createService exception:', error);
+    throw error;
+  }
+}
+
+/**
+ * Update a service
+ */
+export async function updateService(
+  businessId: string,
+  serviceId: number,
+  data: {
+    name?: string;
+    description?: string;
+    durationMinutes?: number;
+    price?: number;
+    imageUrl?: string;
+    staffIds?: number[];
+    active?: boolean;
+  },
+  authToken?: string
+): Promise<any> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  
+  if (authToken) {
+    headers['Authorization'] = `Bearer ${authToken}`;
+  }
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/businesses/${businessId}/services/${serviceId}`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || 'Failed to update service');
+    }
+
+    return await response.json();
+  } catch (error: any) {
+    console.error('updateService exception:', error);
+    throw error;
+  }
+}
+
+/**
+ * Delete a service
+ */
+export async function deleteService(
+  businessId: string,
+  serviceId: number,
+  authToken?: string
+): Promise<void> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  
+  if (authToken) {
+    headers['Authorization'] = `Bearer ${authToken}`;
+  }
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/businesses/${businessId}/services/${serviceId}`, {
+      method: 'DELETE',
+      headers,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || 'Failed to delete service');
+    }
+  } catch (error: any) {
+    console.error('deleteService exception:', error);
     throw error;
   }
 }

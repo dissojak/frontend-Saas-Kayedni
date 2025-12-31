@@ -7,6 +7,10 @@ export interface User {
   phone?: string;
   role: UserRole;
   avatar?: string;
+  // Business owner specific fields
+  businessId?: string;
+  businessName?: string;
+  hasBusiness?: boolean;
 }
 
 export interface AuthContextType {
