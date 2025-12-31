@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import type { AuthContextType, User } from './types';
 import { loadStoredUser, storeUser, loadStoredToken } from './utils';
 import { login as backendLogin, register as backendRegister } from './actions';
@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation';
 export function useAuthImplementation() {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
+  const [hydrated, setHydrated] = useState<boolean>(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -16,12 +17,14 @@ export function useAuthImplementation() {
     const storedToken = loadStoredToken();
     if (stored) setUser(stored);
     if (storedToken) setToken(storedToken);
+    // mark that initial load from storage is complete
+    setHydrated(true);
   }, []);
 
-  const updateUser = (nextUser: User | null) => {
+  const updateUser = useCallback((nextUser: User | null) => {
     setUser(nextUser);
     storeUser(nextUser);
-  };
+  }, []);
 
   const login = async (email: string, password: string, role: User['role']) => {
     try {
@@ -58,6 +61,6 @@ export function useAuthImplementation() {
     router.push('/');
   };
 
-  const api = { user, token, isAuthenticated: !!user, login, logout, register, updateUser } as AuthContextType;
+  const api = { user, token, isAuthenticated: !!user, hydrated, login, logout, register, updateUser } as AuthContextType;
   return api;
 }

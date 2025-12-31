@@ -535,6 +535,9 @@ export interface BookingResponse {
   id: number;
   serviceId: number;
   serviceName: string;
+  serviceDuration?: number;
+  businessId?: number | null;
+  businessName?: string | null;
   clientId: number;
   clientName: string;
   clientEmail: string;
@@ -547,6 +550,7 @@ export interface BookingResponse {
   status: string;
   notes: string | null;
   price: number;
+  duration?: number;
   createdAt: string;
   updatedAt: string | null;
 }
@@ -581,19 +585,35 @@ export async function createBooking(
  * Fetch bookings for the authenticated user.
  */
 export async function fetchMyBookings(authToken: string): Promise<BookingResponse[]> {
-  const response = await fetch(`${API_BASE_URL}/bookings/my-bookings`, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${authToken}`,
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error('Failed to fetch bookings');
+  if (!authToken) {
+    console.error('fetchMyBookings: No auth token provided');
+    return [];
   }
+  
+  try {
+    const response = await fetch(`${API_BASE_URL}/bookings/my-bookings`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`,
+      },
+    });
 
-  return await response.json();
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error('fetchMyBookings error:', response.status, errorData);
+      if (response.status === 401) {
+        throw new Error('Session expired. Please log in again.');
+      }
+      throw new Error(errorData.error || 'Failed to fetch bookings');
+    }
+
+    const data = await response.json();
+    return Array.isArray(data) ? data : [];
+  } catch (error: any) {
+    console.error('fetchMyBookings exception:', error);
+    throw error;
+  }
 }
 
 /**
@@ -612,13 +632,175 @@ export async function cancelBooking(
     headers['Authorization'] = `Bearer ${authToken}`;
   }
 
-  const response = await fetch(`${API_BASE_URL}/bookings/${bookingId}/cancel`, {
+  try {
+    const response = await fetch(`${API_BASE_URL}/bookings/${bookingId}/cancel`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ reason: reason || '' }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error('Cancel booking error:', response.status, errorData);
+      throw new Error(errorData.error || errorData.message || 'Failed to cancel booking');
+    }
+  } catch (error: any) {
+    console.error('cancelBooking exception:', error);
+    throw error;
+  }
+}
+
+/**
+ * Reschedule a booking to a new date/time.
+ */
+export async function rescheduleBooking(
+  bookingId: number,
+  newDate: string,
+  newStartTime: string,
+  newEndTime?: string,
+  authToken?: string
+): Promise<BookingResponse> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  
+  if (authToken) {
+    headers['Authorization'] = `Bearer ${authToken}`;
+  }
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/bookings/${bookingId}/reschedule`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify({ 
+        date: newDate, 
+        startTime: newStartTime,
+        endTime: newEndTime 
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error('Reschedule booking error:', response.status, errorData);
+      throw new Error(errorData.error || errorData.message || 'Failed to reschedule booking');
+    }
+
+    return await response.json();
+  } catch (error: any) {
+    console.error('rescheduleBooking exception:', error);
+    throw error;
+  }
+}
+
+// ==========================================
+// RATING API (Using ServiceRating and BusinessRating tables)
+// ==========================================
+
+export interface RatingCreateRequest {
+  bookingId: number;
+  serviceRating?: number;
+  businessRating?: number;
+  serviceComment?: string;
+  businessComment?: string;
+}
+
+export interface RatingResponse {
+  bookingId: number;
+  serviceId: number;
+  serviceName: string;
+  businessId: number | null;
+  businessName: string | null;
+  clientName: string;
+  serviceRatingId: number | null;
+  serviceRating: number | null;
+  serviceComment: string | null;
+  serviceRatingDate: string | null;
+  businessRatingId: number | null;
+  businessRating: number | null;
+  businessComment: string | null;
+  businessRatingDate: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+  hasExistingRating: boolean;
+}
+
+/**
+ * Create or update ratings for a completed booking.
+ * Uses the new Rating API with ServiceRating and BusinessRating entities.
+ */
+export async function createOrUpdateRating(
+  request: RatingCreateRequest,
+  authToken: string
+): Promise<RatingResponse> {
+  // Clean up undefined/null values to avoid validation issues
+  const cleanRequest = {
+    bookingId: request.bookingId,
+    ...(request.serviceRating !== undefined && request.serviceRating !== null && { serviceRating: request.serviceRating }),
+    ...(request.businessRating !== undefined && request.businessRating !== null && { businessRating: request.businessRating }),
+    ...(request.serviceComment && { serviceComment: request.serviceComment }),
+    ...(request.businessComment && { businessComment: request.businessComment }),
+  };
+
+  const response = await fetch(`${API_BASE_URL}/ratings`, {
     method: 'POST',
-    headers,
-    body: JSON.stringify({ reason }),
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${authToken}`,
+    },
+    body: JSON.stringify(cleanRequest),
   });
 
   if (!response.ok) {
-    throw new Error('Failed to cancel booking');
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to submit rating');
   }
+
+  return await response.json();
+}
+
+/**
+ * Get existing rating for a booking.
+ * Returns the service and business ratings if they exist.
+ */
+export async function getRatingForBooking(
+  bookingId: number,
+  authToken: string
+): Promise<RatingResponse> {
+  const response = await fetch(`${API_BASE_URL}/ratings/booking/${bookingId}`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${authToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to get rating');
+  }
+
+  return await response.json();
+}
+
+/**
+ * Check if a booking has been rated.
+ */
+export async function checkRatingExists(
+  bookingId: number,
+  authToken: string
+): Promise<boolean> {
+  const response = await fetch(`${API_BASE_URL}/ratings/booking/${bookingId}/exists`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${authToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    return false;
+  }
+
+  const data = await response.json();
+  return data.hasRating === true;
 }

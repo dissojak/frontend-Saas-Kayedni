@@ -5,7 +5,9 @@ import { useRouter } from 'next/navigation';
 import { Card, CardContent } from '@components/ui/card';
 import { Button } from '@components/ui/button';
 import { createBusinessSlug } from '@global/lib/businessSlug';
+import { Star } from 'lucide-react';
 import type { Booking } from '../types';
+import type { ReviewBookingInfo } from '@components/reviews';
 
 type Props = {
   items: Booking[];
@@ -14,10 +16,26 @@ type Props = {
   getStaffName: (id: string) => string;
   formatDate: (d: Date | string) => string;
   formatTime: (d: Date | string) => string;
+  onReview?: (bookingInfo: ReviewBookingInfo) => void;
 };
 
-export default function PastList({ items, getService, getBusinessName, getStaffName, formatDate, formatTime }: Props) {
+export default function PastList({ items, getService, getBusinessName, getStaffName, formatDate, formatTime, onReview }: Props) {
   const router = useRouter();
+
+  const handleReviewClick = (booking: Booking) => {
+    if (!onReview) return;
+    
+    const service = getService(booking.serviceId);
+    const businessName = getBusinessName(booking.businessId);
+    const staffName = getStaffName(booking.staffId);
+    
+    onReview({
+      id: booking.id,
+      businessName,
+      serviceName: service?.name || 'Service',
+      staffName,
+    });
+  };
 
   return (
     <div className="space-y-4">
@@ -43,7 +61,17 @@ export default function PastList({ items, getService, getBusinessName, getStaffN
                 <div>
                   <p className="text-lg font-semibold mb-2">${service.price.toFixed(2)}</p>
                   <div className="flex space-x-3">
-                    {booking.status === 'completed' && <Button variant="outline" size="sm">Leave Review</Button>}
+                    {booking.status === 'completed' && (
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="gap-1.5"
+                        onClick={() => handleReviewClick(booking)}
+                      >
+                        <Star className="h-4 w-4" />
+                        Leave Review
+                      </Button>
+                    )}
                     <Button variant="secondary" size="sm" onClick={() => router.push(`/business/${businessSlug}`)}>Book Again</Button>
                   </div>
                 </div>

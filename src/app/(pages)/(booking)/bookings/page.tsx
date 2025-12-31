@@ -1,17 +1,18 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Layout from '@components/layout/Layout';
 import { useAuth } from '@/(pages)/(auth)/context/AuthContext';
 import { Button } from '@components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@components/ui/tabs';
+import { ReviewDialog, type ReviewBookingInfo } from '@components/reviews';
 import useBookingsData from './hooks/useBookingsData';
 import UpcomingList from './components/UpcomingList';
 import PastList from './components/PastList';
 
 const BookingsPage = () => {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const router = useRouter();
   const {
     getBookingsForUser,
@@ -24,6 +25,10 @@ const BookingsPage = () => {
     handleCancelBooking,
   } = useBookingsData();
 
+  // Review dialog state
+  const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
+  const [selectedBookingForReview, setSelectedBookingForReview] = useState<ReviewBookingInfo | null>(null);
+
   if (!user) {
     router.push('/login');
     return null;
@@ -33,6 +38,16 @@ const BookingsPage = () => {
 
   const upcomingBookings = userBookings.filter((b) => b.status === 'confirmed' || b.status === 'pending');
   const pastBookings = userBookings.filter((b) => b.status === 'completed' || b.status === 'cancelled');
+
+  const handleReview = (bookingInfo: ReviewBookingInfo) => {
+    setSelectedBookingForReview(bookingInfo);
+    setReviewDialogOpen(true);
+  };
+
+  const handleReviewSuccess = () => {
+    // Optionally refresh bookings data here if needed
+    setSelectedBookingForReview(null);
+  };
 
   return (
     <Layout>
@@ -78,6 +93,7 @@ const BookingsPage = () => {
                 getStaffName={getStaffName}
                 formatDate={formatDate}
                 formatTime={formatTime}
+                onReview={handleReview}
               />
             ) : (
               <div className="text-center py-12">
@@ -89,6 +105,15 @@ const BookingsPage = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Review Dialog */}
+      <ReviewDialog
+        open={reviewDialogOpen}
+        onOpenChange={setReviewDialogOpen}
+        booking={selectedBookingForReview}
+        token={token}
+        onSuccess={handleReviewSuccess}
+      />
     </Layout>
   );
 };

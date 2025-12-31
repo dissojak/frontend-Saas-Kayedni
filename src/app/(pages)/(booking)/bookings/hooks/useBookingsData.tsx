@@ -1,24 +1,73 @@
 "use client";
 
-import { useMemo, useState } from 'react';
-import { useBooking } from '@/(pages)/(booking)/context/BookingContext';
-import type { Booking, Business, Staff, Service } from '../types';
+import { useEffect, useMemo, useState } from 'react';
+import { useAuth } from '@/(pages)/(auth)/context/AuthContext';
+import { fetchMyBookings, cancelBooking as cancelBookingAPI, type BookingResponse } from '@/(pages)/(business)/actions/backend';
+import type { Booking } from '../types';
 import { formatDate, formatTime } from '../utils/format';
 
+function toBooking(b: BookingResponse): Booking {
+  // Map backend booking into UI Booking type
+  return {
+    id: String(b.id),
+    businessId: String(b.businessId ?? ''),
+    staffId: String(b.staffId),
+    serviceId: String(b.serviceId),
+    userId: String(b.clientId),
+    date: b.date as unknown as Date, // formatting utils accept string as well
+    startTime: b.startTime as unknown as Date,
+    endTime: b.endTime as unknown as Date,
+    status: (b.status || '').toLowerCase() as Booking['status'],
+    price: Number(b.price ?? 0),
+  };
+}
+
 export default function useBookingsData() {
-  const { bookings, getBookingsForUser, businesses, staff, services, cancelBooking } = useBooking();
+  const { token } = useAuth();
+  const [bookings, setBookings] = useState<Booking[]>([]);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [bizMap, setBizMap] = useState<Record<string, string>>({});
+  const [staffMap, setStaffMap] = useState<Record<string, string>>({});
+  const [serviceMap, setServiceMap] = useState<Record<string, { name: string; price: number }>>({});
 
-  const getBusinessName = (businessId: string) => businesses.find((b: Business) => b.id === businessId)?.name ?? 'Unknown Business';
-  const getStaffName = (staffId: string) => staff.find((s: Staff) => s.id === staffId)?.name ?? 'Unknown Staff';
-  const getServiceDetails = (serviceId: string) => services.find((s: Service) => s.id === serviceId) ?? { name: 'Unknown Service', price: 0, duration: 0 };
+  useEffect(() => {
+    let mounted = true;
+    async function load() {
+      if (!token) return;
+      const list = await fetchMyBookings(token);
+      if (!mounted) return;
+      setBookings(list.map(toBooking));
+      // Build lookup maps
+      const biz: Record<string, string> = {};
+      const staff: Record<string, string> = {};
+      const svc: Record<string, { name: string; price: number }> = {};
+      for (const item of list) {
+        if (item.businessId) biz[String(item.businessId)] = item.businessName || '—';
+        staff[String(item.staffId)] = item.staffName || '—';
+        svc[String(item.serviceId)] = { name: item.serviceName, price: Number(item.price ?? 0) };
+      }
+      setBizMap(biz);
+      setStaffMap(staff);
+      setServiceMap(svc);
+    }
+    load();
+    return () => { mounted = false; };
+  }, [token]);
 
-  const handleCancelBooking = (bookingId: string) => {
+  const getBookingsForUser = (userId: string) => bookings; // already scoped to authenticated user
+  const getBusinessName = (businessId: string) => bizMap[businessId] ?? 'Unknown Business';
+  const getStaffName = (staffId: string) => staffMap[staffId] ?? 'Unknown Staff';
+  const getServiceDetails = (serviceId: string) => serviceMap[serviceId] ?? { name: 'Unknown Service', price: 0 };
+
+  const handleCancelBooking = async (bookingId: string) => {
+    if (!token) return;
     setCancellingId(bookingId);
-    setTimeout(() => {
-      cancelBooking(bookingId);
+    try {
+      await cancelBookingAPI(Number(bookingId), undefined, token);
+      setBookings((prev) => prev.map((bk) => (bk.id === bookingId ? { ...bk, status: 'cancelled' } : bk)));
+    } finally {
       setCancellingId(null);
-    }, 1000);
+    }
   };
 
   return {

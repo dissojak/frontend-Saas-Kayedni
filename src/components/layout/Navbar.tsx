@@ -93,12 +93,12 @@ const Navbar = () => {
   const links = roleKey && navLinks[roleKey] ? navLinks[roleKey] : defaultLinks;
 
   return (
-    <nav className="bg-white shadow-sm sticky top-0 z-50">
+    <nav className="bg-white dark:bg-zinc-900 shadow-sm sticky top-0 z-50 transition-colors">
       <div className="container mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
             <Link href="/" className="flex items-center space-x-2">
-              <span className="text-2xl font-bold text-primary">Bookify</span>
+              <span className="text-2xl font-bold text-primary dark:text-primary-light">Bookify</span>
             </Link>
 
             {/* Desktop Navigation */}
@@ -107,7 +107,7 @@ const Navbar = () => {
                 <Link
                   key={link.path}
                   href={link.path}
-                  className="text-gray-600 hover:text-primary font-medium"
+                  className="text-gray-600 dark:text-gray-200 hover:text-primary dark:hover:text-primary font-medium transition-colors"
                 >
                   {link.label}
                 </Link>
@@ -120,9 +120,8 @@ const Navbar = () => {
               <>
                 {user && (
                   <div className="hidden md:flex md:flex-col md:items-end md:text-right md:mr-2">
-                    {/* Show user name above a smaller role label */}
-                    <span className="text-sm dark:text-black-light-800 font-medium leading-tight">{user.name ?? user.email?.split('@')[0]}</span>
-                    <span className={`text-xs text-gray-500 mt-0.5 role-badge role-badge-${String(user.role).toLowerCase()}`}>{user.role}</span>
+                    <span className="text-sm text-gray-800 dark:text-gray-200 font-medium leading-tight">{user.name ?? user.email?.split('@')[0]}</span>
+                    <span className={`text-xs text-gray-500 dark:text-gray-400 mt-0.5 role-badge role-badge-${String(user.role).toLowerCase()}`}>{user.role}</span>
                   </div>
                 )}
                 <DropdownMenu>
@@ -135,10 +134,10 @@ const Navbar = () => {
                       />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuContent align="end" className="w-56 bg-white dark:bg-zinc-800 dark:text-gray-100">
                     <div className="p-2">
                       <p className="font-medium">{user?.name ?? "User"}</p>
-                      <p className="text-sm text-gray-500">{user?.email ?? ""}</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-300">{user?.email ?? ""}</p>
                     </div>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={() => router.push("/profile")}>
@@ -167,8 +166,10 @@ const Navbar = () => {
               size="icon"
               onClick={toggleTheme}
               title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+              aria-pressed={isDark}
+              className="transition-colors"
             >
-              {isDark ? <Sun /> : <Moon />}
+              {isDark ? <Sun className="text-yellow-400" /> : <Moon className="text-gray-600" />}
             </Button>
 
             <Button
@@ -184,13 +185,13 @@ const Navbar = () => {
 
         {/* Mobile Navigation */}
         {mobileMenuOpen && (
-          <div className="md:hidden mt-3 pb-3 border-t">
+              <div className="md:hidden mt-3 pb-3 border-t dark:border-zinc-700">
             <div className="flex flex-col space-y-3 mt-3">
               {links.map((link) => (
                 <Link
                   key={link.path}
                   href={link.path}
-                  className="text-gray-600 hover:text-primary py-2 font-medium"
+                  className="text-gray-600 dark:text-gray-200 hover:text-primary dark:hover:text-primary py-2 font-medium"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   {link.label}

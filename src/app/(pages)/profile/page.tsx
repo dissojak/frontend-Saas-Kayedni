@@ -25,31 +25,37 @@ export default function ProfilePage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const { isAuthenticated, updateUser } = useAuth();
+  const { isAuthenticated, updateUser, hydrated } = useAuth();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const { data: profile, isLoading: loadingProfile } = useQuery<UserProfile>({
+  const { data: profile, isPending: loadingProfile } = useQuery<UserProfile>({
     queryKey: ['profile'],
     queryFn: fetchProfile,
     enabled: isAuthenticated,
-    onSuccess: (data) => {
-      updateUser(buildUserFromDb({
-        userId: data.userId,
-        name: data.name,
-        email: data.email,
-        phoneNumber: data.phoneNumber,
-        avatarUrl: data.avatarUrl,
-        role: data.role,
-      }));
-    },
     retry: false,
   });
 
+  // Sync profile to auth context when data loads
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (profile) {
+      updateUser(buildUserFromDb({
+        userId: profile.userId,
+        name: profile.name,
+        email: profile.email,
+        phoneNumber: profile.phoneNumber,
+        avatarUrl: profile.avatarUrl,
+        role: profile.role as any,
+      }));
+    }
+  }, [profile, updateUser]);
+
+  useEffect(() => {
+    // Wait until auth state has been hydrated from storage to avoid
+    // a false-negative redirect while the client reads localStorage.
+    if (hydrated && !isAuthenticated) {
       router.push('/login');
     }
-  }, [isAuthenticated, router]);
+  }, [hydrated, isAuthenticated, router]);
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -92,7 +98,7 @@ export default function ProfilePage() {
           email: data.email,
           phoneNumber: data.phoneNumber,
           avatarUrl: data.avatarUrl,
-          role: data.role,
+          role: data.role as any,
         })
       );
     },
@@ -142,7 +148,7 @@ export default function ProfilePage() {
             email: cached.email,
             phoneNumber: cached.phoneNumber,
             avatarUrl: data.url,
-            role: cached.role,
+            role: cached.role as any,
           })
         );
       } else {
@@ -169,7 +175,7 @@ export default function ProfilePage() {
     updateProfileMutation.mutate({
       name,
       phoneNumber: phone || undefined,
-      avatarUrl: profile.avatarUrl ?? undefined,
+      avatarUrl: profile?.avatarUrl ?? undefined,
     });
   };
 
@@ -203,7 +209,7 @@ export default function ProfilePage() {
                 <div className="flex items-center gap-3">
                   <Sparkles className="h-8 w-8 text-yellow-300 animate-pulse" />
                   <h1 className="text-4xl md:text-5xl font-bold text-white">
-                    Your Profile
+                    {profile?.name || 'Your Profile'}
                   </h1>
                 </div>
                 <p className="text-blue-100 text-lg max-w-2xl">
@@ -223,7 +229,7 @@ export default function ProfilePage() {
                   </Avatar>
                   
                   {/* Avatar Upload Loading Overlay */}
-                  {uploadAvatarMutation.isLoading && (
+                  {uploadAvatarMutation.isPending && (
                     <div className="absolute inset-0 rounded-full bg-black/70 backdrop-blur-md flex items-center justify-center z-10">
                       <div className="relative">
                         {/* Animated Ring */}
@@ -243,10 +249,10 @@ export default function ProfilePage() {
                   
                   <button
                     onClick={() => fileInputRef.current?.click()}
-                    disabled={uploadAvatarMutation.isLoading}
+                    disabled={uploadAvatarMutation.isPending}
                     className="absolute bottom-0 right-0 p-2.5 rounded-full bg-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed border-2 border-blue-500"
                   >
-                    {uploadAvatarMutation.isLoading ? (
+                    {uploadAvatarMutation.isPending ? (
                       <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
                     ) : (
                       <Camera className="h-5 w-5 text-blue-600" />
@@ -276,7 +282,7 @@ export default function ProfilePage() {
                 <Card className="relative border-0 shadow-xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-2xl overflow-hidden">
                   
                   {/* Profile Save Loading Overlay */}
-                  {updateProfileMutation.isLoading && (
+                  {updateProfileMutation.isPending && (
                     <div className="absolute inset-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md z-50 flex items-center justify-center rounded-2xl">
                       <div className="text-center space-y-3">
                         <div className="relative">
@@ -305,10 +311,10 @@ export default function ProfilePage() {
                       </div>
                       <Button 
                         onClick={handleProfileSubmit} 
-                        disabled={updateProfileMutation.isLoading || loadingProfile}
+                        disabled={updateProfileMutation.isPending || loadingProfile}
                         className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 disabled:opacity-70 disabled:cursor-not-allowed"
                       >
-                        {updateProfileMutation.isLoading ? (
+                        {updateProfileMutation.isPending ? (
                           <>
                             <Loader2 className="h-4 w-4 animate-spin mr-2" />
                             Saving...
@@ -402,10 +408,10 @@ export default function ProfilePage() {
                       </div>
                       <Button
                         onClick={handlePasswordSubmit}
-                        disabled={changePasswordMutation.isLoading}
+                        disabled={changePasswordMutation.isPending}
                         className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
                       >
-                        {changePasswordMutation.isLoading ? (
+                        {changePasswordMutation.isPending ? (
                           <Loader2 className="h-4 w-4 animate-spin mr-2" />
                         ) : (
                           <Shield className="h-4 w-4 mr-2" />
