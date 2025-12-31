@@ -769,6 +769,60 @@ export async function fetchBookingsForBusiness(
 }
 
 /**
+ * Fetch bookings for a staff member within a date range
+ */
+export async function fetchBookingsForStaff(
+  staffId: string,
+  from?: string,
+  to?: string,
+  authToken?: string
+): Promise<any[]> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  
+  if (authToken) {
+    headers['Authorization'] = `Bearer ${authToken}`;
+  }
+
+  try {
+    let url = `${API_BASE_URL}/bookings/staff/${staffId}`;
+    const params = new URLSearchParams();
+    if (from) params.append('from', from);
+    if (to) params.append('to', to);
+    if (params.toString()) url += `?${params.toString()}`;
+
+    console.log('[fetchBookingsForStaff] URL:', url);
+    console.log('[fetchBookingsForStaff] Headers:', { ...headers, Authorization: authToken ? 'Bearer ***' : 'none' });
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers,
+    });
+
+    console.log('[fetchBookingsForStaff] Response status:', response.status);
+    console.log('[fetchBookingsForStaff] Response ok:', response.ok);
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        console.warn('[fetchBookingsForStaff] 404 - No bookings found');
+        return [];
+      }
+      const errorText = await response.text();
+      console.error('[fetchBookingsForStaff] Error response:', errorText);
+      throw new Error('Failed to fetch bookings');
+    }
+
+    const data = await response.json();
+    console.log('[fetchBookingsForStaff] Data received:', data);
+    return data;
+  } catch (error) {
+    console.error('[fetchBookingsForStaff] error:', error);
+    return [];
+  }
+}
+
+/**
  * Update booking status
  */
 export async function updateBookingStatus(
