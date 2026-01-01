@@ -28,8 +28,9 @@ const navLinks: Record<Exclude<UserRole, null>, { path: string; label: string }[
     { path: "/business/bookings", label: "Bookings" },
   ],
   STAFF: [
-    { path: "/staff/dashboard", label: "Dashboard" },
+    { path: "/staff/dashboard", label: "My Workspace" },
     { path: "/staff/schedule", label: "My Schedule" },
+    { path: "/staff/services", label: "Services" },
     { path: "/staff/bookings", label: "Bookings" },
   ],
   ADMIN: [

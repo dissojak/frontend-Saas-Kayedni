@@ -3,6 +3,39 @@ import type { Business } from "../businesses/types/business";
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8088/api/v1';
 
 /**
+ * Fetch current staff member's info including their business
+ */
+export async function fetchCurrentStaffInfo(authToken: string): Promise<{
+  staffId: number;
+  name?: string;
+  email?: string;
+  hasBusiness: boolean;
+  businessId?: number;
+  businessName?: string;
+} | null> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/staff/me`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`,
+      },
+    });
+
+    if (!response.ok) {
+      console.error('fetchCurrentStaffInfo failed:', response.status);
+      return null;
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('fetchCurrentStaffInfo error:', error);
+    return null;
+  }
+}
+
+/**
  * Fetch all active businesses from the backend API
  */
 export async function fetchBusinesses(): Promise<Business[]> {
@@ -150,7 +183,11 @@ export async function fetchStaffByBusinessId(businessId: string, authToken?: str
 /**
  * Fetch services for a business from the real backend API
  */
-export async function fetchServicesByBusinessId(businessId: string, authToken?: string): Promise<any[]> {
+export async function fetchServicesByBusinessId(
+  businessId: string, 
+  authToken?: string,
+  includeInactive: boolean = false
+): Promise<any[]> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
   };
@@ -160,7 +197,11 @@ export async function fetchServicesByBusinessId(businessId: string, authToken?: 
   }
 
   try {
-    const response = await fetch(`${API_BASE_URL}/businesses/${businessId}/services`, {
+    const url = includeInactive 
+      ? `${API_BASE_URL}/businesses/${businessId}/services?includeInactive=true`
+      : `${API_BASE_URL}/businesses/${businessId}/services`;
+      
+    const response = await fetch(url, {
       method: 'GET',
       headers,
     });
@@ -946,6 +987,8 @@ export async function createService(
   }
 
   try {
+    console.log('createService: POST', `${API_BASE_URL}/businesses/${businessId}/services`, data);
+    
     const response = await fetch(`${API_BASE_URL}/businesses/${businessId}/services`, {
       method: 'POST',
       headers,
@@ -953,8 +996,27 @@ export async function createService(
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || 'Failed to create service');
+      const errorText = await response.text();
+      console.error('createService error response:', response.status, errorText);
+      
+      // Handle specific HTTP status codes
+      if (response.status === 401) {
+        throw new Error('Authentication required. Please log in again.');
+      }
+      if (response.status === 403) {
+        throw new Error('You do not have permission to create services for this business.');
+      }
+      
+      let errorMessage = 'Failed to create service';
+      if (errorText) {
+        try {
+          const errorData = JSON.parse(errorText);
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch {
+          errorMessage = errorText || errorMessage;
+        }
+      }
+      throw new Error(errorMessage);
     }
 
     return await response.json();
@@ -1315,6 +1377,87 @@ export async function updateStaffWorkHours(
     return await response.json();
   } catch (error: any) {
     console.error('updateStaffWorkHours exception:', error);
+    throw error;
+  }
+}
+
+/**
+ * Staff resigns from business (becomes normal client)
+ * DELETE /v1/businesses/{businessId}/staff/{staffId}
+ */
+export async function staffResignFromBusiness(
+  businessId: string,
+  staffId: string,
+  authToken: string
+): Promise<{ message: string }> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${authToken}`,
+  };
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/businesses/${businessId}/staff/${staffId}`, {
+      method: 'DELETE',
+      headers,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || errorData.error || 'Failed to resign from business');
+    }
+
+    return await response.json();
+  } catch (error: any) {
+    console.error('staffResignFromBusiness exception:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get staff's booking stats (total, completed, cancelled, no_show)
+ */
+export async function fetchStaffStats(
+  staffId: string,
+  authToken: string
+): Promise<{
+  totalBookings: number;
+  completedBookings: number;
+  cancelledBookings: number;
+  noShowBookings: number;
+  pendingBookings: number;
+  confirmedBookings: number;
+}> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${authToken}`,
+  };
+
+  try {
+    // Fetch all bookings for the staff to calculate stats
+    const response = await fetch(`${API_BASE_URL}/bookings/staff/${staffId}`, {
+      method: 'GET',
+      headers,
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch staff bookings for stats');
+    }
+
+    const bookings = await response.json();
+    
+    // Calculate stats from bookings
+    const stats = {
+      totalBookings: bookings.length,
+      completedBookings: bookings.filter((b: any) => b.status === 'COMPLETED').length,
+      cancelledBookings: bookings.filter((b: any) => b.status === 'CANCELLED').length,
+      noShowBookings: bookings.filter((b: any) => b.status === 'NO_SHOW').length,
+      pendingBookings: bookings.filter((b: any) => b.status === 'PENDING').length,
+      confirmedBookings: bookings.filter((b: any) => b.status === 'CONFIRMED').length,
+    };
+
+    return stats;
+  } catch (error: any) {
+    console.error('fetchStaffStats exception:', error);
     throw error;
   }
 }
