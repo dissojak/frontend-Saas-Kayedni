@@ -1152,3 +1152,169 @@ export async function checkRatingExists(
   const data = await response.json();
   return data.hasRating === true;
 }
+
+// ==========================================
+// STAFF AVAILABILITY & SCHEDULE API
+// ==========================================
+
+/**
+ * Fetch availabilities for a staff member within a date range
+ */
+export async function fetchStaffAvailabilities(
+  staffId: string,
+  from: string,
+  to: string,
+  authToken?: string
+): Promise<any[]> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  
+  if (authToken) {
+    headers['Authorization'] = `Bearer ${authToken}`;
+  }
+
+  try {
+    const url = `${API_BASE_URL}/staff/${staffId}/availabilities?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`;
+    console.log('[fetchStaffAvailabilities] URL:', url);
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers,
+    });
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        console.warn('[fetchStaffAvailabilities] 404 - No availabilities found');
+        return [];
+      }
+      throw new Error('Failed to fetch availabilities');
+    }
+
+    const data = await response.json();
+    console.log('[fetchStaffAvailabilities] Data received:', data);
+    return data;
+  } catch (error) {
+    console.error('[fetchStaffAvailabilities] error:', error);
+    return [];
+  }
+}
+
+/**
+ * Update a staff availability slot
+ */
+export async function updateStaffAvailability(
+  staffId: string,
+  availabilityId: number,
+  updates: {
+    startTime?: string;
+    endTime?: string;
+    status?: string;
+  },
+  authToken?: string
+): Promise<any> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  
+  if (authToken) {
+    headers['Authorization'] = `Bearer ${authToken}`;
+  }
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/staff/${staffId}/availabilities/${availabilityId}`, {
+      method: 'PATCH',
+      headers,
+      body: JSON.stringify(updates),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || 'Failed to update availability');
+    }
+
+    return await response.json();
+  } catch (error: any) {
+    console.error('updateStaffAvailability exception:', error);
+    throw error;
+  }
+}
+
+/**
+ * Fetch staff work hours (default start/end time)
+ */
+export async function fetchStaffWorkHours(
+  staffId: string,
+  authToken?: string
+): Promise<any> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  
+  if (authToken) {
+    headers['Authorization'] = `Bearer ${authToken}`;
+  }
+
+  try {
+    console.log('[fetchStaffWorkHours] Fetching for staffId:', staffId);
+    console.log('[fetchStaffWorkHours] Token:', authToken ? 'YES' : 'NO');
+    
+    // Call the workTime endpoint - backend returns current values when req is null
+    const response = await fetch(`${API_BASE_URL}/staff/${staffId}/workTime`, {
+      method: 'PATCH',
+      headers,
+      body: JSON.stringify(null),
+    });
+
+    console.log('[fetchStaffWorkHours] Response status:', response.status);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('[fetchStaffWorkHours] Error response:', errorText);
+      throw new Error('Failed to fetch work hours');
+    }
+
+    const data = await response.json();
+    console.log('[fetchStaffWorkHours] Data received:', data);
+    return data;
+  } catch (error: any) {
+    console.error('fetchStaffWorkHours exception:', error);
+    throw error;
+  }
+}
+
+/**
+ * Update staff work hours (default start/end time)
+ */
+export async function updateStaffWorkHours(
+  staffId: string,
+  defaultStartTime: string,
+  defaultEndTime: string,
+  authToken?: string
+): Promise<any> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  
+  if (authToken) {
+    headers['Authorization'] = `Bearer ${authToken}`;
+  }
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/staff/${staffId}/workTime`, {
+      method: 'PATCH',
+      headers,
+      body: JSON.stringify({ defaultStartTime, defaultEndTime }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || 'Failed to update work hours');
+    }
+
+    return await response.json();
+  } catch (error: any) {
+    console.error('updateStaffWorkHours exception:', error);
+    throw error;
+  }
+}
