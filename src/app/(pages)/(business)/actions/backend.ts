@@ -2,6 +2,354 @@ import type { Business } from "../businesses/types/business";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8088/api/v1';
 
+// ========================
+// Business Owner API Types
+// ========================
+
+export interface BusinessEvaluation {
+  id: number;
+  brandingScore: number;
+  nameProfessionalismScore: number;
+  emailProfessionalismScore: number;
+  descriptionProfessionalismScore: number;
+  locationScore: number;
+  categoryScore: number;
+  overallScore: number;
+  nameDetails?: string;
+  emailDetails?: string;
+  descriptionDetails?: string;
+  brandingDetails?: string;
+  locationDetails?: string;
+  categoryDetails?: string;
+  nameSuggestions?: string;
+  emailSuggestions?: string;
+  descriptionSuggestions?: string;
+  brandingSuggestions?: string;
+  source: 'AI' | 'HEURISTIC';
+  createdAt: string;
+}
+
+export interface BusinessResponse {
+  id: number;
+  name: string;
+  location?: string;
+  phone?: string;
+  email?: string;
+  status: 'ACTIVE' | 'PENDING' | 'SUSPENDED' | 'DELETED';
+  categoryId?: number;
+  categoryName?: string;
+  ownerId?: number;
+  description?: string;
+  evaluation?: BusinessEvaluation;
+  firstImageUrl?: string;
+  weekendDay?: string;
+}
+
+export interface BusinessUpdateRequest {
+  name?: string;
+  location?: string;
+  phone?: string;
+  email?: string;
+  description?: string;
+  categoryId?: number;
+  weekendDay?: string;
+}
+
+// ========================
+// Business Owner API Functions
+// ========================
+
+/**
+ * Get the current owner's business with full evaluation details
+ */
+export async function fetchOwnerBusiness(authToken: string): Promise<BusinessResponse | null> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/owner/businesses`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`,
+      },
+    });
+
+    if (!response.ok) {
+      console.error('fetchOwnerBusiness failed:', response.status);
+      return null;
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('fetchOwnerBusiness error:', error);
+    return null;
+  }
+}
+
+/**
+ * Update business information (triggers re-evaluation if relevant fields change)
+ */
+export async function updateOwnerBusiness(
+  businessId: number,
+  data: BusinessUpdateRequest,
+  authToken: string
+): Promise<BusinessResponse | null> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/owner/businesses/${businessId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`,
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('updateOwnerBusiness failed:', response.status, errorText);
+      throw new Error(errorText || 'Failed to update business');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('updateOwnerBusiness error:', error);
+    throw error;
+  }
+}
+
+/**
+ * Re-evaluate business with AI
+ * Triggers a fresh AI evaluation and returns updated business with new evaluation
+ */
+export async function reEvaluateBusiness(
+  businessId: number,
+  authToken: string
+): Promise<BusinessResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/owner/businesses/${businessId}/reevaluate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`,
+      },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('reEvaluateBusiness failed:', response.status, errorText);
+      throw new Error(errorText || 'Failed to re-evaluate business');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('reEvaluateBusiness error:', error);
+    throw error;
+  }
+}
+
+/**
+ * Change business status (submit for review, etc.)
+ */
+export async function changeBusinessStatus(
+  businessId: number,
+  status: 'PENDING' | 'ACTIVE',
+  authToken: string
+): Promise<{ message: string; status: string; overallScore?: number; advice?: string }> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/owner/businesses/${businessId}/status`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`,
+      },
+      body: JSON.stringify({ status }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText || 'Failed to change status');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('changeBusinessStatus error:', error);
+    throw error;
+  }
+}
+
+/**
+ * Upload a business image file to Cloudinary
+ */
+export async function uploadBusinessImageFile(
+  businessId: number,
+  file: File,
+  authToken: string
+): Promise<{ id: number; imageUrl: string; displayOrder: number }> {
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetch(`${API_BASE_URL}/owner/businesses/${businessId}/images/upload`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${authToken}`,
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText || 'Failed to upload image');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('uploadBusinessImageFile error:', error);
+    throw error;
+  }
+}
+
+/**
+ * Upload a business image by URL (legacy)
+ */
+export async function uploadBusinessImage(
+  businessId: number,
+  imageUrl: string,
+  authToken: string
+): Promise<{ id: number; imageUrl: string; displayOrder: number }> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/owner/businesses/${businessId}/images`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`,
+      },
+      body: JSON.stringify({ imageUrl }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText || 'Failed to upload image');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('uploadBusinessImage error:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get all images for a business (owner endpoint)
+ */
+export async function fetchOwnerBusinessImages(
+  businessId: number,
+  authToken: string
+): Promise<{ id: number; imageUrl: string; displayOrder: number }[]> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/owner/businesses/${businessId}/images`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`,
+      },
+    });
+
+    if (!response.ok) {
+      return [];
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('fetchOwnerBusinessImages error:', error);
+    return [];
+  }
+}
+
+/**
+ * Delete a business image
+ */
+export async function deleteBusinessImage(
+  businessId: number,
+  imageId: number,
+  authToken: string
+): Promise<void> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/owner/businesses/${businessId}/images/${imageId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${authToken}`,
+      },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText || 'Failed to delete image');
+    }
+  } catch (error) {
+    console.error('deleteBusinessImage error:', error);
+    throw error;
+  }
+}
+
+/**
+ * Reorder business images
+ */
+export async function reorderBusinessImages(
+  businessId: number,
+  imageIds: number[],
+  authToken: string
+): Promise<void> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/owner/businesses/${businessId}/images/reorder`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`,
+      },
+      body: JSON.stringify({ imageIds }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText || 'Failed to reorder images');
+    }
+  } catch (error) {
+    console.error('reorderBusinessImages error:', error);
+    throw error;
+  }
+}
+
+/**
+ * Check AI health status
+ */
+export async function checkAIHealth(): Promise<{ ok: boolean; message: string; model?: string }> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/health/ai`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    const data = await response.json();
+    
+    if (response.ok) {
+      return {
+        ok: true,
+        message: data.message || 'AI is available and working',
+        model: data.model,
+      };
+    } else {
+      return {
+        ok: false,
+        message: data.message || 'AI service is unavailable',
+      };
+    }
+  } catch (error) {
+    console.error('checkAIHealth error:', error);
+    return { ok: false, message: 'Failed to check AI health' };
+  }
+}
+
 /**
  * Fetch current staff member's info including their business
  */
@@ -256,13 +604,15 @@ export async function fetchServicesByStaffId(staffId: string): Promise<any[]> {
     const data = await response.json();
     // Map backend ServiceResponse to expected service format
     return data.map((service: any) => ({
-      id: String(service.id),
+      id: service.id,
       name: service.name,
       description: service.description || '',
       price: Number(service.price ?? 0),
       duration: service.durationMinutes ?? service.duration ?? 30,
+      estimatedDuration: service.durationMinutes ?? service.duration ?? 30,
       imageUrl: service.imageUrl || null,
       staffIds: service.staffIds || [],
+      active: service.active ?? true,
     }));
   } catch (error) {
     console.error('fetchServicesByStaffId error:', error);
@@ -897,12 +1247,13 @@ export async function updateBookingStatus(
 }
 
 /**
- * Add staff to business by email
+ * Add staff to business by email with optional work hours
  */
 export async function addStaffToBusinessByEmail(
   businessId: string,
   email: string,
-  authToken?: string
+  authToken?: string,
+  workHours?: { startTime: string; endTime: string }
 ): Promise<any> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -912,11 +1263,17 @@ export async function addStaffToBusinessByEmail(
     headers['Authorization'] = `Bearer ${authToken}`;
   }
 
+  const body: Record<string, string> = { email };
+  if (workHours?.startTime && workHours?.endTime) {
+    body.startTime = workHours.startTime;
+    body.endTime = workHours.endTime;
+  }
+
   try {
     const response = await fetch(`${API_BASE_URL}/businesses/${businessId}/staff`, {
       method: 'POST',
       headers,
-      body: JSON.stringify({ email }),
+      body: JSON.stringify(body),
     });
 
     if (!response.ok) {
@@ -1406,7 +1763,16 @@ export async function staffResignFromBusiness(
       throw new Error(errorData.message || errorData.error || 'Failed to resign from business');
     }
 
-    return await response.json();
+    // Handle empty response (204 No Content) or responses with JSON
+    const text = await response.text();
+    if (text) {
+      try {
+        return JSON.parse(text);
+      } catch {
+        return { message: 'Successfully resigned from business' };
+      }
+    }
+    return { message: 'Successfully resigned from business' };
   } catch (error: any) {
     console.error('staffResignFromBusiness exception:', error);
     throw error;
@@ -1458,6 +1824,197 @@ export async function fetchStaffStats(
     return stats;
   } catch (error: any) {
     console.error('fetchStaffStats exception:', error);
+    throw error;
+  }
+}
+
+// ===========================
+// Business Client API
+// ===========================
+
+export interface BusinessClient {
+  id: number;
+  name: string;
+  phone: string;
+  email?: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface BusinessClientCreateRequest {
+  name: string;
+  phone: string;
+  email?: string;
+  notes?: string;
+}
+
+/**
+ * Get all business clients for a business
+ */
+export async function fetchBusinessClients(
+  businessId: number,
+  authToken: string
+): Promise<BusinessClient[]> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${authToken}`,
+  };
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/business/${businessId}/clients`, {
+      method: 'GET',
+      headers,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch business clients: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error: any) {
+    console.error('fetchBusinessClients exception:', error);
+    throw error;
+  }
+}
+
+/**
+ * Create a new business client
+ */
+export async function createBusinessClient(
+  businessId: number,
+  clientData: BusinessClientCreateRequest,
+  authToken: string
+): Promise<BusinessClient> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${authToken}`,
+  };
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/business/${businessId}/clients`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(clientData),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `Failed to create business client: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error: any) {
+    console.error('createBusinessClient exception:', error);
+    throw error;
+  }
+}
+
+/**
+ * Delete a business client (only if no active bookings exist)
+ */
+export async function deleteBusinessClient(
+  businessId: number,
+  clientId: number,
+  authToken: string
+): Promise<void> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${authToken}`,
+  };
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/business/${businessId}/clients/${clientId}`, {
+      method: 'DELETE',
+      headers,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `Failed to delete business client: ${response.status}`);
+    }
+  } catch (error: any) {
+    console.error('deleteBusinessClient exception:', error);
+    throw error;
+  }
+}
+
+/**
+ * Check if a business client has bookings (for UI purposes)
+ */
+export async function checkClientBookings(
+  businessId: number,
+  clientId: number,
+  authToken: string
+): Promise<{ hasActiveBookings: boolean; hasCompletedBookings: boolean; count: number }> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${authToken}`,
+  };
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/business/${businessId}/clients/${clientId}/bookings/summary`, {
+      method: 'GET',
+      headers,
+    });
+
+    if (!response.ok) {
+      // If endpoint doesn't exist, return safe defaults
+      if (response.status === 404) {
+        return { hasActiveBookings: false, hasCompletedBookings: false, count: 0 };
+      }
+      throw new Error(`Failed to check client bookings: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error: any) {
+    console.error('checkClientBookings exception:', error);
+    // Return safe defaults on error
+    return { hasActiveBookings: false, hasCompletedBookings: false, count: 0 };
+  }
+}
+
+/**
+ * Create a booking for a business client (walk-in)
+ */
+export interface WalkInBookingRequest {
+  serviceId: number;
+  businessClientId: number;
+  staffId: number;
+  date: string; // YYYY-MM-DD
+  startTime: string; // HH:mm
+  endTime: string; // HH:mm
+  notes?: string;
+  price: number;
+}
+
+export async function createWalkInBooking(
+  bookingData: WalkInBookingRequest,
+  authToken: string
+): Promise<any> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${authToken}`,
+  };
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/bookings`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        ...bookingData,
+        status: 'CONFIRMED', // Walk-in bookings are auto-confirmed
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `Failed to create booking: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error: any) {
+    console.error('createWalkInBooking exception:', error);
     throw error;
   }
 }

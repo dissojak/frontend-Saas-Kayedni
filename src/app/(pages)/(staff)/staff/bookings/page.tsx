@@ -8,34 +8,35 @@ import { Badge } from "@components/ui/badge";
 import { Input } from "@components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@components/ui/tabs";
-import { Calendar, Clock, Search, CheckCircle, UserCheck, Ban, XCircle } from "lucide-react";
+import { Calendar, Search, CheckCircle, UserCheck, XCircle, UserPlus, Clock } from "lucide-react";
 import { fetchBookingsForStaff, updateBookingStatus } from "../../../(business)/actions/backend";
 import { useAuth } from "@/(pages)/(auth)/context/AuthContext";
 
-// Import types
-import { Booking, ConfirmDialogState } from './types/index';
+// Import types from shared location
+import { Booking, ConfirmDialogState } from '../../../shared/bookings/types';
 
-// Import utils
-import { categorizeBookings, getStatusColor, formatTime, isCurrentlyActive, isUpNext, isToday } from './utils/index';
+// Import utils from shared location
+import { categorizeBookings, getStatusColor, formatTime, isCurrentlyActive, isUpNext } from '../../../shared/bookings/utils';
 
-// Import hooks
-import { useBookingFilters, useCurrentTime } from './hooks/index';
+// Import hooks from shared location
+import { useBookingFilters, useCurrentTime } from '../../../shared/bookings/hooks';
 
-// Import components
+// Import components from shared location
 import {
   BookingCard,
   ConfirmationDialog,
   ActiveBookingBanner,
   UpNextBookingBanner,
-  QuickStats,
-  EmptyState
-} from './components';
+  QuickStats
+} from '../../../shared/bookings/components';
+import WalkInBooking from './WalkInBooking';
 
 export default function StaffBookingsPage() {
   const { user, token, logout } = useAuth();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [businessId, setBusinessId] = useState<number | null>(null);
   
   // Use custom hooks
   const currentTime = useCurrentTime(30000);
@@ -78,6 +79,10 @@ export default function StaffBookingsPage() {
 
       if (Array.isArray(data)) {
         setBookings(data);
+        // Extract business ID from first booking if available
+        if (data.length > 0 && data[0].businessId) {
+          setBusinessId(data[0].businessId);
+        }
       } else {
         console.error('[Staff Bookings Page] Expected array but got:', typeof data, data);
         setBookings([]);
@@ -101,11 +106,6 @@ export default function StaffBookingsPage() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const filterAndSortBookings = () => {
-    // This is now handled by useBookingFilters hook
-    return filteredBookings;
   };
 
   useEffect(() => {
@@ -144,6 +144,10 @@ export default function StaffBookingsPage() {
 
   // Categorize bookings using utility function
   const { upcomingBookings, todayBookings, pastBookings, cancelledBookings } = categorizeBookings(filteredBookings, currentTime);
+  
+  // Separate pending from confirmed upcomingBookings
+  const pendingBookings = upcomingBookings.filter(b => b.status === 'PENDING');
+  const confirmedUpcomingBookings = upcomingBookings.filter(b => b.status === 'CONFIRMED');
 
   // Get the currently active booking and next up booking
   const activeBooking = todayBookings.find(b => isCurrentlyActive(b, currentTime));
@@ -210,6 +214,29 @@ export default function StaffBookingsPage() {
               completedCount={pastBookings.length}
             />
           </div>
+
+          {/* Walk-in Booking - NEW Feature */}
+          {user?.id && token && businessId && (
+            <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-background border-2 border-primary/20 rounded-2xl p-6 shadow-lg">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
+                    <UserPlus className="w-5 h-5 text-primary" />
+                    Walk-in Client Booking
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Quickly book a service for walk-in clients. Select an existing client or create a new one.
+                  </p>
+                </div>
+                <WalkInBooking
+                  staffId={Number(user.id)}
+                  businessId={businessId}
+                  token={token}
+                  onBookingCreated={loadBookings}
+                />
+              </div>
+            </div>
+          )}
 
           {/* CURRENTLY ACTIVE BOOKING - Most Important */}
           {activeBooking && (
@@ -407,7 +434,7 @@ export default function StaffBookingsPage() {
 
           {/* Tabs */}
           <Tabs defaultValue="upcoming" className="space-y-4">
-            <TabsList className="bg-card border border-border rounded-2xl p-1.5 h-auto w-full grid grid-cols-3 gap-1">
+            <TabsList className="bg-card border border-border rounded-2xl p-1.5 h-auto w-full grid grid-cols-4 gap-1">
               <TabsTrigger 
                 value="upcoming" 
                 className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground py-3 text-sm font-semibold text-muted-foreground shadow-none transition-all"
@@ -415,7 +442,17 @@ export default function StaffBookingsPage() {
                 <span className="hidden sm:inline">Upcoming</span>
                 <span className="sm:hidden">Active</span>
                 <span className="ml-2 bg-primary/20 data-[state=active]:bg-white/20 px-2 py-0.5 rounded-full text-xs">
-                  {upcomingBookings.length}
+                  {confirmedUpcomingBookings.length}
+                </span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="pending" 
+                className="rounded-xl data-[state=active]:bg-amber-600 data-[state=active]:text-white py-3 text-sm font-semibold text-muted-foreground shadow-none transition-all"
+              >
+                <span className="hidden sm:inline">Pending</span>
+                <span className="sm:hidden">Wait</span>
+                <span className="ml-2 bg-amber-500/20 data-[state=active]:bg-white/20 px-2 py-0.5 rounded-full text-xs">
+                  {pendingBookings.length}
                 </span>
               </TabsTrigger>
               <TabsTrigger 
@@ -442,7 +479,7 @@ export default function StaffBookingsPage() {
 
             {/* Upcoming */}
             <TabsContent value="upcoming" className="mt-6 space-y-4">
-              {upcomingBookings.length === 0 ? (
+              {confirmedUpcomingBookings.length === 0 ? (
                 <div className="text-center py-16 bg-card rounded-2xl border border-border">
                   <div className="w-16 h-16 rounded-2xl bg-muted/50 flex items-center justify-center mx-auto mb-4">
                     <Calendar className="w-8 h-8 text-muted-foreground/50" />
@@ -452,7 +489,34 @@ export default function StaffBookingsPage() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {upcomingBookings.map((booking) => (
+                  {confirmedUpcomingBookings.map((booking) => (
+                    <BookingCard 
+                      key={booking.id} 
+                      booking={booking} 
+                      variant="default"
+                      currentTime={currentTime}
+                      onStatusUpdate={handleStatusUpdate}
+                      onCancel={handleCancelBooking}
+                      onMarkNoShow={handleMarkNotShown}
+                    />
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+
+            {/* Pending */}
+            <TabsContent value="pending" className="mt-6 space-y-4">
+              {pendingBookings.length === 0 ? (
+                <div className="text-center py-16 bg-card rounded-2xl border border-border">
+                  <div className="w-16 h-16 rounded-2xl bg-amber-500/10 flex items-center justify-center mx-auto mb-4">
+                    <Clock className="w-8 h-8 text-amber-500/50" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-foreground mb-2">No pending bookings</h3>
+                  <p className="text-muted-foreground">Pending requests will appear here waiting for confirmation</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {pendingBookings.map((booking) => (
                     <BookingCard 
                       key={booking.id} 
                       booking={booking} 

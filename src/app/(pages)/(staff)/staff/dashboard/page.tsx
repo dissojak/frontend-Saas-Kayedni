@@ -12,67 +12,41 @@ import {
 } from "@components/ui/alert-dialog";
 import { 
   Building2, 
-  Calendar, 
-  CheckCircle, 
-  Clock, 
-  XCircle, 
   AlertTriangle, 
-  TrendingUp, 
-  Star,
   LogOut,
-  CalendarDays,
-  BarChart3,
-  ArrowRight,
-  Mail,
-  Phone,
-  MapPin,
-  Sparkles,
-  Users,
-  Briefcase,
   ChevronLeft,
   ChevronRight,
   Image as ImageIcon,
-  Scissors,
-  Plus,
-  Settings,
-  Eye
+  Sparkles
 } from "lucide-react";
 import { useAuth } from "@/(pages)/(auth)/context/AuthContext";
 import { useRouter } from "next/navigation";
-import { fetchStaffStats, staffResignFromBusiness, fetchBusinessById, fetchBusinessImages, fetchServicesByBusinessId, fetchStaffByBusinessId, fetchCurrentStaffInfo } from "../../../(business)/actions/backend";
-
-interface StaffStats {
-  totalBookings: number;
-  completedBookings: number;
-  cancelledBookings: number;
-  noShowBookings: number;
-  pendingBookings: number;
-  confirmedBookings: number;
-}
-
-interface BusinessImage {
-  id: number;
-  imageUrl: string;
-  displayOrder: number;
-}
-
-interface BusinessInfo {
-  id: string;
-  name: string;
-  description?: string;
-  logo?: string;
-  category?: string;
-  location?: string;
-  phone?: string;
-  email?: string;
-  rating?: number | string | null;
-  reviewCount?: number;
-}
+import { useToast } from "@global/hooks/use-toast";
+import { fetchStaffStats, staffResignFromBusiness, fetchBusinessById, fetchBusinessImages, fetchServicesByBusinessId, fetchStaffByBusinessId, fetchCurrentStaffInfo, fetchBookingsForStaff } from "../../../(business)/actions/backend";
+import { Booking, BusinessImage, BusinessInfo } from "../../../shared/dashboard/types";
+import { useDashboardStats } from "../../../shared/dashboard/hooks";
+import { 
+  StatsCards, 
+  MonthlyBarChart, 
+  StatusDonutChart, 
+  TopServicesChart, 
+  PerformanceInsight 
+} from "../../../shared/dashboard/components";
+import { StaffStats } from "./types";
+import { 
+  StaffBusinessCard,
+  StaffQuickStats,
+  StaffQuickActions,
+  StaffServicesSection,
+  LeaveBusinessSection
+} from "@components/dashboard/staff";
 
 export default function StaffWorkspacePage() {
   const { user, token, logout } = useAuth();
   const router = useRouter();
+  const { toast } = useToast();
   const [stats, setStats] = useState<StaffStats | null>(null);
+  const [bookings, setBookings] = useState<Booking[]>([]);
   const [business, setBusiness] = useState<BusinessInfo | null>(null);
   const [businessImages, setBusinessImages] = useState<BusinessImage[]>([]);
   const [servicesCount, setServicesCount] = useState<number>(0);
@@ -81,6 +55,10 @@ export default function StaffWorkspacePage() {
   const [loading, setLoading] = useState(true);
   const [resignDialogOpen, setResignDialogOpen] = useState(false);
   const [resigning, setResigning] = useState(false);
+  const [showCharts, setShowCharts] = useState(false);
+
+  // Use shared dashboard hook for analytics
+  const { stats: dashboardStats, monthlyData, serviceBreakdown, maxMonthlyTotal, maxServiceCount } = useDashboardStats(bookings);
 
   useEffect(() => {
     if (user?.id && token) {
@@ -120,17 +98,19 @@ export default function StaffWorkspacePage() {
       // Load business info if we have a businessId
       if (businessId) {
         console.log('Fetching business data for ID:', businessId);
-        const [businessData, images, services, staff] = await Promise.all([
+        const [businessData, images, services, staff, bookingsData] = await Promise.all([
           fetchBusinessById(businessId),
           fetchBusinessImages(businessId),
           fetchServicesByBusinessId(businessId, token),
-          fetchStaffByBusinessId(businessId, token)
+          fetchStaffByBusinessId(businessId, token),
+          fetchBookingsForStaff(user.id, token)
         ]);
         
         console.log('Business data received:', businessData);
         console.log('Images received:', images);
         console.log('Services received:', services);
         console.log('Staff received:', staff);
+        console.log('Bookings received:', bookingsData);
         
         if (businessData) {
           setBusiness(businessData);
@@ -144,6 +124,9 @@ export default function StaffWorkspacePage() {
         if (staff) {
           setStaffCount(staff.length);
         }
+        if (bookingsData) {
+          setBookings(bookingsData);
+        }
       } else {
         console.log('No businessId found - staff may not be linked to a business');
       }
@@ -155,20 +138,62 @@ export default function StaffWorkspacePage() {
   };
 
   const handleResign = async () => {
-    if (!user?.id || !user?.businessId || !token) return;
+    if (!user?.id) {
+      toast({
+        variant: "error",
+        title: "Error",
+        description: "User information not found. Please try logging in again.",
+      });
+      return;
+    }
+
+    // Get token and businessId
+    const authToken = token || localStorage.getItem('token') || localStorage.getItem('accessToken');
+    let businessId = user.businessId || business?.id;
+
+    if (!authToken) {
+      toast({
+        variant: "error",
+        title: "Authentication required",
+        description: "Please log in again to continue.",
+      });
+      return;
+    }
+
+    if (!businessId) {
+      toast({
+        variant: "error",
+        title: "No business found",
+        description: "You are not currently linked to any business.",
+      });
+      return;
+    }
 
     try {
       setResigning(true);
-      await staffResignFromBusiness(user.businessId, user.id, token);
+      const response = await staffResignFromBusiness(String(businessId), String(user.id), authToken);
       
-      // Log out and redirect to home after resignation
-      logout();
-      router.push('/');
-    } catch (error) {
+      // Show success toast
+      toast({
+        variant: "success",
+        title: "Successfully resigned",
+        description: response.message || "You have left the business. You will now be logged out.",
+      });
+      
+      // Wait a moment for the toast to show, then log out and redirect
+      setTimeout(() => {
+        logout();
+        router.push('/');
+      }, 1500);
+    } catch (error: any) {
       console.error('Error resigning from business:', error);
-      alert('Failed to resign. Please try again.');
-    } finally {
+      toast({
+        variant: "error",
+        title: "Failed to resign",
+        description: error.message || "Unable to leave the business. Please try again.",
+      });
       setResigning(false);
+    } finally {
       setResignDialogOpen(false);
     }
   };
@@ -231,143 +256,13 @@ export default function StaffWorkspacePage() {
             </div>
           )}
 
-          {/* Business Card - Premium Hero Style with Glass Morphism */}
+          {/* Business Card */}
           {business && (
-            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950 text-white shadow-2xl">
-              {/* Decorative gradient blurs */}
-              <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-bl from-teal-500/30 via-cyan-500/20 to-transparent rounded-full blur-3xl"></div>
-              <div className="absolute bottom-0 left-0 w-64 h-64 bg-gradient-to-tr from-violet-500/20 via-purple-500/10 to-transparent rounded-full blur-3xl"></div>
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-r from-teal-500/10 to-violet-500/10 rounded-full blur-3xl"></div>
-              
-              <div className="relative p-6 sm:p-8">
-                <div className="flex flex-col lg:flex-row gap-6">
-                  {/* Business Logo/Avatar */}
-                  <div className="flex flex-col items-center lg:items-start gap-4">
-                    <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl bg-gradient-to-br from-teal-400 to-cyan-500 p-0.5 shadow-lg shadow-teal-500/30">
-                      <div className="w-full h-full rounded-2xl bg-slate-900 flex items-center justify-center overflow-hidden">
-                        {business.logo && !business.logo.includes('placeholder') ? (
-                          <img src={business.logo} alt={business.name} className="w-full h-full rounded-xl object-cover" />
-                        ) : (
-                          <Building2 className="w-12 h-12 sm:w-14 sm:h-14 text-teal-400" />
-                        )}
-                      </div>
-                    </div>
-                    
-                    {/* Rating Badge */}
-                    {business.rating !== null && business.rating !== undefined && (
-                      <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30">
-                        <Star className="w-5 h-5 text-amber-400 fill-amber-400" />
-                        <span className="font-bold text-lg text-white">
-                          {typeof business.rating === 'number' ? business.rating.toFixed(1) : business.rating}
-                        </span>
-                        {business.reviewCount !== undefined && business.reviewCount > 0 && (
-                          <span className="text-slate-400 text-sm">({business.reviewCount})</span>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                  
-                  {/* Business Info */}
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-teal-400 text-sm font-medium uppercase tracking-wider">You work at</span>
-                    </div>
-                    <h2 className="text-3xl sm:text-4xl font-bold mb-3 bg-gradient-to-r from-white via-slate-100 to-slate-200 bg-clip-text text-transparent">
-                      {business.name}
-                    </h2>
-                    
-                    {business.category && (
-                      <Badge className="bg-gradient-to-r from-violet-500/20 to-purple-500/20 text-violet-300 border border-violet-500/30 mb-4 px-3 py-1">
-                        {business.category}
-                      </Badge>
-                    )}
-                    
-                    {/* Description */}
-                    {business.description && (
-                      <p className="text-slate-400 text-sm mb-4 max-w-xl line-clamp-2">
-                        {business.description}
-                      </p>
-                    )}
-                    
-                    {/* Contact Info Grid */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-4">
-                      {business.location && (
-                        <div className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm">
-                          <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-rose-500 to-pink-500 flex items-center justify-center">
-                            <MapPin className="w-4 h-4 text-white" />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <p className="text-xs text-slate-500 uppercase tracking-wider">Location</p>
-                            <p className="text-sm text-white truncate">{business.location}</p>
-                          </div>
-                        </div>
-                      )}
-                      {business.phone && (
-                        <a 
-                          href={`tel:${business.phone}`} 
-                          className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm hover:bg-white/10 transition-colors group"
-                        >
-                          <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center">
-                            <Phone className="w-4 h-4 text-white" />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <p className="text-xs text-slate-500 uppercase tracking-wider">Phone</p>
-                            <p className="text-sm text-white group-hover:text-teal-400 transition-colors">{business.phone}</p>
-                          </div>
-                        </a>
-                      )}
-                      {business.email && (
-                        <a 
-                          href={`mailto:${business.email}`} 
-                          className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm hover:bg-white/10 transition-colors group sm:col-span-2 lg:col-span-1"
-                        >
-                          <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center">
-                            <Mail className="w-4 h-4 text-white" />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <p className="text-xs text-slate-500 uppercase tracking-wider">Email</p>
-                            <p className="text-sm text-white group-hover:text-violet-400 transition-colors truncate">{business.email}</p>
-                          </div>
-                        </a>
-                      )}
-                    </div>
-
-                    {/* Business Stats Row */}
-                    <div className="flex flex-wrap gap-4 mt-5 pt-5 border-t border-white/10">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-lg bg-cyan-500/20 flex items-center justify-center">
-                          <Briefcase className="w-4 h-4 text-cyan-400" />
-                        </div>
-                        <div>
-                          <p className="text-lg font-bold text-white">{servicesCount}</p>
-                          <p className="text-xs text-slate-400">Services</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-lg bg-violet-500/20 flex items-center justify-center">
-                          <Users className="w-4 h-4 text-violet-400" />
-                        </div>
-                        <div>
-                          <p className="text-lg font-bold text-white">{staffCount}</p>
-                          <p className="text-xs text-slate-400">Staff Members</p>
-                        </div>
-                      </div>
-                      {business.reviewCount !== undefined && business.reviewCount > 0 && (
-                        <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center">
-                            <Star className="w-4 h-4 text-amber-400" />
-                          </div>
-                          <div>
-                            <p className="text-lg font-bold text-white">{business.reviewCount}</p>
-                            <p className="text-xs text-slate-400">Reviews</p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <StaffBusinessCard 
+              business={business}
+              servicesCount={servicesCount}
+              staffCount={staffCount}
+            />
           )}
 
           {/* Business Image Gallery */}
@@ -435,222 +330,61 @@ export default function StaffWorkspacePage() {
             </div>
           )}
 
-          {/* Quick Stats Grid - Glass Morphism Style */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Total Bookings */}
-            <div className="relative overflow-hidden bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm border border-slate-200/60 dark:border-slate-700/60 rounded-2xl p-5 shadow-lg shadow-slate-200/40 dark:shadow-slate-900/40">
-              <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-cyan-400/20 to-transparent rounded-bl-full"></div>
-              <div className="flex items-center justify-between mb-3 relative z-10">
-                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-cyan-500 to-sky-500 flex items-center justify-center shadow-lg shadow-cyan-500/30">
-                  <Calendar className="w-5 h-5 text-white" />
-                </div>
-                <TrendingUp className="w-4 h-4 text-teal-500" />
+          {/* Quick Stats */}
+          {stats && <StaffQuickStats stats={stats} completionRate={completionRate} />}
+
+          {/* Quick Actions */}
+          <StaffQuickActions 
+            completionRate={completionRate}
+            totalBookings={stats?.totalBookings || 0}
+            showingCharts={showCharts}
+            onToggleCharts={() => setShowCharts(!showCharts)}
+          />
+
+          {/* Analytics Section - Using Shared Dashboard Components */}
+          {showCharts && bookings.length > 0 && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold bg-gradient-to-r from-slate-900 via-slate-700 to-slate-800 dark:from-white dark:via-slate-200 dark:to-slate-300 bg-clip-text text-transparent">
+                  Analytics Dashboard
+                </h2>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowCharts(false)}
+                  className="rounded-xl"
+                >
+                  Hide Charts
+                </Button>
               </div>
-              <p className="text-3xl font-bold text-slate-800 dark:text-white">{stats?.totalBookings || 0}</p>
-              <p className="text-sm text-slate-500 dark:text-slate-400">Total Bookings</p>
+
+              <StatsCards stats={dashboardStats} />
+              
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <MonthlyBarChart 
+                  monthlyData={monthlyData} 
+                  maxMonthlyTotal={maxMonthlyTotal}
+                />
+                <StatusDonutChart stats={dashboardStats} />
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <TopServicesChart 
+                  serviceBreakdown={serviceBreakdown} 
+                  maxServiceCount={maxServiceCount}
+                />
+                <PerformanceInsight completionRate={completionRate} />
+              </div>
             </div>
+          )}
 
-            {/* Completed */}
-            <div className="relative overflow-hidden bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm border border-slate-200/60 dark:border-slate-700/60 rounded-2xl p-5 shadow-lg shadow-slate-200/40 dark:shadow-slate-900/40">
-              <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-teal-400/20 to-transparent rounded-bl-full"></div>
-              <div className="flex items-center justify-between mb-3 relative z-10">
-                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-teal-500/30">
-                  <CheckCircle className="w-5 h-5 text-white" />
-                </div>
-                <span className="text-xs font-bold text-teal-600 dark:text-teal-400 bg-teal-100 dark:bg-teal-900/40 px-2.5 py-1 rounded-full">
-                  {completionRate}%
-                </span>
-              </div>
-              <p className="text-3xl font-bold text-slate-800 dark:text-white">{stats?.completedBookings || 0}</p>
-              <p className="text-sm text-slate-500 dark:text-slate-400">Completed</p>
-            </div>
+          {/* Services Management */}
+          <StaffServicesSection servicesCount={servicesCount} />
 
-            {/* Upcoming (Pending + Confirmed) */}
-            <div className="relative overflow-hidden bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm border border-slate-200/60 dark:border-slate-700/60 rounded-2xl p-5 shadow-lg shadow-slate-200/40 dark:shadow-slate-900/40">
-              <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-violet-400/20 to-transparent rounded-bl-full"></div>
-              <div className="flex items-center justify-between mb-3 relative z-10">
-                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center shadow-lg shadow-violet-500/30">
-                  <Clock className="w-5 h-5 text-white" />
-                </div>
-              </div>
-              <p className="text-3xl font-bold text-slate-800 dark:text-white">
-                {(stats?.pendingBookings || 0) + (stats?.confirmedBookings || 0)}
-              </p>
-              <p className="text-sm text-slate-500 dark:text-slate-400">Upcoming</p>
-            </div>
-
-            {/* No Shows / Cancelled */}
-            <div className="relative overflow-hidden bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm border border-slate-200/60 dark:border-slate-700/60 rounded-2xl p-5 shadow-lg shadow-slate-200/40 dark:shadow-slate-900/40">
-              <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-rose-400/20 to-transparent rounded-bl-full"></div>
-              <div className="flex items-center justify-between mb-3 relative z-10">
-                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-rose-500 to-pink-500 flex items-center justify-center shadow-lg shadow-rose-500/30">
-                  <XCircle className="w-5 h-5 text-white" />
-                </div>
-              </div>
-              <p className="text-3xl font-bold text-slate-800 dark:text-white">
-                {(stats?.noShowBookings || 0) + (stats?.cancelledBookings || 0)}
-              </p>
-              <p className="text-sm text-slate-500 dark:text-slate-400">No Show / Cancelled</p>
-            </div>
-          </div>
-
-          {/* Quick Actions - Enhanced */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {/* View Bookings */}
-            <button
-              onClick={() => router.push('/staff/bookings')}
-              className="group relative overflow-hidden bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border border-slate-200/60 dark:border-slate-700/60 rounded-2xl p-6 text-left hover:shadow-xl transition-all hover:border-cyan-300/50 dark:hover:border-cyan-700/50"
-            >
-              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-cyan-500/10 to-transparent rounded-bl-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
-              <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-cyan-500 to-sky-500 flex items-center justify-center mb-4 shadow-lg shadow-cyan-500/30 group-hover:scale-110 transition-transform">
-                <CalendarDays className="w-7 h-7 text-white" />
-              </div>
-              <h3 className="font-bold text-slate-800 dark:text-white text-lg mb-1">My Bookings</h3>
-              <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">View and manage all your appointments</p>
-              <div className="flex items-center text-cyan-600 dark:text-cyan-400 text-sm font-semibold">
-                <span>Go to bookings</span>
-                <ArrowRight className="w-4 h-4 ml-1.5 group-hover:translate-x-1.5 transition-transform" />
-              </div>
-            </button>
-
-            {/* View Schedule */}
-            <button
-              onClick={() => router.push('/staff/schedule')}
-              className="group relative overflow-hidden bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border border-slate-200/60 dark:border-slate-700/60 rounded-2xl p-6 text-left hover:shadow-xl transition-all hover:border-teal-300/50 dark:hover:border-teal-700/50"
-            >
-              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-teal-500/10 to-transparent rounded-bl-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
-              <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center mb-4 shadow-lg shadow-teal-500/30 group-hover:scale-110 transition-transform">
-                <Clock className="w-7 h-7 text-white" />
-              </div>
-              <h3 className="font-bold text-slate-800 dark:text-white text-lg mb-1">My Schedule</h3>
-              <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">Manage your availability and working hours</p>
-              <div className="flex items-center text-teal-600 dark:text-teal-400 text-sm font-semibold">
-                <span>View schedule</span>
-                <ArrowRight className="w-4 h-4 ml-1.5 group-hover:translate-x-1.5 transition-transform" />
-              </div>
-            </button>
-
-            {/* Stats Overview */}
-            <button
-              onClick={() => router.push('/staff/stats')}
-              className="group relative overflow-hidden bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border border-slate-200/60 dark:border-slate-700/60 rounded-2xl p-6 text-left hover:shadow-xl transition-all hover:border-violet-300/50 dark:hover:border-violet-700/50 sm:col-span-2 lg:col-span-1"
-            >
-              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-violet-500/10 to-transparent rounded-bl-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
-              <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center mb-4 shadow-lg shadow-violet-500/30 group-hover:scale-110 transition-transform">
-                <BarChart3 className="w-7 h-7 text-white" />
-              </div>
-              <h3 className="font-bold text-slate-800 dark:text-white text-lg mb-1">Performance</h3>
-              <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
-                {completionRate}% completion rate • {stats?.totalBookings || 0} total bookings
-              </p>
-              <div className="flex items-center text-violet-600 dark:text-violet-400 text-sm font-semibold">
-                <span>View charts</span>
-                <ArrowRight className="w-4 h-4 ml-1.5 group-hover:translate-x-1.5 transition-transform" />
-              </div>
-            </button>
-          </div>
-
-          {/* Services Management Section */}
-          <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border border-slate-200/60 dark:border-slate-700/60 rounded-2xl p-6 shadow-lg">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center shadow-lg shadow-emerald-500/30">
-                  <Scissors className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-slate-800 dark:text-white text-lg">Services Management</h3>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">Manage services you provide</p>
-                </div>
-              </div>
-              <Button
-                onClick={() => router.push('/staff/services/create')}
-                className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white shadow-lg shadow-emerald-500/30 rounded-xl"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Create Service
-              </Button>
-            </div>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {/* View All Business Services */}
-              <button
-                onClick={() => router.push('/staff/services')}
-                className="group relative overflow-hidden bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 rounded-xl p-4 text-left hover:shadow-lg transition-all hover:border-cyan-300/50 dark:hover:border-cyan-700/50"
-              >
-                <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-cyan-500/10 to-transparent rounded-bl-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-500 to-sky-500 flex items-center justify-center mb-3 shadow-md shadow-cyan-500/20 group-hover:scale-110 transition-transform">
-                  <Eye className="w-5 h-5 text-white" />
-                </div>
-                <h4 className="font-semibold text-slate-800 dark:text-white mb-1">All Services</h4>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">View all {servicesCount} business services</p>
-                <div className="flex items-center text-cyan-600 dark:text-cyan-400 text-xs font-medium">
-                  <span>Browse</span>
-                  <ArrowRight className="w-3 h-3 ml-1 group-hover:translate-x-1 transition-transform" />
-                </div>
-              </button>
-
-              {/* My Services */}
-              <button
-                onClick={() => router.push('/staff/services/my-services')}
-                className="group relative overflow-hidden bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 rounded-xl p-4 text-left hover:shadow-lg transition-all hover:border-emerald-300/50 dark:hover:border-emerald-700/50"
-              >
-                <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-emerald-500/10 to-transparent rounded-bl-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center mb-3 shadow-md shadow-emerald-500/20 group-hover:scale-110 transition-transform">
-                  <Scissors className="w-5 h-5 text-white" />
-                </div>
-                <h4 className="font-semibold text-slate-800 dark:text-white mb-1">My Services</h4>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">Services you currently provide</p>
-                <div className="flex items-center text-emerald-600 dark:text-emerald-400 text-xs font-medium">
-                  <span>View & Edit</span>
-                  <ArrowRight className="w-3 h-3 ml-1 group-hover:translate-x-1 transition-transform" />
-                </div>
-              </button>
-
-              {/* Create New Service */}
-              <button
-                onClick={() => router.push('/staff/services/create')}
-                className="group relative overflow-hidden bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 rounded-xl p-4 text-left hover:shadow-lg transition-all hover:border-violet-300/50 dark:hover:border-violet-700/50"
-              >
-                <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-violet-500/10 to-transparent rounded-bl-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center mb-3 shadow-md shadow-violet-500/20 group-hover:scale-110 transition-transform">
-                  <Plus className="w-5 h-5 text-white" />
-                </div>
-                <h4 className="font-semibold text-slate-800 dark:text-white mb-1">New Service</h4>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">Create a custom service</p>
-                <div className="flex items-center text-violet-600 dark:text-violet-400 text-xs font-medium">
-                  <span>Create</span>
-                  <ArrowRight className="w-3 h-3 ml-1 group-hover:translate-x-1 transition-transform" />
-                </div>
-              </button>
-            </div>
-          </div>
-
-          {/* Leave Business Section - Subtle Warning Style */}
-          <div className="relative overflow-hidden bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm border border-rose-200/50 dark:border-rose-900/30 rounded-2xl p-6">
-            <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-bl from-rose-500/5 to-transparent rounded-bl-full"></div>
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 relative z-10">
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-rose-100 to-pink-100 dark:from-rose-900/30 dark:to-pink-900/30 flex items-center justify-center shrink-0">
-                  <LogOut className="w-6 h-6 text-rose-600 dark:text-rose-400" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-slate-800 dark:text-white mb-1">Leave This Business</h3>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">
-                    If you wish to leave {business?.name || 'this business'}, you can resign from your staff position. 
-                    You&apos;ll become a regular client.
-                  </p>
-                </div>
-              </div>
-              <Button
-                variant="outline"
-                className="border-rose-300 dark:border-rose-800/50 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 hover:border-rose-400 shrink-0 rounded-xl px-5"
-                onClick={() => setResignDialogOpen(true)}
-              >
-                <LogOut className="w-4 h-4 mr-2" />
-                Leave Business
-              </Button>
-            </div>
-          </div>
+          {/* Leave Business */}
+          <LeaveBusinessSection
+            businessName={business?.name}
+            onLeaveClick={() => setResignDialogOpen(true)}
+          />
 
         </div>
       </div>

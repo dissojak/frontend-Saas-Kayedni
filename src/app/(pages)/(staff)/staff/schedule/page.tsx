@@ -133,6 +133,19 @@ export default function StaffSchedulePage() {
 
   const handleSaveWorkHours = async () => {
     if (!user?.id) return;
+    
+    // Validation: BOTH times must be provided
+    if (!tempWorkHours.defaultStartTime || !tempWorkHours.defaultEndTime) {
+      alert('Both start time and end time are required. Please fill in both fields.');
+      return;
+    }
+    
+    // Validate that start time is before end time
+    if (tempWorkHours.defaultStartTime >= tempWorkHours.defaultEndTime) {
+      alert('Start time must be before end time.');
+      return;
+    }
+    
     try {
       await updateStaffWorkHours(
         user.id,
@@ -142,6 +155,8 @@ export default function StaffSchedulePage() {
       );
       setWorkHours(tempWorkHours);
       setEditingWorkHours(false);
+      // Reload availabilities since they might have been auto-generated
+      await loadAvailabilities();
     } catch (error) {
       console.error('Failed to update work hours:', error);
       alert('Failed to update work hours');

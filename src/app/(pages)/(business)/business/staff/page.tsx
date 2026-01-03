@@ -7,10 +7,12 @@ import { Button } from "@components/ui/button";
 import { Badge } from "@components/ui/badge";
 import { Input } from "@components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@components/ui/dialog";
+import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@components/ui/alert-dialog";
 import { Label } from "@components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@components/ui/avatar";
-import { User, Mail, Phone, Search, UserPlus, UserMinus, Briefcase } from "lucide-react";
+import { User, Mail, Phone, Search, UserPlus, UserMinus, Briefcase, CheckCircle2, Clock } from "lucide-react";
 import { fetchStaffByBusinessId, addStaffToBusinessByEmail, removeStaffFromBusiness } from "../../actions/backend";
+import { useToast } from "@global/hooks/use-toast";
 
 interface StaffMember {
   id: number;
@@ -22,6 +24,7 @@ interface StaffMember {
 }
 
 export default function BusinessStaffPage() {
+  const { toast } = useToast();
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [filteredStaff, setFilteredStaff] = useState<StaffMember[]>([]);
   const [loading, setLoading] = useState(true);
@@ -29,7 +32,10 @@ export default function BusinessStaffPage() {
   const [businessId, setBusinessId] = useState<string | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [newStaffEmail, setNewStaffEmail] = useState('');
+  const [newStaffStartTime, setNewStaffStartTime] = useState('09:00');
+  const [newStaffEndTime, setNewStaffEndTime] = useState('17:00');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [confirmRemove, setConfirmRemove] = useState<{ open: boolean; staffId: number | null; staffName: string }>({ open: false, staffId: null, staffName: '' });
 
   useEffect(() => {
     // Get businessId from localStorage (user's business)
@@ -57,11 +63,16 @@ export default function BusinessStaffPage() {
     
     setLoading(true);
     try {
-      const token = localStorage.getItem('token') || undefined;
-      const data = await fetchStaffByBusinessId(businessId, token);
+      const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+      const data = await fetchStaffByBusinessId(businessId, token || undefined);
       setStaff(data);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to load staff:', error);
+      toast({
+        variant: "error",
+        title: "Failed to load staff",
+        description: error.message || "Unable to fetch staff members. Please try again.",
+      });
     } finally {
       setLoading(false);
     }
@@ -83,31 +94,85 @@ export default function BusinessStaffPage() {
   const handleAddStaff = async () => {
     if (!newStaffEmail || !businessId) return;
     
+    // Validate work hours: both must be provided and start < end
+    if (!newStaffStartTime || !newStaffEndTime) {
+      toast({
+        variant: "error",
+        title: "Work hours required",
+        description: "Please set both start and end working times for the staff member.",
+      });
+      return;
+    }
+    
+    if (newStaffStartTime >= newStaffEndTime) {
+      toast({
+        variant: "error",
+        title: "Invalid work hours",
+        description: "Start time must be before end time.",
+      });
+      return;
+    }
+    
     setIsSubmitting(true);
     try {
-      const token = localStorage.getItem('token') || undefined;
-      await addStaffToBusinessByEmail(businessId, newStaffEmail, token);
+      const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+      await addStaffToBusinessByEmail(
+        businessId, 
+        newStaffEmail, 
+        token || undefined,
+        { startTime: newStaffStartTime, endTime: newStaffEndTime }
+      );
+      
+      toast({
+        variant: "success",
+        title: "Staff member added successfully",
+        description: `${newStaffEmail} has been added to your team with their schedule auto-generated.`,
+      });
+      
       setIsAddDialogOpen(false);
       setNewStaffEmail('');
+      setNewStaffStartTime('09:00');
+      setNewStaffEndTime('17:00');
       await loadStaff();
     } catch (error: any) {
-      alert(error.message || 'Failed to add staff member');
+      console.error('Error adding staff:', error);
+      toast({
+        variant: "error",
+        title: "Failed to add staff member",
+        description: error.message || "The user might not exist or is already part of your staff.",
+      });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleRemoveStaff = async (staffId: number) => {
-    if (!businessId) return;
-    if (!confirm('Are you sure you want to remove this staff member?')) return;
+  const handleRemoveStaff = (staffId: number, staffName: string) => {
+    setConfirmRemove({ open: true, staffId, staffName });
+  };
+
+  const confirmRemoveStaff = async () => {
+    if (!businessId || !confirmRemove.staffId) return;
     
     try {
-      const token = localStorage.getItem('token') || undefined;
-      await removeStaffFromBusiness(businessId, staffId, token);
+      const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+      await removeStaffFromBusiness(businessId, confirmRemove.staffId, token || undefined);
+      
+      toast({
+        variant: "success",
+        title: "Staff member removed",
+        description: `${confirmRemove.staffName} has been removed from your team.`,
+      });
+      
+      setConfirmRemove({ open: false, staffId: null, staffName: '' });
       await loadStaff();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to remove staff:', error);
-      alert('Failed to remove staff member');
+      toast({
+        variant: "error",
+        title: "Failed to remove staff member",
+        description: error.message || "Unable to remove staff member. Please try again.",
+      });
+      setConfirmRemove({ open: false, staffId: null, staffName: '' });
     }
   };
 
@@ -123,10 +188,10 @@ export default function BusinessStaffPage() {
   if (loading) {
     return (
       <Layout>
-        <div className="flex items-center justify-center h-96">
+        <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-business mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading staff...</p>
+            <div className="animate-spin rounded-full h-12 w-12 border-4 border-business border-t-transparent mx-auto"></div>
+            <p className="mt-4 text-muted-foreground font-medium">Loading staff members...</p>
           </div>
         </div>
       </Layout>
@@ -148,35 +213,89 @@ export default function BusinessStaffPage() {
             </Badge>
             <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
               <DialogTrigger asChild>
-                <Button className="bg-business hover:bg-business-dark">
+                <Button className="bg-business hover:bg-business-dark shadow-lg">
                   <UserPlus className="w-4 h-4 mr-2" />
                   Add Staff
                 </Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-md">
                 <DialogHeader>
-                  <DialogTitle>Add Staff Member</DialogTitle>
-                  <DialogDescription>
-                    Enter the email address of the user you want to add as staff. They must already be registered on the platform.
+                  <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-business/10">
+                    <UserPlus className="h-6 w-6 text-business" />
+                  </div>
+                  <DialogTitle className="text-center text-2xl">Add Staff Member</DialogTitle>
+                  <DialogDescription className="text-center">
+                    Enter the email and set the default working hours. Schedule will be auto-generated.
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email Address</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="staff@example.com"
-                      value={newStaffEmail}
-                      onChange={(e) => setNewStaffEmail(e.target.value)}
-                    />
+                    <Label htmlFor="email" className="text-sm font-medium">
+                      Email Address <span className="text-red-500">*</span>
+                    </Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="email"
+                        type="email"
+                        placeholder="staff@example.com"
+                        className="pl-10"
+                        value={newStaffEmail}
+                        onChange={(e) => setNewStaffEmail(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* Work Hours Section */}
+                  <div className="border-t pt-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Clock className="h-4 w-4 text-business" />
+                      <Label className="text-sm font-medium">
+                        Default Working Hours <span className="text-red-500">*</span>
+                      </Label>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="startTime" className="text-xs text-muted-foreground">
+                          Start Time
+                        </Label>
+                        <Input
+                          id="startTime"
+                          type="time"
+                          value={newStaffStartTime}
+                          onChange={(e) => setNewStaffStartTime(e.target.value)}
+                          className="text-center"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="endTime" className="text-xs text-muted-foreground">
+                          End Time
+                        </Label>
+                        <Input
+                          id="endTime"
+                          type="time"
+                          value={newStaffEndTime}
+                          onChange={(e) => setNewStaffEndTime(e.target.value)}
+                          className="text-center"
+                        />
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Schedule will be automatically generated for the next month.
+                    </p>
                   </div>
                 </div>
-                <DialogFooter>
+                <DialogFooter className="gap-2 sm:gap-0">
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => setIsAddDialogOpen(false)}
+                    onClick={() => {
+                      setIsAddDialogOpen(false);
+                      setNewStaffEmail('');
+                      setNewStaffStartTime('09:00');
+                      setNewStaffEndTime('17:00');
+                    }}
+                    disabled={isSubmitting}
                   >
                     Cancel
                   </Button>
@@ -184,9 +303,19 @@ export default function BusinessStaffPage() {
                     type="button"
                     className="bg-business hover:bg-business-dark"
                     onClick={handleAddStaff}
-                    disabled={isSubmitting || !newStaffEmail}
+                    disabled={isSubmitting || !newStaffEmail.trim() || !newStaffStartTime || !newStaffEndTime}
                   >
-                    {isSubmitting ? 'Adding...' : 'Add Staff'}
+                    {isSubmitting ? (
+                      <>
+                        <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                        Adding...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="mr-2 h-4 w-4" />
+                        Add Staff
+                      </>
+                    )}
                   </Button>
                 </DialogFooter>
               </DialogContent>
@@ -231,28 +360,28 @@ export default function BusinessStaffPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredStaff.map((member) => (
-              <Card key={member.id} className="hover:shadow-lg transition-shadow">
+              <Card key={member.id} className="hover:shadow-xl transition-all duration-300 border-2 hover:border-business/20">
                 <CardContent className="p-6">
                   <div className="flex flex-col items-center text-center space-y-4">
                     {/* Avatar */}
-                    <Avatar className="w-24 h-24">
+                    <Avatar className="w-24 h-24 ring-4 ring-business/10">
                       <AvatarImage src={member.avatarUrl} alt={member.name} />
-                      <AvatarFallback className="bg-business text-white text-2xl">
+                      <AvatarFallback className="bg-business text-white text-2xl font-bold">
                         {getInitials(member.name)}
                       </AvatarFallback>
                     </Avatar>
 
                     {/* Info */}
                     <div className="space-y-2 w-full">
-                      <h3 className="text-xl font-semibold text-gray-900">{member.name}</h3>
-                      <Badge className="bg-business-light text-business">
+                      <h3 className="text-xl font-bold text-gray-900">{member.name}</h3>
+                      <Badge className="bg-business-light text-business font-semibold">
                         <Briefcase className="w-3 h-3 mr-1" />
                         {member.role}
                       </Badge>
                     </div>
 
                     {/* Contact Details */}
-                    <div className="space-y-2 w-full text-left">
+                    <div className="space-y-2 w-full text-left bg-muted/50 rounded-lg p-3">
                       <div className="flex items-center text-gray-600 text-sm">
                         <Mail className="w-4 h-4 mr-2 text-business flex-shrink-0" />
                         <span className="truncate">{member.email}</span>
@@ -269,8 +398,8 @@ export default function BusinessStaffPage() {
                     <div className="w-full pt-4 border-t">
                       <Button
                         variant="destructive"
-                        className="w-full"
-                        onClick={() => handleRemoveStaff(member.id)}
+                        className="w-full shadow-sm"
+                        onClick={() => handleRemoveStaff(member.id, member.name)}
                       >
                         <UserMinus className="w-4 h-4 mr-2" />
                         Remove Staff
@@ -303,6 +432,49 @@ export default function BusinessStaffPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Remove Staff Confirmation Dialog */}
+      <AlertDialog open={confirmRemove.open} onOpenChange={(open) => !open && setConfirmRemove({ open: false, staffId: null, staffName: '' })}>
+        <AlertDialogContent className="max-w-sm sm:max-w-md p-0 overflow-hidden border-0 shadow-2xl">
+          <div className="p-6 border-t-4 border-red-500 bg-red-50/50 dark:bg-red-950/20">
+            <AlertDialogHeader>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-full flex items-center justify-center bg-red-100 dark:bg-red-900/30">
+                  <UserMinus className="w-6 h-6 text-red-600 dark:text-red-400" />
+                </div>
+                <AlertDialogTitle className="text-xl font-bold text-foreground">
+                  Remove Staff Member?
+                </AlertDialogTitle>
+              </div>
+              <AlertDialogDescription className="text-muted-foreground text-base leading-relaxed">
+                Are you sure you want to remove{' '}
+                <span className="font-semibold text-foreground">{confirmRemove.staffName}</span>
+                {' '}from your team?
+                <br />
+                <span className="text-sm mt-2 block text-amber-600 dark:text-amber-400">
+                  This action cannot be undone. They will lose access to manage your business.
+                </span>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter className="mt-6 flex-col sm:flex-row gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setConfirmRemove({ open: false, staffId: null, staffName: '' })}
+                className="w-full sm:w-auto border-2 border-border hover:bg-muted font-semibold h-11 rounded-xl"
+              >
+                Go Back
+              </Button>
+              <Button
+                onClick={confirmRemoveStaff}
+                className="w-full sm:w-auto font-bold h-11 rounded-xl bg-red-600 hover:bg-red-700 text-white"
+              >
+                <UserMinus className="w-4 h-4 mr-2" />
+                Yes, Remove Staff
+              </Button>
+            </AlertDialogFooter>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
     </Layout>
   );
 }
