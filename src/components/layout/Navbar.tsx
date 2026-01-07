@@ -23,6 +23,7 @@ const navLinks: Record<Exclude<UserRole, null>, { path: string; label: string }[
   ],
   BUSINESS_OWNER: [
     { path: "/business/dashboard", label: "Dashboard" },
+    { path: "/business", label: "My Business" },
     { path: "/business/staff", label: "Staff" },
     { path: "/business/services", label: "Services" },
     { path: "/business/bookings", label: "Bookings" },
