@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@components/ui/dropdown-menu";
 import { useAuth, UserRole } from "@/(pages)/(auth)/context/AuthContext";
-import { Menu, Sun, Moon } from "lucide-react";
+import { Menu, Sun, Moon, Briefcase, Users } from "lucide-react";
 
 // Role-specific navigation links (keys now use uppercase to match backend/user role values)
 const navLinks: Record<Exclude<UserRole, null>, { path: string; label: string }[]> = {
@@ -49,11 +49,12 @@ const defaultLinks = [
 ];
 
 const Navbar = () => {
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, logout, activeMode, switchMode } = useAuth();
   const router = useRouter();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isDark, setIsDark] = useState(false);
+  const [isSwitchingMode, setIsSwitchingMode] = useState(false);
 
   useEffect(() => {
     // initialize theme from localStorage or existing html class
@@ -90,9 +91,34 @@ const Navbar = () => {
     }
   };
 
-  // Use the user.role (now uppercase) to look up navLinks; fall back to defaultLinks.
-  const roleKey = user?.role ? String(user.role).toUpperCase() as keyof typeof navLinks : null;
-  const links = roleKey && navLinks[roleKey] ? navLinks[roleKey] : defaultLinks;
+  // Handle mode switching
+  const handleModeSwitch = async (mode: 'owner' | 'staff') => {
+    if (mode === activeMode) return;
+    setIsSwitchingMode(true);
+    try {
+      await switchMode(mode);
+      if (mode === 'staff') {
+        router.push('/staff/dashboard');
+      } else {
+        router.push('/business/dashboard');
+      }
+    } catch (error) {
+      console.error('Failed to switch mode:', error);
+    } finally {
+      setIsSwitchingMode(false);
+    }
+  };
+
+  // Determine which links to show based on activeMode for BO+Staff users
+  const getNavLinks = () => {
+    if (user?.role === 'BUSINESS_OWNER' && user?.isAlsoStaff && activeMode === 'staff') {
+      return navLinks.STAFF;
+    }
+    const roleKey = user?.role ? String(user.role).toUpperCase() as keyof typeof navLinks : null;
+    return roleKey && navLinks[roleKey] ? navLinks[roleKey] : defaultLinks;
+  };
+
+  const links = getNavLinks();
 
   return (
     <nav className="bg-white dark:bg-zinc-900 shadow-sm sticky top-0 z-50 transition-colors">
@@ -120,6 +146,35 @@ const Navbar = () => {
           <div className="flex items-center space-x-4">
             {isAuthenticated ? (
               <>
+                {/* Mode Switcher for BO who is also Staff */}
+                {user?.role === 'BUSINESS_OWNER' && user?.isAlsoStaff && (
+                  <div className="hidden md:flex items-center bg-gray-100 dark:bg-zinc-800 rounded-full p-1">
+                    <button
+                      onClick={() => handleModeSwitch('owner')}
+                      disabled={isSwitchingMode}
+                      className={`flex items-center px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                        activeMode === 'owner'
+                          ? 'bg-white dark:bg-zinc-700 text-primary shadow-sm'
+                          : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'
+                      }`}
+                    >
+                      <Briefcase className="w-4 h-4 mr-1.5" />
+                      Manager
+                    </button>
+                    <button
+                      onClick={() => handleModeSwitch('staff')}
+                      disabled={isSwitchingMode}
+                      className={`flex items-center px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                        activeMode === 'staff'
+                          ? 'bg-white dark:bg-zinc-700 text-primary shadow-sm'
+                          : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'
+                      }`}
+                    >
+                      <Users className="w-4 h-4 mr-1.5" />
+                      Staff
+                    </button>
+                  </div>
+                )}
                 {user && (
                   <div className="hidden md:flex md:flex-col md:items-end md:text-right md:mr-2">
                     <span className="text-sm text-gray-800 dark:text-gray-200 font-medium leading-tight">{user.name ?? user.email?.split('@')[0]}</span>
@@ -188,6 +243,35 @@ const Navbar = () => {
         {/* Mobile Navigation */}
         {mobileMenuOpen && (
               <div className="md:hidden mt-3 pb-3 border-t dark:border-zinc-700">
+            {/* Mobile Mode Switcher */}
+            {user?.role === 'BUSINESS_OWNER' && user?.isAlsoStaff && (
+              <div className="flex items-center justify-center bg-gray-100 dark:bg-zinc-800 rounded-full p-1 mb-3">
+                <button
+                  onClick={() => { handleModeSwitch('owner'); setMobileMenuOpen(false); }}
+                  disabled={isSwitchingMode}
+                  className={`flex items-center px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                    activeMode === 'owner'
+                      ? 'bg-white dark:bg-zinc-700 text-primary shadow-sm'
+                      : 'text-gray-500'
+                  }`}
+                >
+                  <Briefcase className="w-4 h-4 mr-1.5" />
+                  Manager
+                </button>
+                <button
+                  onClick={() => { handleModeSwitch('staff'); setMobileMenuOpen(false); }}
+                  disabled={isSwitchingMode}
+                  className={`flex items-center px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                    activeMode === 'staff'
+                      ? 'bg-white dark:bg-zinc-700 text-primary shadow-sm'
+                      : 'text-gray-500'
+                  }`}
+                >
+                  <Users className="w-4 h-4 mr-1.5" />
+                  Staff
+                </button>
+              </div>
+            )}
             <div className="flex flex-col space-y-3 mt-3">
               {links.map((link) => (
                 <Link

@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import Layout from "@components/layout/Layout";
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8088/api';
 import { Card, CardContent } from "@components/ui/card";
 import { Button } from "@components/ui/button";
 import { Badge } from "@components/ui/badge";
@@ -36,14 +38,20 @@ export default function BusinessStaffPage() {
   const [newStaffEndTime, setNewStaffEndTime] = useState('17:00');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState<{ open: boolean; staffId: number | null; staffName: string }>({ open: false, staffId: null, staffName: '' });
+  const [user, setUser] = useState<any>(null);
+  const [isAddingSelfAsStaff, setIsAddingSelfAsStaff] = useState(false);
+  const [boWorkHoursDialogOpen, setBoWorkHoursDialogOpen] = useState(false);
+  const [boStartTime, setBoStartTime] = useState('09:00');
+  const [boEndTime, setBoEndTime] = useState('17:00');
 
   useEffect(() => {
     // Get businessId from localStorage (user's business)
     const userData = localStorage.getItem('user');
     if (userData) {
-      const user = JSON.parse(userData);
-      if (user.businessId) {
-        setBusinessId(user.businessId);
+      const parsedUser = JSON.parse(userData);
+      setUser(parsedUser);
+      if (parsedUser.businessId) {
+        setBusinessId(parsedUser.businessId);
       }
     }
   }, []);
@@ -173,6 +181,105 @@ export default function BusinessStaffPage() {
         description: error.message || "Unable to remove staff member. Please try again.",
       });
       setConfirmRemove({ open: false, staffId: null, staffName: '' });
+    }
+  };
+
+  const handleAddSelfAsStaff = async () => {
+    if (!businessId) return;
+
+    setIsAddingSelfAsStaff(true);
+    try {
+      const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+      const response = await fetch(`${API_BASE_URL}/v1/businesses/${businessId}/staff/self`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          startTime: boStartTime,
+          endTime: boEndTime,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to add yourself as staff');
+      }
+
+      const data = await response.json();
+      
+      toast({
+        variant: "success",
+        title: "Great! You're now working as staff",
+        description: "Your availability has been set and services are waiting to be assigned.",
+      });
+
+      // Update user state
+      const updatedUser = { ...user, isAlsoStaff: true, staffId: data.staffId };
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      setUser(updatedUser);
+
+      // Close dialog and reload page
+      setBoWorkHoursDialogOpen(false);
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+    } catch (error: any) {
+      console.error('Error adding yourself as staff:', error);
+      toast({
+        variant: "error",
+        title: "Failed to add yourself as staff",
+        description: error.message || "Unable to add yourself as staff. Please try again.",
+      });
+    } finally {
+      setIsAddingSelfAsStaff(false);
+    }
+  };
+
+  const handleRemoveSelfAsStaff = async () => {
+    if (!businessId) return;
+
+    setIsAddingSelfAsStaff(true);
+    try {
+      const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+      const response = await fetch(`${API_BASE_URL}/v1/businesses/${businessId}/staff/self`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to remove yourself from staff');
+      }
+
+      toast({
+        variant: "success",
+        title: "You stopped working as staff",
+        description: "You're now only managing your business.",
+      });
+
+      // Update user state
+      const updatedUser = { ...user, isAlsoStaff: false, staffId: undefined };
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      setUser(updatedUser);
+
+      // Reload page
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+    } catch (error: any) {
+      console.error('Error removing yourself from staff:', error);
+      toast({
+        variant: "error",
+        title: "Failed to remove yourself from staff",
+        description: error.message || "Unable to remove yourself from staff. Please try again.",
+      });
+    } finally {
+      setIsAddingSelfAsStaff(false);
     }
   };
 
@@ -322,6 +429,66 @@ export default function BusinessStaffPage() {
             </Dialog>
           </div>
         </div>
+
+        {/* Self as Staff Card */}
+        {user?.role === 'BUSINESS_OWNER' && (
+          <Card className={`border-2 ${user?.isAlsoStaff ? 'border-business/50 bg-business/5' : 'border-dashed'}`}>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    {user?.isAlsoStaff ? '✓ You\'re working as staff' : 'Do you also work here?'}
+                  </h3>
+                  <p className="text-gray-600 mt-1">
+                    {user?.isAlsoStaff 
+                      ? 'You are registered as a staff member. You can switch between Manager and Staff modes in the navbar.'
+                      : 'Add yourself as a staff member to work alongside your team and manage your own schedule.'}
+                  </p>
+                </div>
+                <div>
+                  {user?.isAlsoStaff ? (
+                    <Button
+                      variant="outline"
+                      className="text-red-600 border-red-200 hover:bg-red-50"
+                      onClick={handleRemoveSelfAsStaff}
+                      disabled={isAddingSelfAsStaff}
+                    >
+                      {isAddingSelfAsStaff ? (
+                        <>
+                          <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                          Removing...
+                        </>
+                      ) : (
+                        <>
+                          <UserMinus className="w-4 h-4 mr-2" />
+                          Stop working as staff
+                        </>
+                      )}
+                    </Button>
+                  ) : (
+                    <Button
+                      className="bg-business hover:bg-business-dark"
+                      onClick={() => setBoWorkHoursDialogOpen(true)}
+                      disabled={isAddingSelfAsStaff}
+                    >
+                      {isAddingSelfAsStaff ? (
+                        <>
+                          <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                          Adding...
+                        </>
+                      ) : (
+                        <>
+                          <UserPlus className="w-4 h-4 mr-2" />
+                          I also work here
+                        </>
+                      )}
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Search */}
         <Card>
@@ -475,6 +642,75 @@ export default function BusinessStaffPage() {
           </div>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Work Hours Setup Dialog for BO */}
+      <Dialog open={boWorkHoursDialogOpen} onOpenChange={setBoWorkHoursDialogOpen}>
+        <DialogContent className="max-w-sm sm:max-w-md p-0 overflow-hidden border-0 shadow-2xl">
+          <div className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-bold text-foreground">Set Your Working Hours</DialogTitle>
+              <DialogDescription className="text-muted-foreground mt-2">
+                When you work as staff, clients can book services with you during these hours. You can change this later.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="mt-6 space-y-4">
+              <div>
+                <Label htmlFor="bo-start-time" className="text-sm font-semibold mb-2 block">
+                  Start Time
+                </Label>
+                <Input
+                  id="bo-start-time"
+                  type="time"
+                  value={boStartTime}
+                  onChange={(e) => setBoStartTime(e.target.value)}
+                  className="h-11 rounded-lg border-2"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="bo-end-time" className="text-sm font-semibold mb-2 block">
+                  End Time
+                </Label>
+                <Input
+                  id="bo-end-time"
+                  type="time"
+                  value={boEndTime}
+                  onChange={(e) => setBoEndTime(e.target.value)}
+                  className="h-11 rounded-lg border-2"
+                />
+              </div>
+            </div>
+
+            <DialogFooter className="mt-6 flex-col sm:flex-row gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setBoWorkHoursDialogOpen(false)}
+                className="w-full sm:w-auto border-2 border-border hover:bg-muted font-semibold h-11 rounded-xl"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleAddSelfAsStaff}
+                disabled={isAddingSelfAsStaff}
+                className="w-full sm:w-auto font-bold h-11 rounded-xl bg-business hover:bg-business-dark text-white"
+              >
+                {isAddingSelfAsStaff ? (
+                  <>
+                    <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    Setting up...
+                  </>
+                ) : (
+                  <>
+                    <UserPlus className="w-4 h-4 mr-2" />
+                    Become Staff
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 }
