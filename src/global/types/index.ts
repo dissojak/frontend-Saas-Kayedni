@@ -26,6 +26,114 @@ export interface Service {
   price: number;
 }
 
+// ============================================================================
+// RESOURCE TYPES
+// ============================================================================
+
+export interface TemplateAttribute {
+  attributeKey: string;
+  attributeType: 'TEXT' | 'NUMBER' | 'BOOLEAN';
+  required: boolean;
+  displayOrder: number;
+}
+
+export interface ResourceTemplate {
+  id: string;
+  name: string;
+  description?: string;
+  businessId: string;
+  attributes: TemplateAttribute[];
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface ResourceAttribute {
+  attributeKey: string;
+  attributeValue: string;
+  attributeType: 'TEXT' | 'NUMBER' | 'BOOLEAN';
+  displayOrder: number;
+}
+
+export interface ResourcePricingOption {
+  id?: string;
+  pricingType: 'PER_HOUR' | 'PER_HALF_DAY' | 'PER_DAY' | 'PER_WEEK' | 'PER_MONTH' | 'PER_PERSON' | 'FLAT_RATE';
+  price: number;
+  label?: string;
+  minDuration?: number;
+  maxDuration?: number;
+  isDefault: boolean;
+}
+
+export interface ResourceImage {
+  id: string;
+  imageUrl: string;
+  displayOrder: number;
+  isPrimary: boolean;
+}
+
+export interface StaffInfo {
+  id: string;
+  name: string;
+  email?: string;
+  avatarUrl?: string;
+}
+
+export interface Resource {
+  id: string;
+  name: string;
+  description?: string;
+  type?: string;
+  status: 'AVAILABLE' | 'OUT_OF_ORDER' | 'MAINTENANCE' | 'HOLIDAY';
+  templateId?: string;
+  templateName?: string;
+  attributes: ResourceAttribute[];
+  pricingOptions: ResourcePricingOption[];
+  images: ResourceImage[];
+  assignedStaff: StaffInfo[];
+  businessId: string;
+  businessName: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface ResourceAvailability {
+  id: string;
+  resourceId: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  status: 'AVAILABLE' | 'HOLIDAY' | 'MAINTENANCE' | 'OUT_OF_ORDER';
+  isBooked: boolean;
+}
+
+export interface ResourceReservation {
+  id: string;
+  resourceId: string;
+  resourceName: string;
+  resourcePrimaryImage?: string;
+  clientId: string;
+  clientName: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  price: number;
+  pricingType: string;
+  status: 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED' | 'NO_SHOW';
+  notes?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface BulkAvailabilityRequest {
+  startDate: string;
+  endDate: string;
+  dailyStartTime: string;
+  dailyEndTime: string;
+  slotDurationMinutes: number;
+  excludeWeekends: boolean;
+  excludedDates?: string[];
+}
+
 export interface TimeSlot {
   id: string;
   staffId: string;
