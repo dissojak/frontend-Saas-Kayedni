@@ -6,6 +6,7 @@ import { Toaster as Sonner } from "@components/ui/sonner";
 import { TooltipProvider } from "@components/ui/tooltip";
 import { AuthProvider } from "@/(pages)/(auth)/context/AuthContext";
 import { BookingProvider } from "@/(pages)/(booking)/context/BookingContext";
+import TrackingProvider from "@global/providers/TrackingProvider";
 
 const queryClient = new QueryClient();
 
@@ -16,7 +17,9 @@ export const Providers: React.FC<React.PropsWithChildren> = ({ children }) => {
         <Toaster />
         <Sonner />
         <AuthProvider>
-          <BookingProvider>{children}</BookingProvider>
+          <TrackingProvider>
+            <BookingProvider>{children}</BookingProvider>
+          </TrackingProvider>
         </AuthProvider>
       </TooltipProvider>
     </QueryClientProvider>

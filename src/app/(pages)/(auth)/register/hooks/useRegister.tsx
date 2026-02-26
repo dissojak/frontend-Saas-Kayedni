@@ -5,10 +5,12 @@ import { useAuth } from "@/(pages)/(auth)/context/AuthContext";
 import { callBackendRegister } from "../utils";
 import type { UserRole } from "../../types";
 import { useRouter } from "next/navigation";
+import { useTracking } from "@global/hooks/useTracking";
 
 export function useRegister() {
   const auth = useAuth();
   const router = useRouter();
+  const { trackEvent } = useTracking();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -41,6 +43,7 @@ export function useRegister() {
         setRegistered(true);
         setRegisteredEmail(res.user.email ?? null);
         setRegistrationMessage(res.message ?? 'Registration successful. Please check your email to activate your account.');
+        trackEvent('signup', { method: 'email', role });
       } else {
         setError(res.message ?? "Registration failed");
       }

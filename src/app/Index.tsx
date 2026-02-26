@@ -13,12 +13,16 @@ import { useAuth } from '@/(pages)/(auth)/context/AuthContext';
 import { useEffect, useState } from 'react';
 import { fetchBusinesses, fetchCategories } from './(pages)/(business)/actions/backend';
 import { useSearch } from '@global/hooks/useSearch';
+import { useTracking } from '@global/hooks/useTracking';
+import TimeOnPageTracker from '@components/tracking/TimeOnPageTracker';
+import ScrollDepthTracker from '@components/tracking/ScrollDepthTracker';
 import { ArrowRight, Clock, Users, TrendingUp, Sparkles, Search } from 'lucide-react';
 import { createBusinessSlug } from '@global/lib/businessSlug';
 
 export default function Index() {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
+  const { trackEvent } = useTracking();
 
   // Service categories (default fallback)
   const defaultCategories = [
@@ -104,6 +108,10 @@ export default function Index() {
 
   return (
     <Layout>
+      {/* Tracking Components */}
+      <TimeOnPageTracker pageName="home" />
+      <ScrollDepthTracker pageName="home" />
+
       {/* Hero Section with Animated Background */}
       <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden bg-slate-950">
         {/* Animated background (same as auth pages) */}
@@ -138,7 +146,7 @@ export default function Index() {
               <Button
                 size="lg"
                 className="bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-accent)] text-white font-semibold shadow-lg shadow-[var(--color-primary)]/30 hover:-translate-y-0.5 transition-all group"
-                onClick={() => router.push('/businesses')}
+                onClick={() => { trackEvent('click', { element: 'hero_find_services', section: 'hero' }); router.push('/businesses'); }}
               >
                 Find Services
                 <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
@@ -146,7 +154,7 @@ export default function Index() {
               <Button
                 size="lg"
                 className="bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold shadow-lg shadow-amber-500/30 hover:-translate-y-0.5 transition-all group"
-                onClick={() => router.push('/business-solutions')}
+                onClick={() => { trackEvent('click', { element: 'hero_for_business', section: 'hero' }); router.push('/business-solutions'); }}
               >
                 For Business
                 <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
@@ -156,7 +164,7 @@ export default function Index() {
                   variant="outline"
                   size="lg"
                   className="border-white/30 text-black hover:bg-white/10 backdrop-blur-sm"
-                  onClick={() => router.push('/register')}
+                  onClick={() => { trackEvent('click', { element: 'hero_create_account', section: 'hero' }); router.push('/register'); }}
                 >
                   Create Account
                 </Button>
@@ -228,7 +236,7 @@ export default function Index() {
                 <form
                   onSubmit={(e) => {
                     e.preventDefault();
-                    // Navigate to search page like Fresha
+                    trackEvent('search_query', { query: searchQuery, location: searchLocation, source: 'home_search_form' });
                     const params = new URLSearchParams();
                     if (searchQuery) params.set('q', searchQuery);
                     if (searchLocation) params.set('location', searchLocation);
@@ -294,6 +302,7 @@ export default function Index() {
                       key={tag} 
                       type="button"
                       onClick={() => {
+                        trackEvent('search_query', { query: tag, source: 'home_quick_search' });
                         handleQueryChange(tag);
                         searchWithParams({ query: tag });
                       }}
@@ -350,7 +359,7 @@ export default function Index() {
                       <span className="text-gray-500 dark:text-gray-400 text-sm">({business.reviewCount})</span>
                     </div>
                   </div>
-                  <Button className="w-full bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-accent)] hover:shadow-lg transition-all" onClick={() => router.push(`/business/${createBusinessSlug(business.name, String(business.id))}`)}>
+                  <Button className="w-full bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-accent)] hover:shadow-lg transition-all" onClick={() => { trackEvent('business_view', { businessId: String(business.id), businessName: business.name, source: 'home_featured' }); router.push(`/business/${createBusinessSlug(business.name, String(business.id))}`); }}>
                     View & Book
                   </Button>
                 </div>
@@ -358,7 +367,7 @@ export default function Index() {
             ))}
           </div>
           <div className="mt-12 text-center">
-            <Button variant="outline" size="lg" onClick={() => router.push('/businesses')} className="border-2 dark:border-slate-700">
+            <Button variant="outline" size="lg" onClick={() => { trackEvent('click', { element: 'browse_all_professionals', section: 'featured' }); router.push('/businesses'); }} className="border-2 dark:border-slate-700">
               Browse All Professionals <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </div>
@@ -634,7 +643,7 @@ export default function Index() {
               <Button
                 size="lg"
                 className="bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-accent)] text-white font-semibold shadow-lg"
-                onClick={() => router.push('/register')}
+                onClick={() => { trackEvent('click', { element: 'cta_start_booking', section: 'final_cta' }); router.push('/register'); }}
               >
                 Start Booking Free <ArrowRight className="ml-2 h-4 w-4" />
               </Button>

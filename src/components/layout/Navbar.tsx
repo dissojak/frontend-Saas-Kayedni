@@ -12,7 +12,9 @@ import {
   DropdownMenuTrigger,
 } from "@components/ui/dropdown-menu";
 import { useAuth, UserRole } from "@/(pages)/(auth)/context/AuthContext";
+import { useTracking } from "@global/hooks/useTracking";
 import { Menu, Sun, Moon, Briefcase, Users } from "lucide-react";
+import Image from "next/image";
 
 // Role-specific navigation links (keys now use uppercase to match backend/user role values)
 const navLinks: Record<Exclude<UserRole, null>, { path: string; label: string }[]> = {
@@ -51,6 +53,7 @@ const defaultLinks = [
 const Navbar = () => {
   const { user, isAuthenticated, logout, activeMode, switchMode } = useAuth();
   const router = useRouter();
+  const { trackEvent } = useTracking();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isDark, setIsDark] = useState(false);
@@ -60,7 +63,8 @@ const Navbar = () => {
     // initialize theme from localStorage or existing html class
     try {
       const stored = localStorage.getItem("theme");
-      const prefersDark = stored === "dark" || (!stored && document.documentElement.classList.contains("dark"));
+      const prefersDark =
+        stored === "dark" || (!stored && document.documentElement.classList.contains("dark"));
       if (prefersDark) {
         document.documentElement.classList.add("dark");
         setIsDark(true);
@@ -92,18 +96,18 @@ const Navbar = () => {
   };
 
   // Handle mode switching
-  const handleModeSwitch = async (mode: 'owner' | 'staff') => {
+  const handleModeSwitch = async (mode: "owner" | "staff") => {
     if (mode === activeMode) return;
     setIsSwitchingMode(true);
     try {
       await switchMode(mode);
-      if (mode === 'staff') {
-        router.push('/staff/dashboard');
+      if (mode === "staff") {
+        router.push("/staff/dashboard");
       } else {
-        router.push('/business/dashboard');
+        router.push("/business/dashboard");
       }
     } catch (error) {
-      console.error('Failed to switch mode:', error);
+      console.error("Failed to switch mode:", error);
     } finally {
       setIsSwitchingMode(false);
     }
@@ -111,10 +115,10 @@ const Navbar = () => {
 
   // Determine which links to show based on activeMode for BO+Staff users
   const getNavLinks = () => {
-    if (user?.role === 'BUSINESS_OWNER' && user?.isAlsoStaff && activeMode === 'staff') {
+    if (user?.role === "BUSINESS_OWNER" && user?.isAlsoStaff && activeMode === "staff") {
       return navLinks.STAFF;
     }
-    const roleKey = user?.role ? String(user.role).toUpperCase() as keyof typeof navLinks : null;
+    const roleKey = user?.role ? (String(user.role).toUpperCase() as keyof typeof navLinks) : null;
     return roleKey && navLinks[roleKey] ? navLinks[roleKey] : defaultLinks;
   };
 
@@ -124,14 +128,20 @@ const Navbar = () => {
     <nav className="bg-white dark:bg-zinc-900 shadow-sm sticky top-0 z-50 transition-colors">
       <div className="container mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-4">
             <Link href="/" className="flex items-center space-x-2">
-              <span className="text-2xl font-bold text-primary dark:text-primary-light">Bookify</span>
+              {/* <span className="text-2xl font-bold text-primary dark:text-primary-light">Bookify</span> */}
+              {/* <Image src="/assets/KAyedni-zain.png"  */}
+              <Image src="/assets/KayedniFullLogo-zain.png" 
+              alt="Kayedni Logo" 
+              width={128}
+              height={8}
+              />
             </Link>
 
             {/* Desktop Navigation */}
             <div className="hidden md:flex space-x-6 ml-10">
-              {links.map((link) => 
+              {links.map((link) => (
                 <Link
                   key={link.path}
                   href={link.path}
@@ -139,7 +149,7 @@ const Navbar = () => {
                 >
                   {link.label}
                 </Link>
-              )}
+              ))}
             </div>
           </div>
 
@@ -147,27 +157,27 @@ const Navbar = () => {
             {isAuthenticated ? (
               <>
                 {/* Mode Switcher for BO who is also Staff */}
-                {user?.role === 'BUSINESS_OWNER' && user?.isAlsoStaff && (
+                {user?.role === "BUSINESS_OWNER" && user?.isAlsoStaff && (
                   <div className="hidden md:flex items-center bg-gray-100 dark:bg-zinc-800 rounded-full p-1">
                     <button
-                      onClick={() => handleModeSwitch('owner')}
+                      onClick={() => handleModeSwitch("owner")}
                       disabled={isSwitchingMode}
                       className={`flex items-center px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                        activeMode === 'owner'
-                          ? 'bg-white dark:bg-zinc-700 text-primary shadow-sm'
-                          : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'
+                        activeMode === "owner"
+                          ? "bg-white dark:bg-zinc-700 text-primary shadow-sm"
+                          : "text-gray-500 hover:text-gray-700 dark:text-gray-400"
                       }`}
                     >
                       <Briefcase className="w-4 h-4 mr-1.5" />
                       Manager
                     </button>
                     <button
-                      onClick={() => handleModeSwitch('staff')}
+                      onClick={() => handleModeSwitch("staff")}
                       disabled={isSwitchingMode}
                       className={`flex items-center px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                        activeMode === 'staff'
-                          ? 'bg-white dark:bg-zinc-700 text-primary shadow-sm'
-                          : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'
+                        activeMode === "staff"
+                          ? "bg-white dark:bg-zinc-700 text-primary shadow-sm"
+                          : "text-gray-500 hover:text-gray-700 dark:text-gray-400"
                       }`}
                     >
                       <Users className="w-4 h-4 mr-1.5" />
@@ -177,24 +187,43 @@ const Navbar = () => {
                 )}
                 {user && (
                   <div className="hidden md:flex md:flex-col md:items-end md:text-right md:mr-2">
-                    <span className="text-sm text-gray-800 dark:text-gray-200 font-medium leading-tight">{user.name ?? user.email?.split('@')[0]}</span>
-                    <span className={`text-xs text-gray-500 dark:text-gray-400 mt-0.5 role-badge role-badge-${String(user.role).toLowerCase()}`}>{user.role}</span>
+                    <span className="text-sm text-gray-800 dark:text-gray-200 font-medium leading-tight">
+                      {user.name ?? user.email?.split("@")[0]}
+                    </span>
+                    <span
+                      className={`text-xs text-gray-500 dark:text-gray-400 mt-0.5 role-badge role-badge-${String(user.role).toLowerCase()}`}
+                    >
+                      {user.role}
+                    </span>
                   </div>
                 )}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="relative rounded-full h-8 w-8 p-0 hover:bg-transparent">
+                    <Button
+                      variant="ghost"
+                      className="relative rounded-full h-8 w-8 p-0 hover:bg-transparent"
+                    >
                       <img
-                        src={user?.avatar || (user?.name ? `https://ui-avatars.com/api/?name=${user.name}` : "/assets/placeholder.svg")}
+                        src={
+                          user?.avatar ||
+                          (user?.name
+                            ? `https://ui-avatars.com/api/?name=${user.name}`
+                            : "/assets/placeholder.svg")
+                        }
                         alt={user?.name ?? "Profile"}
                         className="h-8 w-8 rounded-full object-cover"
                       />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56 bg-white dark:bg-zinc-800 dark:text-gray-100">
+                  <DropdownMenuContent
+                    align="end"
+                    className="w-56 bg-white dark:bg-zinc-800 dark:text-gray-100"
+                  >
                     <div className="p-2">
                       <p className="font-medium">{user?.name ?? "User"}</p>
-                        <p className="text-sm text-gray-500 dark:text-gray-300">{user?.email ?? ""}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-300">
+                        {user?.email ?? ""}
+                      </p>
                     </div>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={() => router.push("/profile")}>
@@ -204,16 +233,37 @@ const Navbar = () => {
                       Settings
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => logout()}>Logout</DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => {
+                        trackEvent("logout", { method: "navbar" });
+                        trackEvent("click", { element: "nav_logout", section: "navbar" });
+                        logout();
+                      }}
+                    >
+                      Logout
+                    </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </>
             ) : (
               <div className="hidden md:block">
-                <Button variant="ghost" onClick={() => router.push("/login")}>
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    trackEvent("click", { element: "nav_login", section: "navbar" });
+                    router.push("/login");
+                  }}
+                >
                   Login
                 </Button>
-                <Button onClick={() => router.push("/register")}>Sign Up</Button>
+                <Button
+                  onClick={() => {
+                    trackEvent("click", { element: "nav_signup", section: "navbar" });
+                    router.push("/register");
+                  }}
+                >
+                  Sign Up
+                </Button>
               </div>
             )}
 
@@ -242,29 +292,35 @@ const Navbar = () => {
 
         {/* Mobile Navigation */}
         {mobileMenuOpen && (
-              <div className="md:hidden mt-3 pb-3 border-t dark:border-zinc-700">
+          <div className="md:hidden mt-3 pb-3 border-t dark:border-zinc-700">
             {/* Mobile Mode Switcher */}
-            {user?.role === 'BUSINESS_OWNER' && user?.isAlsoStaff && (
+            {user?.role === "BUSINESS_OWNER" && user?.isAlsoStaff && (
               <div className="flex items-center justify-center bg-gray-100 dark:bg-zinc-800 rounded-full p-1 mb-3">
                 <button
-                  onClick={() => { handleModeSwitch('owner'); setMobileMenuOpen(false); }}
+                  onClick={() => {
+                    handleModeSwitch("owner");
+                    setMobileMenuOpen(false);
+                  }}
                   disabled={isSwitchingMode}
                   className={`flex items-center px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                    activeMode === 'owner'
-                      ? 'bg-white dark:bg-zinc-700 text-primary shadow-sm'
-                      : 'text-gray-500'
+                    activeMode === "owner"
+                      ? "bg-white dark:bg-zinc-700 text-primary shadow-sm"
+                      : "text-gray-500"
                   }`}
                 >
                   <Briefcase className="w-4 h-4 mr-1.5" />
                   Manager
                 </button>
                 <button
-                  onClick={() => { handleModeSwitch('staff'); setMobileMenuOpen(false); }}
+                  onClick={() => {
+                    handleModeSwitch("staff");
+                    setMobileMenuOpen(false);
+                  }}
                   disabled={isSwitchingMode}
                   className={`flex items-center px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                    activeMode === 'staff'
-                      ? 'bg-white dark:bg-zinc-700 text-primary shadow-sm'
-                      : 'text-gray-500'
+                    activeMode === "staff"
+                      ? "bg-white dark:bg-zinc-700 text-primary shadow-sm"
+                      : "text-gray-500"
                   }`}
                 >
                   <Users className="w-4 h-4 mr-1.5" />
@@ -288,14 +344,20 @@ const Navbar = () => {
                   <Link
                     href="/login"
                     className="text-gray-600 hover:text-primary py-2 font-medium"
-                    onClick={() => setMobileMenuOpen(false)}
+                    onClick={() => {
+                      trackEvent("click", { element: "nav_login", section: "navbar_mobile" });
+                      setMobileMenuOpen(false);
+                    }}
                   >
                     Login
                   </Link>
                   <Link
                     href="/register"
                     className="text-primary py-2 font-medium"
-                    onClick={() => setMobileMenuOpen(false)}
+                    onClick={() => {
+                      trackEvent("click", { element: "nav_signup", section: "navbar_mobile" });
+                      setMobileMenuOpen(false);
+                    }}
                   >
                     Sign Up
                   </Link>

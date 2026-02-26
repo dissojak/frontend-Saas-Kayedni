@@ -6,10 +6,12 @@ import { callBackendLogin } from '../utils/index';
 import type { LoginPayload } from '../types/index';
 import { UserRole } from '../../types';
 import { useRouter } from 'next/navigation';
+import { useTracking } from '@global/hooks/useTracking';
 
 export function useLogin() {
   const auth = useAuth();
   const router = useRouter();
+  const { trackEvent } = useTracking();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<UserRole>('CLIENT');
@@ -26,6 +28,7 @@ export function useLogin() {
       if (result.success && result.user) {
         // Login successful with backend
         await auth.login(email, password, role);
+        trackEvent('login', { method: 'email', role });
         router.push("/");
         return;
       }

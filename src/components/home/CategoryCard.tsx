@@ -4,6 +4,7 @@
 import React from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@components/ui/card";
+import { useTracking } from "@global/hooks/useTracking";
 
 interface CategoryCardProps {
   category: {
@@ -17,11 +18,12 @@ interface CategoryCardProps {
 
 const CategoryCard: React.FC<CategoryCardProps> = ({ category }) => {
   const router = useRouter();
+  const { trackEvent } = useTracking();
 
   return (
     <Card
       className="card-hover cursor-pointer"
-      onClick={() => router.push(`/businesses?category=${category.id}`)}
+      onClick={() => { trackEvent('category_browsed', { categoryId: category.id, categoryName: category.name, source: 'home' }); router.push(`/businesses?category=${category.id}`); }}
     >
       <CardContent className="p-6 flex items-center space-x-4">
         <div className={`${category.color} h-12 w-12 rounded-full flex items-center justify-center text-xl`}>

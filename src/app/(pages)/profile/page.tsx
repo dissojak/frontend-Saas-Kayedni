@@ -20,12 +20,15 @@ import {
 } from '@global/lib/api/profile.api';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Loader2, Save, Camera, Shield, User, Mail, Phone, Lock, Sparkles, Crown } from 'lucide-react';
+import { useTracking } from '@global/hooks/useTracking';
+import TimeOnPageTracker from '@components/tracking/TimeOnPageTracker';
 
 export default function ProfilePage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { isAuthenticated, updateUser, hydrated } = useAuth();
+  const { trackEvent } = useTracking();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const { data: profile, isPending: loadingProfile } = useQuery<UserProfile>({
@@ -91,6 +94,7 @@ export default function ProfilePage() {
         description: 'Your changes have been saved securely.', 
         variant: 'success' 
       });
+      trackEvent('profile_update', { fields: ['name', 'email', 'phone'].filter(Boolean) });
       updateUser(
         buildUserFromDb({
           userId: data.userId,
@@ -198,6 +202,7 @@ export default function ProfilePage() {
 
   return (
     <Layout>
+      <TimeOnPageTracker pageName="profile" />
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-950 dark:via-slate-900 dark:to-indigo-950 p-4 md:p-8">
         <div className="max-w-7xl mx-auto space-y-8">
           

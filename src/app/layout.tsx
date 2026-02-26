@@ -6,6 +6,7 @@ import { Toaster } from "@components/ui/toaster";
 import { Toaster as Sonner } from "@components/ui/sonner";
 import { TooltipProvider } from "@components/ui/tooltip";
 import Providers from "@global/providers";
+import GoogleAnalytics from "./ga";
 import React from "react";
 
 const geistSans = Geist({
@@ -32,6 +33,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${zain.variable} antialiased`}>
+        <GoogleAnalytics />
         <Providers>
           {children}
         </Providers>
