@@ -13,7 +13,7 @@ export function useForgotPassword() {
 
   // Load email from localStorage on mount (if user came from login page)
   useEffect(() => {
-    const savedEmail = localStorage.getItem('bookify_reset_email');
+    const savedEmail = localStorage.getItem('kayedni_reset_email');
     if (savedEmail) {
       setEmail(savedEmail);
     }
@@ -35,7 +35,7 @@ export function useForgotPassword() {
 
       if (result.message) {
         // Save email to localStorage for reset-password page
-        localStorage.setItem('bookify_reset_email', email);
+        localStorage.setItem('kayedni_reset_email', email);
         setSuccess(true);
         
         // Auto-redirect to reset-password page after 2 seconds

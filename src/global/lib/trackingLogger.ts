@@ -1,18 +1,18 @@
 /**
- * Bookify Tracking Logger
+ * kayedni Tracking Logger
  * Branded console logging for tracking system
  * Never throws - only logs to console for debugging
  */
 
-const BOOKIFY_BANNER = `
+const KAYEDNI_BANNER = `
   ╔═══════════════════════════════════════════════════╗
   ║                                                   ║
-  ║          📍 Bookify Tracking System              ║
+  ║          📍 Kayedni Tracking System              ║
   ║                                                   ║
   ╚═══════════════════════════════════════════════════╝
 `;
 
-const COMPACT_BANNER = "🔷 Bookify Tracking";
+const COMPACT_BANNER = "🔷 Kayedni Tracking";
 
 interface LogEntry {
   level: "info" | "warn" | "error";

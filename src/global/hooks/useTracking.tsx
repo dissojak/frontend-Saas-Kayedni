@@ -22,7 +22,7 @@ export function useTracking(): TrackingContextType {
     // Never crash the app - return no-op stub
     if (typeof window !== "undefined") {
       console.warn(
-        "[Bookify Tracking] useTracking called outside TrackingProvider - tracking disabled for this component. " +
+        "[kayedni Tracking] useTracking called outside TrackingProvider - tracking disabled for this component. " +
         "Ensure TrackingProvider wraps your component tree in providers/index.tsx"
       );
     }

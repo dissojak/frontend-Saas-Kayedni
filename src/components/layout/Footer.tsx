@@ -1,108 +1,98 @@
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Twitter, Facebook, Instagram, Github, Mail } from "lucide-react";
+import { Button } from "@components/ui/button";
+import { Input } from "@components/ui/input";
 
 const Footer = () => {
 	const currentYear = new Date().getFullYear();
 
 	return (
-		<footer className="relative bg-zinc-900 text-gray-200 overflow-hidden">
-			{/* Decorative arcs - positioned to the right */}
-			<div className="pointer-events-none absolute -right-40 -top-40 w-[900px] h-[900px] rounded-full bg-gradient-to-br from-zinc-800/60 to-zinc-700/30 opacity-60"></div>
-			<div className="pointer-events-none absolute -right-20 top-20 w-[600px] h-[600px] rounded-full bg-gradient-to-br from-zinc-800/40 to-transparent opacity-40"></div>
+		<footer className="relative bg-zinc-950 text-gray-200 overflow-hidden pt-20 pb-10">
+			{/* Decorative elements */}
+			<div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-primary/50 to-transparent"></div>
+			<div className="absolute -top-[300px] -left-[300px] w-[600px] h-[600px] rounded-full bg-primary/20 blur-[120px] pointer-events-none"></div>
+            <div className="absolute -bottom-[300px] -right-[300px] w-[600px] h-[600px] rounded-full bg-brand-orange/10 blur-[120px] pointer-events-none"></div>
 
-			<div className="container mx-auto px-6 py-16 relative z-10">
-				<div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
-					{/* Left column: brand + vertical social */}
-					<div className="md:col-span-4 flex flex-col md:flex-row md:items-start">
-						<div className="flex-shrink-0">
-							<Link href="/" className="inline-block">
-								<span className="text-3xl font-extrabold text-white">Bookify</span>
-							</Link>
-							<p className="mt-4 text-gray-300 max-w-[220px]">A modern booking platform designed for great user experiences.</p>
-						</div>
-
-						<div className="mt-6 md:mt-0 md:ml-6 flex md:flex-col items-center md:items-start space-x-4 md:space-x-0 md:space-y-4">
-							<a href="#" aria-label="GitHub" className="p-2 rounded-full bg-zinc-800 hover:bg-zinc-700 transition-colors">
-								<Github size={18} />
+			<div className="container mx-auto px-6 relative z-10">
+				<div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
+					{/* Brand Column */}
+					<div className="md:col-span-1 space-y-6">
+						<Link href="/" className="inline-block">
+                             <Image 
+                                src="/assets/KayedniFullLogo-zain.png"
+                                alt="kayedni"
+                                width={160}
+                                height={45}
+                                className="brightness-0 invert" 
+                            />
+						</Link>
+						<p className="text-gray-400 leading-relaxed text-sm">
+                            Simplifying bookings for everyone. The all-in-one platform for modern businesses and clients.
+                        </p>
+						<div className="flex gap-4 pt-2">
+							<a href="#" aria-label="Github" className="text-gray-400 hover:text-white transition-colors hover:scale-110 transform duration-200">
+								<Github size={20} />
 							</a>
-							<a href="#" aria-label="Twitter" className="p-2 rounded-full bg-zinc-800 hover:bg-zinc-700 transition-colors">
-								<Twitter size={18} />
+							<a href="#" aria-label="Twitter" className="text-gray-400 hover:text-white transition-colors hover:scale-110 transform duration-200">
+								<Twitter size={20} />
 							</a>
-							<a href="#" aria-label="Instagram" className="p-2 rounded-full bg-zinc-800 hover:bg-zinc-700 transition-colors">
-								<Instagram size={18} />
+							<a href="#" aria-label="Instagram" className="text-gray-400 hover:text-white transition-colors hover:scale-110 transform duration-200">
+								<Instagram size={20} />
 							</a>
-							<a href="#" aria-label="Facebook" className="p-2 rounded-full bg-zinc-800 hover:bg-zinc-700 transition-colors">
-								<Facebook size={18} />
+							<a href="#" aria-label="Facebook" className="text-gray-400 hover:text-white transition-colors hover:scale-110 transform duration-200">
+								<Facebook size={20} />
 							</a>
 						</div>
 					</div>
 
-					{/* Middle columns: For Clients & For Businesses */}
-					<div className="md:col-span-5 grid grid-cols-1 sm:grid-cols-2 gap-8">
+                    {/* Links Columns */}
+					<div className="md:col-span-2 grid grid-cols-2 gap-8 md:pl-12">
 						<div>
-							<h5 className="text-white font-semibold mb-3">For Clients</h5>
-							<ul className="space-y-2 text-gray-300">
-								<li><Link href="/businesses" className="hover:text-white">Find services</Link></li>
-								<li><Link href="/client/bookings" className="hover:text-white">My bookings</Link></li>
-								<li><Link href="/help" className="hover:text-white">Help center</Link></li>
-								<li><Link href="/how-it-works" className="hover:text-white">How it works</Link></li>
-								<li><Link href="/reviews" className="hover:text-white">Reviews & ratings</Link></li>
+							<h5 className="text-white font-bold mb-6 text-lg tracking-tight">Product</h5>
+							<ul className="space-y-4 text-gray-400 text-sm">
+								<li><Link href="/features" className="hover:text-primary transition-colors">Features</Link></li>
+								<li><Link href="/pricing" className="hover:text-primary transition-colors">Pricing</Link></li>
+								<li><Link href="/businesses" className="hover:text-primary transition-colors">Find Services</Link></li>
+                                <li><Link href="/integrations" className="hover:text-primary transition-colors">Integrations</Link></li>
 							</ul>
 						</div>
-
 						<div>
-							<h5 className="text-white font-semibold mb-3">For Businesses</h5>
-							<ul className="space-y-2 text-gray-300">
-								<li><Link href="/business/register" className="hover:text-white">Register your business</Link></li>
-								<li><Link href="/business/pricing" className="hover:text-white">Pricing & plans</Link></li>
-								<li><Link href="/business/resources" className="hover:text-white">Resources</Link></li>
-								<li><Link href="/business/features" className="hover:text-white">Point of sale</Link></li>
-								<li><Link href="/business/integrations" className="hover:text-white">Integrations</Link></li>
+							<h5 className="text-white font-bold mb-6 text-lg tracking-tight">Company</h5>
+							<ul className="space-y-4 text-gray-400 text-sm">
+								<li><Link href="/about" className="hover:text-primary transition-colors">About Us</Link></li>
+								<li><Link href="/careers" className="hover:text-primary transition-colors">Careers</Link></li>
+								<li><Link href="/blog" className="hover:text-primary transition-colors">Blog</Link></li>
+								<li><Link href="/contact" className="hover:text-primary transition-colors">Contact</Link></li>
 							</ul>
 						</div>
 					</div>
 
-					{/* Right column: Business pricing snippet + newsletter */}
-					<div className="md:col-span-3 flex flex-col items-start md:items-end">
-						<div className="w-full md:w-72 text-left md:text-right">
-							<div className="bg-zinc-800/40 rounded-lg p-4">
-								<h6 className="text-white font-semibold">Business plan</h6>
-								<p className="text-gray-300 mt-2 text-sm">Start taking bookings, manage staff and payments.</p>
-								<div className="mt-4 flex items-baseline justify-between">
-									<div>
-										<div className="text-2xl font-bold">Free</div>
-										<div className="text-xs text-gray-400">Forever plan for basic businesses</div>
-									</div>
-									<div>
-										<Link href="/business/pricing" className="inline-block px-3 py-2 bg-primary rounded-md text-white">See plans</Link>
-									</div>
-								</div>
-							</div>
-
-							<div className="mt-6">
-								<h5 className="text-white font-semibold mb-3">Stay connected</h5>
-								<form onSubmit={(e)=>e.preventDefault()} className="flex gap-2">
-									<input aria-label="Email" type="email" placeholder="Email address" className="flex-1 px-3 py-2 rounded-lg bg-zinc-800 text-gray-200 placeholder-gray-400 outline-none" />
-									<button className="px-4 py-2 rounded-lg bg-primary text-white hover:opacity-95">Join</button>
-								</form>
-
-								<div className="mt-4 flex items-center justify-end gap-3">
-									<button className="text-sm text-white font-semibold">En</button>
-									<button className="text-sm text-gray-400">Es</button>
-									<button className="text-sm text-gray-400">Fr</button>
-								</div>
-							</div>
-						</div>
+					{/* Newsletter Column */}
+					<div className="md:col-span-1">
+                        <h5 className="text-white font-bold mb-6 text-lg tracking-tight">Stay Updated</h5>
+                        <p className="text-gray-400 text-sm mb-4">Subscribe to our newsletter for the latest updates and offers.</p>
+						<form onSubmit={(e)=>e.preventDefault()} className="flex flex-col gap-3">
+							<Input 
+                                type="email" 
+                                placeholder="Enter your email" 
+                                className="bg-zinc-900/50 border-zinc-800 text-white placeholder:text-gray-500 focus-visible:ring-primary/50" 
+                            />
+							<Button type="submit" variant="skeuo-primary" className="w-full">
+                                Subscribe
+                            </Button>
+						</form>
 					</div>
 				</div>
 
-				<div className="mt-12 border-t border-zinc-800 pt-6 text-sm text-gray-500 flex flex-col md:flex-row items-center justify-between">
-					<div>© {currentYear} Bookify. All rights reserved.</div>
-					<div className="mt-3 md:mt-0 flex gap-6">
-						<Link href="#" className="hover:text-white">Privacy</Link>
-						<Link href="#" className="hover:text-white">Terms</Link>
-					</div>
+				<div className="border-t border-zinc-800 pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-gray-500">
+                    <p>&copy; {currentYear} kayedni. All rights reserved.</p>
+                    <div className="flex gap-6">
+                        <Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link>
+                        <Link href="/terms" className="hover:text-white transition-colors">Terms of Service</Link>
+                        <Link href="/cookies" className="hover:text-white transition-colors">Cookie Settings</Link>
+                    </div>
 				</div>
 			</div>
 		</footer>
@@ -110,4 +100,5 @@ const Footer = () => {
 };
 
 export default Footer;
+
 

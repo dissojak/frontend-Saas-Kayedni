@@ -16,7 +16,7 @@ export function useResetPassword() {
 
   // Load email from localStorage on mount
   useEffect(() => {
-    const savedEmail = localStorage.getItem('bookify_reset_email');
+    const savedEmail = localStorage.getItem('kayedni_reset_email');
     if (savedEmail) {
       setEmail(savedEmail);
     }
@@ -29,7 +29,7 @@ export function useResetPassword() {
 
     try {
       // Get email from state (loaded from localStorage)
-      const emailToUse = email || localStorage.getItem('bookify_reset_email') || '';
+      const emailToUse = email || localStorage.getItem('kayedni_reset_email') || '';
       
       // Validation
       if (!emailToUse) {
@@ -65,7 +65,7 @@ export function useResetPassword() {
       if (result.message) {
         setSuccess(true);
         // Clear the stored email from localStorage
-        localStorage.removeItem('bookify_reset_email');
+        localStorage.removeItem('kayedni_reset_email');
         // Redirect to login after 2 seconds
         setTimeout(() => {
           router.push('/login');

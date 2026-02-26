@@ -37,10 +37,10 @@ export default function LoginView({
             <div className="relative z-10 flex flex-col gap-10 px-10 py-12 text-white">
               <div className="flex items-center gap-3">
                 <div className="h-11 w-11 rounded-xl bg-white/15 backdrop-blur flex items-center justify-center">
-                  <Image src="/assets/KayedniLogo.png" alt="Bookify Logo" width={28} height={28} />
+                  <Image src="/assets/KayedniLogo.png" alt="kayedni Logo" width={28} height={28} />
                 </div>
                 <div>
-                  <p className="text-xs uppercase tracking-[0.2em] text-white/60">Bookify OS</p>
+                  <p className="text-xs uppercase tracking-[0.2em] text-white/60">kayedni OS</p>
                   <h1 className="text-2xl font-semibold">Scheduling that feels smooth</h1>
                 </div>
               </div>
@@ -73,7 +73,7 @@ export default function LoginView({
               <div className="mb-8 flex items-center justify-between gap-4">
                 <div>
                   <p className="text-sm text-slate-500 dark:text-slate-400">Sign in</p>
-                  <h2 className="text-2xl font-semibold">Welcome to Bookify</h2>
+                  <h2 className="text-2xl font-semibold">Welcome to kayedni</h2>
                 </div>
                 <Link
                   href="/register"
@@ -104,7 +104,7 @@ export default function LoginView({
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     type="email"
-                    placeholder="you@bookify.com"
+                    placeholder="you@kayedni.com"
                     required
                     className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-slate-900 shadow-sm transition focus:border-[var(--color-primary)] focus-visible:ring-[var(--color-primary)] dark:border-slate-800 dark:bg-slate-900 dark:text-white"
                   />
@@ -118,7 +118,7 @@ export default function LoginView({
                       className="text-sm text-[var(--color-primary)] hover:underline"
                       onClick={() => {
                         if (email) {
-                          localStorage.setItem('bookify_reset_email', email);
+                          localStorage.setItem('kayedni_reset_email', email);
                         }
                       }}
                     >

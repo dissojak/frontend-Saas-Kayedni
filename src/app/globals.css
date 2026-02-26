@@ -15,43 +15,43 @@
   --popover: 0 0% 100%;
   --popover-foreground: 240 6% 10%;
 
-  --primary: 270 100% 52%;
+  --primary: 269 66% 55%;
   --primary-foreground: 0 0% 100%;
 
-  --secondary: 265 60% 95%;
-  --secondary-foreground: 270 80% 35%;
+  --secondary: 269 30% 95%;
+  --secondary-foreground: 269 66% 35%;
 
-  --muted: 265 40% 96%;
-  --muted-foreground: 270 20% 45%;
+  --muted: 269 20% 96%;
+  --muted-foreground: 269 10% 45%;
 
-  --accent: 270 80% 95%;
-  --accent-foreground: 270 80% 25%;
+  --accent: 23 74% 66%;
+  --accent-foreground: 0 0% 100%;
 
   --destructive: 0 85% 55%;
   --destructive-foreground: 0 0% 100%;
 
-  --border: 270 30% 90%;
-  --input: 270 30% 90%;
-  --ring: 270 100% 52%;
+  --border: 269 20% 90%;
+  --input: 269 20% 90%;
+  --ring: 269 66% 55%;
 
-  --radius: 0.5rem;
+  --radius: 0.75rem;
 
   --sidebar-background: 0 0% 98%;
   --sidebar-foreground: 240 6% 10%;
-  --sidebar-primary: 270 100% 52%;
+  --sidebar-primary: 269 66% 55%;
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 265 60% 95%;
-  --sidebar-accent-foreground: 270 80% 35%;
-  --sidebar-border: 270 30% 90%;
-  --sidebar-ring: 270 100% 52%;
+  --sidebar-accent: 269 30% 95%;
+  --sidebar-accent-foreground: 269 66% 35%;
+  --sidebar-border: 269 20% 90%;
+  --sidebar-ring: 269 66% 55%;
 
   /* Brand color tokens (hex values) — mapped to the palettes added in tailwind.config.ts */
-  /* Primary brand (user indicated 'this' at black-pearl 900) */
-  --brand-primary: #034477;
-  /* Primary (dark-side) alternative (user indicated smalt-blue 500) */
-  --brand-primary-dark: #5c7c89;
-  /* Accent / secondary (user indicated vivid-tangerine 400) */
-  --brand-accent: #f58f7c;
+  /* Primary brand (Purple) */
+  --brand-primary: #8A42D8;
+  /* Primary (dark-side) alternative */
+  --brand-primary-dark: #512DA8;
+  /* Accent / secondary (Orange) */
+  --brand-accent: #E89A6A;
   --brand-primary-foreground: #ffffff;
 }
 
@@ -66,33 +66,33 @@
   --popover: 240 6% 12%;
   --popover-foreground: 0 0% 100%;
 
-  --primary: 270 100% 66%;
+  --primary: 269 66% 65%;
   --primary-foreground: 0 0% 100%;
 
-  --secondary: 270 30% 25%;
+  --secondary: 269 30% 25%;
   --secondary-foreground: 0 0% 100%;
 
-  --muted: 270 20% 30%;
-  --muted-foreground: 270 20% 70%;
+  --muted: 269 20% 30%;
+  --muted-foreground: 269 20% 70%;
 
-  --accent: 270 30% 25%;
-  --accent-foreground: 270 10% 85%;
+  --accent: 23 74% 66%;
+  --accent-foreground: 0 0% 100%;
 
   --destructive: 0 70% 40%;
   --destructive-foreground: 0 0% 100%;
 
-  --border: 270 20% 30%;
-  --input: 270 20% 30%;
-  --ring: 270 100% 66%;
+  --border: 269 20% 30%;
+  --input: 269 20% 30%;
+  --ring: 269 66% 65%;
 
   --sidebar-background: 240 6% 10%;
-  --sidebar-foreground: 270 30% 90%;
-  --sidebar-primary: 270 100% 66%;
+  --sidebar-foreground: 269 30% 90%;
+  --sidebar-primary: 269 66% 65%;
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 270 30% 25%;
-  --sidebar-accent-foreground: 270 30% 90%;
-  --sidebar-border: 270 30% 25%;
-  --sidebar-ring: 270 100% 66%;
+  --sidebar-accent: 269 30% 25%;
+  --sidebar-accent-foreground: 269 30% 90%;
+  --sidebar-border: 269 30% 25%;
+  --sidebar-ring: 269 66% 65%;
 }
 
 /* Expose tokens as Tailwind colors and fonts */
@@ -179,7 +179,7 @@ body {
 .auth-sphere-1 {
   width: 38vw;
   height: 38vw;
-  background: linear-gradient(35deg, rgba(255, 58, 130, 0.65), rgba(255, 102, 0, 0.35));
+  background: linear-gradient(35deg, rgba(138, 66, 216, 0.65), rgba(232, 154, 106, 0.35)); /* Purple to Orange */
   top: -10%;
   left: -12%;
   animation: auth-float-1 16s ease-in-out infinite alternate;
@@ -188,7 +188,7 @@ body {
 .auth-sphere-2 {
   width: 44vw;
   height: 44vw;
-  background: linear-gradient(215deg, rgba(72, 0, 255, 0.6), rgba(0, 183, 255, 0.35));
+  background: linear-gradient(215deg, rgba(81, 45, 168, 0.6), rgba(38, 198, 218, 0.35)); /* Dark Purple to Blue */
   bottom: -18%;
   right: -12%;
   animation: auth-float-2 19s ease-in-out infinite alternate;
@@ -197,7 +197,7 @@ body {
 .auth-sphere-3 {
   width: 30vw;
   height: 30vw;
-  background: linear-gradient(120deg, rgba(133, 89, 255, 0.4), rgba(98, 216, 249, 0.28));
+  background: linear-gradient(120deg, rgba(236, 64, 122, 0.4), rgba(77, 208, 225, 0.28)); /* Pink to Cyan */
   top: 55%;
   left: 18%;
   animation: auth-float-3 20s ease-in-out infinite alternate;
@@ -207,7 +207,7 @@ body {
   position: absolute;
   width: 42vw;
   height: 42vh;
-  background: radial-gradient(circle, rgba(72, 0, 255, 0.18), transparent 70%);
+  background: radial-gradient(circle, rgba(138, 66, 216, 0.18), transparent 70%); /* Primary Purple Glow */
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);

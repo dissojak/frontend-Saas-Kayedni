@@ -79,7 +79,7 @@ export default function AdminControlPanel() {
               </div>
               <div>
                 <h1 className="text-xl font-bold text-gray-900">Admin Control Panel</h1>
-                <p className="text-sm text-gray-500">Bookify Management System</p>
+                <p className="text-sm text-gray-500">kayedni Management System</p>
               </div>
             </div>
             <div className="flex items-center gap-4">

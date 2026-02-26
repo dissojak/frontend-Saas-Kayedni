@@ -33,9 +33,9 @@ export function SearchResults({ results, loading, error, hasSearched, onClose, s
   if (!hasSearched) return null;
 
   return (
-    <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-slate-700 max-h-[70vh] overflow-hidden z-50">
+    <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-slate-700 max-h-[70vh] flex flex-col z-50 overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-slate-700">
+      <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 z-10">
         <h3 className="text-lg font-semibold dark:text-white">
           {loading ? 'Searching...' : `${results.length} Results Found`}
         </h3>
@@ -48,13 +48,10 @@ export function SearchResults({ results, loading, error, hasSearched, onClose, s
       </div>
 
       {/* Content */}
-      <div className="overflow-y-auto max-h-[calc(70vh-60px)]">
+      <div className="flex-1 overflow-y-auto min-h-0 bg-white dark:bg-slate-900 border-x border-gray-100 dark:border-slate-800">
         {loading && (
-          <div className="p-8 text-center">
-            <div className="inline-flex items-center gap-2 text-gray-500 dark:text-gray-400">
-              <div className="h-5 w-5 border-2 border-[var(--color-primary)] border-t-transparent rounded-full animate-spin" />
-              <span>Searching for services...</span>
-            </div>
+          <div className="p-8 text-center text-gray-500 dark:text-gray-400 font-medium">
+            Searching for services...
           </div>
         )}
 
@@ -144,10 +141,11 @@ export function SearchResults({ results, loading, error, hasSearched, onClose, s
 
       {/* Footer */}
       {!loading && results.length > 0 && (
-        <div className="px-6 py-4 border-t border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/50">
+        <div className="flex-shrink-0 px-6 py-4 border-t border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/50 relative z-10">
           <Button
-            className="w-full bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-accent)]"
+            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-lg shadow-primary/20 transition-all hover:-translate-y-0.5"
             onClick={handleViewAll}
+            size="lg"
           >
             View All Results
             <ArrowRight className="ml-2 h-4 w-4" />

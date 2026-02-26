@@ -13,20 +13,20 @@ const GA4_FORWARDED_EVENTS = new Set([
 ]);
 
 // Branded logging utilities
-const BOOKIFY_BANNER = `
+const KAYEDNI_BANNER = `
   ╔═══════════════════════════════════════════════════╗
   ║                                                   ║
-  ║          📍 Bookify Tracking System              ║
+  ║          📍 kayedni Tracking System              ║
   ║                                                   ║
   ╚═══════════════════════════════════════════════════╝
 `;
 
-const COMPACT_BANNER = "🔷 Bookify Tracking";
+const COMPACT_BANNER = "🔷 kayedni Tracking";
 
 const trackingConsole = {
   init: () => {
     if (typeof window !== "undefined") {
-      console.log("%c" + BOOKIFY_BANNER, "color: #10b981; font-weight: bold");
+      console.log("%c" + KAYEDNI_BANNER, "color: #10b981; font-weight: bold");
       console.log(
         "%c✓ Tracking System Ready",
         "color: #10b981; font-weight: bold; font-size: 12px"
@@ -119,8 +119,8 @@ interface TrackingProviderProps {
 const BATCH_SIZE = 10;
 const FLUSH_INTERVAL = 5000; // 5 seconds
 const TRACKING_SERVICE_URL = process.env.NEXT_PUBLIC_TRACKING_SERVICE_URL || "http://localhost:4000";
-const SESSION_STORAGE_KEY = "bookify_session_id";
-const ANONYMOUS_USER_KEY = "bookify_anonymous_id";
+const SESSION_STORAGE_KEY = "kayedni_session_id";
+const ANONYMOUS_USER_KEY = "kayedni_anonymous_id";
 
 // Module-level flag — survives HMR (prevents double banner on hot reload)
 let __trackingLoggerInitialized = false;

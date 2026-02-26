@@ -56,7 +56,7 @@ export default function RegisterView({
               <div className="mb-8 flex items-center justify-between">
                 <div>
                   <p className="text-sm text-slate-500 dark:text-slate-400">Get started free</p>
-                  <h2 className="text-2xl font-semibold">Create your Bookify account</h2>
+                  <h2 className="text-2xl font-semibold">Create your kayedni account</h2>
                 </div>
                 <Link
                   href="/login"
@@ -268,7 +268,7 @@ export default function RegisterView({
                   B
                 </div>
                 <div>
-                  <p className="text-xs uppercase tracking-[0.22em] text-white/60">Bookify OS</p>
+                  <p className="text-xs uppercase tracking-[0.22em] text-white/60">kayedni OS</p>
                   <h3 className="text-2xl font-semibold">Built for modern teams</h3>
                 </div>
               </div>

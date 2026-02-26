@@ -22,7 +22,7 @@ export default function Custom404() {
           <Link href="/contact" className="inline-block border border-primary text-primary font-semibold py-2 px-6 rounded hover:bg-primary/5">Contact</Link>
         </div>
 
-        <p className="text-sm text-gray-500 mt-6">If you think this is an error, email <a href="mailto:contact@bookify.com" className="underline">contact@bookify.com</a></p>
+        <p className="text-sm text-gray-500 mt-6">If you think this is an error, email <a href="mailto:contact@kayedni.com" className="underline">contact@kayedni.com</a></p>
       </div>
     </div>
   );

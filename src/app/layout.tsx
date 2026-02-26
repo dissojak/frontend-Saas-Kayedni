@@ -20,8 +20,8 @@ const zain = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Bookify",
-  description: "Bookify is a Saas platform for easy booking management!",
+  title: "kayedni",
+  description: "kayedni is a Saas platform for easy booking management!",
 };
 
 
@@ -32,7 +32,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${geistSans.variable} ${zain.variable} antialiased`}>
+      <body className={`${geistSans.variable} ${zain.variable} antialiased bg-background text-foreground`}>
         <GoogleAnalytics />
         <Providers>
           {children}

@@ -60,11 +60,11 @@ import {
 // Status badge styling
 const getStatusBadge = (status: ClientBooking['status']) => {
   const styles = {
-    pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-    confirmed: 'bg-green-100 text-green-800 border-green-200',
-    completed: 'bg-blue-100 text-blue-800 border-blue-200',
-    cancelled: 'bg-red-100 text-red-800 border-red-200',
-    no_show: 'bg-gray-100 text-gray-800 border-gray-200',
+    pending: 'bg-yellow-100/50 text-yellow-800 border-yellow-200/50',
+    confirmed: 'bg-green-100/50 text-green-800 border-green-200/50',
+    completed: 'bg-brand-blue/10 text-brand-blue border-brand-blue/20',
+    cancelled: 'bg-red-100/50 text-red-800 border-red-200/50',
+    no_show: 'bg-gray-100/50 text-gray-800 border-gray-200/50',
   };
   const labels = {
     pending: 'Pending',
@@ -74,7 +74,7 @@ const getStatusBadge = (status: ClientBooking['status']) => {
     no_show: 'No Show',
   };
   return (
-    <Badge variant="outline" className={`${styles[status]} font-medium`}>
+    <Badge variant="outline" className={`${styles[status]} font-bold rounded-lg px-3 py-1`}>
       {labels[status]}
     </Badge>
   );
@@ -120,72 +120,82 @@ function BookingCard({
       const hours = Number.parseInt(parts[0], 10);
       const minutes = parts[1];
       const ampm = hours >= 12 ? 'PM' : 'AM';
-      const displayHours = hours % 12 || 12;
-      return `${displayHours}:${minutes} ${ampm}`;
+      return `${hours % 12 || 12}:${minutes} ${ampm}`;
     }
     return timeStr;
   };
 
   return (
-    <Card className="group hover:shadow-md transition-all duration-200 border-l-4 border-l-client overflow-hidden">
+    <Card className="group border-none shadow-skeuo hover:shadow-skeuo-inner transition-all duration-300 rounded-2xl overflow-hidden bg-white/50 dark:bg-zinc-900/50 backdrop-blur-sm">
       <CardContent className="p-0">
-        <div className="p-5">
+        <div className="p-6">
           {/* Header with Business Name and Status */}
-          <div className="flex items-start justify-between mb-3">
+          <div className="flex items-start justify-between mb-4">
             <div>
-              <h3 className="font-bold text-lg text-gray-900">{booking.businessName}</h3>
-              <p className="text-sm text-gray-500">{booking.serviceName}</p>
+              <h3 className="font-bold text-xl text-foreground group-hover:text-primary transition-colors">{booking.businessName}</h3>
+              <p className="text-sm font-medium text-muted-foreground">{booking.serviceName}</p>
             </div>
             {getStatusBadge(booking.status)}
           </div>
           
           {/* Booking Details Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-            <div className="flex items-center gap-2 text-sm">
-              <Calendar className="h-4 w-4 text-client" />
-              <span className="text-gray-700">{formatDate(booking.date)}</span>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
+            <div className="flex flex-col gap-1">
+               <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Date</span>
+               <div className="flex items-center gap-2 font-medium text-foreground">
+                   <Calendar className="h-4 w-4 text-primary" />
+                   {formatDate(booking.date)}
+               </div>
             </div>
-            <div className="flex items-center gap-2 text-sm">
-              <Clock className="h-4 w-4 text-client" />
-              <span className="text-gray-700">
-                {formatTime(booking.startTime)}
-                {booking.endTime && ` - ${formatTime(booking.endTime)}`}
-              </span>
+             <div className="flex flex-col gap-1">
+               <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Time</span>
+               <div className="flex items-center gap-2 font-medium text-foreground">
+                   <Clock className="h-4 w-4 text-primary" />
+                   {formatTime(booking.startTime)}
+               </div>
             </div>
-            <div className="flex items-center gap-2 text-sm">
-              <User className="h-4 w-4 text-client" />
-              <span className="text-gray-700">{booking.staffName}</span>
+             <div className="flex flex-col gap-1">
+               <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Staff</span>
+               <div className="flex items-center gap-2 font-medium text-foreground">
+                   <User className="h-4 w-4 text-primary" />
+                   {booking.staffName}
+               </div>
             </div>
-            <div className="flex items-center gap-2 text-sm">
-              <DollarSign className="h-4 w-4 text-client" />
-              <span className="font-semibold text-gray-900">${booking.servicePrice.toFixed(2)}</span>
+             <div className="flex flex-col gap-1">
+               <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Price</span>
+               <div className="flex items-center gap-2 font-medium text-foreground">
+                   <DollarSign className="h-4 w-4 text-primary" />
+                   ${booking.servicePrice.toFixed(2)}
+               </div>
             </div>
           </div>
 
-          {/* Duration if available */}
-          {booking.serviceDuration && (
-            <div className="flex items-center gap-2 text-sm text-gray-500 mb-4">
-              <Scissors className="h-4 w-4" />
-              <span>{booking.serviceDuration} min service</span>
-            </div>
-          )}
-
-          {/* Notes if available */}
-          {booking.notes && (
-            <div className="bg-gray-50 rounded-lg p-3 mb-4 text-sm text-gray-600">
-              <span className="font-medium">Note:</span> {booking.notes}
-            </div>
-          )}
+          {/* Duration/Notes Section */}
+            {(booking.serviceDuration || booking.notes) && (
+                <div className="flex flex-col gap-2 p-4 bg-muted/30 rounded-xl border border-border/50">
+                     {booking.serviceDuration && (
+                        <div className="flex items-center gap-2 text-sm text-foreground/80">
+                        <Scissors className="h-4 w-4 text-muted-foreground" />
+                        <span>{booking.serviceDuration} min service</span>
+                        </div>
+                    )}
+                     {booking.notes && (
+                        <div className="flex items-start gap-2 text-sm text-muted-foreground italic">
+                            <span className="font-semibold not-italic">Note:</span> {booking.notes}
+                        </div>
+                    )}
+                </div>
+            )}
         </div>
 
         {/* Action Buttons */}
-        <div className="bg-gray-50 px-5 py-3 flex flex-wrap gap-2 justify-end border-t">
+        <div className="bg-muted/20 px-6 py-4 flex flex-wrap gap-3 justify-end border-t border-border/50">
           {type === 'upcoming' ? (
             <>
               <Button 
                 variant="outline" 
                 size="sm"
-                className="gap-1.5"
+                className="gap-2 rounded-lg hover:border-primary hover:text-primary"
                 onClick={() => onReschedule(booking)}
               >
                 <Calendar className="h-4 w-4" />
@@ -194,7 +204,7 @@ function BookingCard({
               <Button 
                 variant="destructive" 
                 size="sm"
-                className="gap-1.5"
+                className="gap-2 rounded-lg shadow-sm"
                 onClick={() => onCancel(booking)}
               >
                 <X className="h-4 w-4" />

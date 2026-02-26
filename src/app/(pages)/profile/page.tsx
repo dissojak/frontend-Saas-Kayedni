@@ -203,133 +203,119 @@ export default function ProfilePage() {
   return (
     <Layout>
       <TimeOnPageTracker pageName="profile" />
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-950 dark:via-slate-900 dark:to-indigo-950 p-4 md:p-8">
-        <div className="max-w-7xl mx-auto space-y-8">
+      
+      {/* Background with animated elements (Skeuomorphic Touch) */}
+      <div className="fixed inset-0 z-0 bg-background overflow-hidden pointer-events-none">
+        <div className="absolute top-[-10%] right-[-5%] w-[500px] h-[500px] rounded-full bg-primary/5 blur-[100px] animate-pulse" />
+        <div className="absolute bottom-[-10%] left-[-5%] w-[500px] h-[500px] rounded-full bg-brand-orange/5 blur-[100px] animate-pulse delay-1000" />
+        <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]" />
+      </div>
+
+      <div className="relative z-10 min-h-screen p-4 md:p-8">
+        <div className="max-w-6xl mx-auto space-y-8">
           
-          {/* Hero Header with Glass Effect */}
-          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 p-8 md:p-12 shadow-2xl">
-            <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10"></div>
-            <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <Sparkles className="h-8 w-8 text-yellow-300 animate-pulse" />
-                  <h1 className="text-4xl md:text-5xl font-bold text-white">
-                    {profile?.name || 'Your Profile'}
-                  </h1>
-                </div>
-                <p className="text-blue-100 text-lg max-w-2xl">
-                  Customize your digital identity and manage your account with style
-                </p>
+          {/* Hero Header Section */}
+          <div className="relative overflow-hidden rounded-3xl bg-card border border-white/20 shadow-xl dark:shadow-none dark:border-border/50 p-8 md:p-10 flex flex-col md:flex-row items-center gap-8 backdrop-blur-sm">
+            {/* Skeuomorphic Glass Effect Overlay */}
+            <div className="absolute inset-0 bg-gradient-to-br from-white/40 via-white/10 to-transparent dark:from-white/5 dark:via-white/0 pointer-events-none" />
+            
+            {/* Avatar Section */}
+            <div className="relative group shrink-0">
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-primary via-brand-purple to-brand-orange rounded-full opacity-70 blur-md group-hover:opacity-100 transition duration-500 animate-pulse" />
+              <div className="relative">
+                <Avatar className="h-28 w-28 md:h-36 md:w-36 border-4 border-background shadow-2xl ring-2 ring-primary/20">
+                  <AvatarImage src={currentAvatar ?? undefined} alt="Profile" className="object-cover" />
+                  <AvatarFallback className="text-4xl font-bold bg-primary text-primary-foreground">
+                    {displayInitials}
+                  </AvatarFallback>
+                </Avatar>
+                
+                {/* Upload Loading UI */}
+                {uploadAvatarMutation.isPending && (
+                  <div className="absolute inset-0 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center z-10 transition-opacity">
+                    <Loader2 className="h-8 w-8 animate-spin text-white drop-shadow-md" />
+                  </div>
+                )}
+                
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadAvatarMutation.isPending}
+                  className="absolute bottom-1 right-1 p-2.5 rounded-full bg-primary text-primary-foreground shadow-lg hover:shadow-xl hover:bg-primary/90 transition-all duration-300 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed ring-2 ring-background"
+                >
+                  <Camera className="h-4 w-4" />
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={onSelectAvatar}
+                />
               </div>
-              
-              {/* Avatar Hero Section */}
-              <div className="relative group">
-                <div className="absolute -inset-1 bg-gradient-to-r from-yellow-400 via-pink-500 to-purple-600 rounded-full opacity-75 blur-lg group-hover:opacity-100 transition duration-500 animate-pulse"></div>
-                <div className="relative">
-                  <Avatar className="h-24 w-24 md:h-32 md:w-32 border-4 border-white shadow-2xl ring-4 ring-white/50">
-                    <AvatarImage src={currentAvatar ?? undefined} alt="Profile" className="object-cover" />
-                    <AvatarFallback className="text-3xl md:text-4xl font-bold bg-gradient-to-br from-blue-500 to-purple-600 text-white">
-                      {displayInitials}
-                    </AvatarFallback>
-                  </Avatar>
-                  
-                  {/* Avatar Upload Loading Overlay */}
-                  {uploadAvatarMutation.isPending && (
-                    <div className="absolute inset-0 rounded-full bg-black/70 backdrop-blur-md flex items-center justify-center z-10">
-                      <div className="relative">
-                        {/* Animated Ring */}
-                        <div className="absolute inset-0 rounded-full border-4 border-t-blue-400 border-r-purple-400 border-b-pink-400 border-l-yellow-400 animate-spin"></div>
-                        <div className="absolute inset-2 rounded-full border-4 border-t-transparent border-r-transparent border-b-blue-400 border-l-purple-400 animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1s' }}></div>
-                        
-                        {/* Center Content */}
-                        <div className="relative flex items-center justify-center w-20 h-20">
-                          <div className="text-center">
-                            <Loader2 className="h-8 w-8 animate-spin text-white mx-auto drop-shadow-lg" />
-                            <p className="text-white text-[10px] mt-1 font-bold drop-shadow-md">Uploading</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={uploadAvatarMutation.isPending}
-                    className="absolute bottom-0 right-0 p-2.5 rounded-full bg-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed border-2 border-blue-500"
-                  >
-                    {uploadAvatarMutation.isPending ? (
-                      <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
-                    ) : (
-                      <Camera className="h-5 w-5 text-blue-600" />
-                    )}
-                  </button>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={onSelectAvatar}
-                  />
-                </div>
+            </div>
+
+            {/* User Info */}
+            <div className="flex-1 text-center md:text-left space-y-2 z-10">
+              <div className="flex items-center justify-center md:justify-start gap-2">
+                <h1 className="text-3xl md:text-4xl font-bold text-foreground tracking-tight">
+                  {profile?.name || 'Your Profile'}
+                </h1>
+                {profile?.role === 'ADMIN' && <Crown className="h-5 w-5 text-yellow-500 fill-yellow-500" />}
+              </div>
+              <p className="text-muted-foreground text-lg max-w-xl">
+                Manage your account settings and preferences.
+              </p>
+              <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mt-4">
+                 <div className="inline-flex items-center px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold border border-primary/20">
+                    <Shield className="w-3 h-3 mr-1" /> Verified User
+                 </div>
+                 {profile?.email && (
+                   <div className="inline-flex items-center px-3 py-1 rounded-full bg-secondary text-secondary-foreground text-xs font-medium border border-border">
+                      {profile.email}
+                   </div>
+                 )}
               </div>
             </div>
           </div>
 
           {/* Main Content Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             
             {/* Left Column - Profile & Security */}
-            <div className="lg:col-span-2 space-y-6">
+            <div className="lg:col-span-2 space-y-8">
               
               {/* Profile Information Card */}
               <div className="group relative">
-                <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl opacity-20 group-hover:opacity-30 blur transition duration-500"></div>
-                <Card className="relative border-0 shadow-xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-2xl overflow-hidden">
+                <div className="absolute -inset-[1px] bg-gradient-to-r from-primary/30 to-brand-purple/30 rounded-2xl opacity-0 group-hover:opacity-100 transition duration-500 blur-sm" />
+                <Card className="relative border border-border/60 shadow-sm bg-card/50 backdrop-blur-xl rounded-2xl overflow-hidden">
                   
-                  {/* Profile Save Loading Overlay */}
+                  {/* Loading State */}
                   {updateProfileMutation.isPending && (
-                    <div className="absolute inset-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md z-50 flex items-center justify-center rounded-2xl">
-                      <div className="text-center space-y-3">
-                        <div className="relative">
-                          <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full blur-xl opacity-50 animate-pulse"></div>
-                          <Loader2 className="h-16 w-16 animate-spin text-blue-600 relative z-10" />
-                        </div>
-                        <div>
-                          <p className="text-lg font-bold text-slate-900 dark:text-white">Saving your profile...</p>
-                          <p className="text-sm text-slate-600 dark:text-slate-400">This will only take a moment</p>
-                        </div>
+                    <div className="absolute inset-0 bg-background/80 backdrop-blur-[2px] z-50 flex items-center justify-center rounded-2xl">
+                      <div className="flex flex-col items-center gap-2">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                        <span className="text-sm font-medium text-muted-foreground">Saving changes...</span>
                       </div>
                     </div>
                   )}
-                  <CardHeader className="pb-4 border-b border-slate-200 dark:border-slate-700">
+
+                  <CardHeader className="pb-4 border-b border-border/40">
                     <div className="flex items-center justify-between">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <User className="h-5 w-5 text-blue-600" />
-                          <CardTitle className="text-2xl bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                            Profile Information
-                          </CardTitle>
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-xl bg-primary/10 text-primary">
+                          <User className="h-5 w-5" />
                         </div>
-                        <p className="text-sm text-slate-600 dark:text-slate-400">
-                          Keep your details up to date
-                        </p>
+                        <div>
+                          <CardTitle className="text-lg font-semibold text-foreground">Personal Information</CardTitle>
+                          <p className="text-sm text-muted-foreground">Update your personal details</p>
+                        </div>
                       </div>
                       <Button 
                         onClick={handleProfileSubmit} 
                         disabled={updateProfileMutation.isPending || loadingProfile}
-                        className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 disabled:opacity-70 disabled:cursor-not-allowed"
+                        className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20 transition-all hover:-translate-y-0.5"
                       >
-                        {updateProfileMutation.isPending ? (
-                          <>
-                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                            Saving...
-                          </>
-                        ) : (
-                          <>
-                            <Save className="h-4 w-4 mr-2" />
-                            Save Changes
-                          </>
-                        )}
+                         <Save className="h-4 w-4 mr-2" /> Save
                       </Button>
                     </div>
                   </CardHeader>
@@ -337,57 +323,41 @@ export default function ProfilePage() {
                     
                     {/* Name Input */}
                     <div className="space-y-2">
-                      <Label htmlFor="name" className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                        <User className="h-4 w-4 text-blue-600" />
-                        Full Name
-                      </Label>
-                      <div className="relative">
-                        <Input
-                          id="name"
-                          value={name}
-                          onChange={(e) => setName(e.target.value)}
-                          placeholder="Enter your full name"
-                          className="pl-4 pr-4 py-6 text-base border-2 border-slate-200 dark:border-slate-700 focus:border-blue-500 rounded-xl transition-all duration-300 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm"
-                        />
-                      </div>
+                      <Label htmlFor="name">Full Name</Label>
+                      <Input
+                        id="name"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        placeholder="John Doe"
+                        className="h-12 border-input/60 focus-visible:ring-primary bg-background/50"
+                      />
                     </div>
 
                     {/* Email & Phone Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-2">
-                        <Label htmlFor="email" className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                          <Mail className="h-4 w-4 text-blue-600" />
-                          Email Address
-                        </Label>
-                        <div className="relative">
-                          <Input 
-                            id="email" 
-                            value={email} 
-                            readOnly 
-                            disabled 
-                            className="pl-4 pr-4 py-6 text-base border-2 border-slate-200 dark:border-slate-700 rounded-xl bg-slate-100 dark:bg-slate-800 cursor-not-allowed"
-                          />
-                        </div>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
-                          <Lock className="h-3 w-3" />
-                          Managed by support team
-                        </p>
+                         <div className="flex justify-between">
+                            <Label htmlFor="email">Email Address</Label>
+                            <span className="text-xs text-muted-foreground flex items-center gap-1"><Lock className="w-3 h-3"/> Read-only</span>
+                         </div>
+                        <Input 
+                          id="email" 
+                          value={email} 
+                          readOnly 
+                          disabled 
+                          className="h-12 bg-muted/50 text-muted-foreground border-transparent cursor-not-allowed"
+                        />
                       </div>
                       
                       <div className="space-y-2">
-                        <Label htmlFor="phone" className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                          <Phone className="h-4 w-4 text-blue-600" />
-                          Phone Number
-                        </Label>
-                        <div className="relative">
-                          <Input
-                            id="phone"
-                            value={phone}
-                            onChange={(e) => setPhone(e.target.value)}
-                            placeholder="+1 (555) 123-4567"
-                            className="pl-4 pr-4 py-6 text-base border-2 border-slate-200 dark:border-slate-700 focus:border-blue-500 rounded-xl transition-all duration-300 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm"
-                          />
-                        </div>
+                        <Label htmlFor="phone">Phone Number</Label>
+                        <Input
+                          id="phone"
+                          value={phone}
+                          onChange={(e) => setPhone(e.target.value)}
+                          placeholder="+1 (555) 000-0000"
+                          className="h-12 border-input/60 focus-visible:ring-primary bg-background/50"
+                        />
                       </div>
                     </div>
                   </CardContent>
@@ -396,32 +366,36 @@ export default function ProfilePage() {
 
               {/* Security Card */}
               <div className="group relative">
-                <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-500 to-pink-600 rounded-2xl opacity-20 group-hover:opacity-30 blur transition duration-500"></div>
-                <Card className="relative border-0 shadow-xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-2xl overflow-hidden">
-                  <CardHeader className="pb-4 border-b border-slate-200 dark:border-slate-700">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <Shield className="h-5 w-5 text-purple-600" />
-                          <CardTitle className="text-2xl bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                            Security Settings
-                          </CardTitle>
-                        </div>
-                        <p className="text-sm text-slate-600 dark:text-slate-400">
-                          Protect your account with a strong password
-                        </p>
+                <div className="absolute -inset-[1px] bg-gradient-to-r from-brand-orange/30 to-brand-teal/30 rounded-2xl opacity-0 group-hover:opacity-100 transition duration-500 blur-sm" />
+                <Card className="relative border border-border/60 shadow-sm bg-card/50 backdrop-blur-xl rounded-2xl overflow-hidden">
+                  
+                   {/* Password Loading Overlay */}
+                   {changePasswordMutation.isPending && (
+                    <div className="absolute inset-0 bg-background/80 backdrop-blur-[2px] z-50 flex items-center justify-center rounded-2xl">
+                      <div className="flex flex-col items-center gap-2">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                        <span className="text-sm font-medium text-muted-foreground">Updating password...</span>
                       </div>
-                      <Button
-                        onClick={handlePasswordSubmit}
-                        disabled={changePasswordMutation.isPending}
-                        className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+                    </div>
+                  )}
+
+                  <CardHeader className="pb-4 border-b border-border/40">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                         <div className="p-2 rounded-xl bg-brand-orange/10 text-brand-orange">
+                            <Shield className="h-5 w-5" />
+                         </div>
+                         <div>
+                            <CardTitle className="text-lg font-semibold text-foreground">Security Settings</CardTitle>
+                            <p className="text-sm text-muted-foreground">Manage your password and security</p>
+                         </div>
+                      </div>
+                      <Button 
+                        onClick={handlePasswordSubmit} 
+                        disabled={!currentPassword || !newPassword || !confirmPassword || changePasswordMutation.isPending}
+                        className="bg-brand-orange hover:bg-brand-orange/90 text-white shadow-lg shadow-brand-orange/20 transition-all hover:-translate-y-0.5"
                       >
-                        {changePasswordMutation.isPending ? (
-                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                        ) : (
-                          <Shield className="h-4 w-4 mr-2" />
-                        )}
-                        Update Password
+                        <Lock className="h-4 w-4 mr-2" /> Update Password
                       </Button>
                     </div>
                   </CardHeader>
@@ -429,58 +403,48 @@ export default function ProfilePage() {
                     
                     {/* Current Password */}
                     <div className="space-y-2">
-                      <Label htmlFor="currentPassword" className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                        <Lock className="h-4 w-4 text-purple-600" />
-                        Current Password
-                      </Label>
+                      <Label htmlFor="currentPassword">Current Password</Label>
                       <Input
                         id="currentPassword"
                         type="password"
                         value={currentPassword}
                         onChange={(e) => setCurrentPassword(e.target.value)}
                         placeholder="Enter current password"
-                        className="pl-4 pr-4 py-6 text-base border-2 border-slate-200 dark:border-slate-700 focus:border-purple-500 rounded-xl transition-all duration-300 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm"
+                        className="h-12 border-input/60 focus-visible:ring-brand-orange bg-background/50"
                       />
                     </div>
 
                     {/* New Password Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-2">
-                        <Label htmlFor="newPassword" className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                          <Lock className="h-4 w-4 text-purple-600" />
-                          New Password
-                        </Label>
+                        <Label htmlFor="newPassword">New Password</Label>
                         <Input
                           id="newPassword"
                           type="password"
                           value={newPassword}
                           onChange={(e) => setNewPassword(e.target.value)}
                           placeholder="Min. 8 characters"
-                          className="pl-4 pr-4 py-6 text-base border-2 border-slate-200 dark:border-slate-700 focus:border-purple-500 rounded-xl transition-all duration-300 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm"
+                          className="h-12 border-input/60 focus-visible:ring-brand-orange bg-background/50"
                         />
                       </div>
                       
                       <div className="space-y-2">
-                        <Label htmlFor="confirmPassword" className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                          <Lock className="h-4 w-4 text-purple-600" />
-                          Confirm Password
-                        </Label>
+                         <Label htmlFor="confirmPassword">Confirm Password</Label>
                         <Input
                           id="confirmPassword"
                           type="password"
                           value={confirmPassword}
                           onChange={(e) => setConfirmPassword(e.target.value)}
                           placeholder="Re-enter password"
-                          className="pl-4 pr-4 py-6 text-base border-2 border-slate-200 dark:border-slate-700 focus:border-purple-500 rounded-xl transition-all duration-300 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm"
+                          className="h-12 border-input/60 focus-visible:ring-brand-orange bg-background/50"
                         />
                       </div>
                     </div>
 
                     {/* Password Strength Indicator */}
-                    <div className="p-4 rounded-xl bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800">
-                      <p className="text-xs text-purple-800 dark:text-purple-200 font-medium">
-                        💡 Password requirements: At least 8 characters, mix of letters, numbers & symbols
-                      </p>
+                    <div className="p-4 rounded-xl bg-muted/50 border border-border/50 flex gap-3 text-sm text-muted-foreground">
+                       <Shield className="w-5 h-5 flex-shrink-0 text-brand-teal" />
+                       <p>Password requirements: At least 8 characters, using a mix of letters, numbers & symbols for maximum security.</p>
                     </div>
                   </CardContent>
                 </Card>
@@ -492,55 +456,52 @@ export default function ProfilePage() {
               
               {/* Account Details Card */}
               <div className="group relative">
-                <div className="absolute -inset-0.5 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-2xl opacity-20 group-hover:opacity-30 blur transition duration-500"></div>
-                <Card className="relative border-0 shadow-xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-2xl overflow-hidden">
-                  <CardHeader className="pb-4 border-b border-slate-200 dark:border-slate-700">
-                    <div className="flex items-center gap-2">
-                      <Crown className="h-5 w-5 text-emerald-600" />
-                      <CardTitle className="text-xl bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
-                        Account Details
-                      </CardTitle>
+                <div className="absolute -inset-[1px] bg-gradient-to-br from-primary/30 to-brand-blue/30 rounded-2xl opacity-0 group-hover:opacity-100 transition duration-500 blur-sm" />
+                <Card className="relative border border-border/60 shadow-sm bg-card/50 backdrop-blur-xl rounded-2xl overflow-hidden">
+                  <CardHeader className="pb-4 border-b border-border/40">
+                    <div className="flex items-center gap-3">
+                       <div className="p-2 rounded-xl bg-background border border-border/50 text-foreground">
+                          <User className="h-5 w-5" />
+                       </div>
+                       <CardTitle className="text-lg font-semibold text-foreground">Account Details</CardTitle>
                     </div>
-                    <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-                      Your account information
-                    </p>
                   </CardHeader>
                   <CardContent className="space-y-4 pt-6">
                     
                     {/* User Info Display */}
-                    <div className="space-y-4">
-                      <div className="p-4 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border border-blue-200 dark:border-blue-800">
+                    <div className="space-y-3">
+                      <div className="p-3 rounded-xl bg-background/50 border border-border/50 flex items-center justify-between group/item hover:border-primary/30 transition-colors">
                         <div className="flex items-center gap-3">
-                          <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900">
-                            <User className="h-5 w-5 text-blue-600" />
+                          <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                             <User className="h-4 w-4" />
                           </div>
-                          <div className="flex-1">
-                            <p className="text-xs text-slate-600 dark:text-slate-400 font-medium">Display Name</p>
-                            <p className="text-base font-bold text-slate-900 dark:text-slate-100">{name || profile?.name || 'Not set'}</p>
+                          <div>
+                            <p className="text-xs text-muted-foreground">Display Name</p>
+                            <p className="text-sm font-semibold text-foreground">{name || profile?.name || 'Not set'}</p>
                           </div>
                         </div>
                       </div>
 
-                      <div className="p-4 rounded-xl bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30 border border-purple-200 dark:border-purple-800">
+                      <div className="p-3 rounded-xl bg-background/50 border border-border/50 flex items-center justify-between group/item hover:border-primary/30 transition-colors">
                         <div className="flex items-center gap-3">
-                          <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900">
-                            <Mail className="h-5 w-5 text-purple-600" />
+                          <div className="h-8 w-8 rounded-lg bg-brand-purple/10 flex items-center justify-center text-brand-purple">
+                             <Mail className="h-4 w-4" />
                           </div>
-                          <div className="flex-1">
-                            <p className="text-xs text-slate-600 dark:text-slate-400 font-medium">Email</p>
-                            <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">{email}</p>
+                          <div className="overflow-hidden">
+                            <p className="text-xs text-muted-foreground">Email</p>
+                            <p className="text-sm font-semibold text-foreground truncate max-w-[150px]">{email}</p>
                           </div>
                         </div>
                       </div>
 
-                      <div className="p-4 rounded-xl bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 border border-emerald-200 dark:border-emerald-800">
+                      <div className="p-3 rounded-xl bg-background/50 border border-border/50 flex items-center justify-between group/item hover:border-primary/30 transition-colors">
                         <div className="flex items-center gap-3">
-                          <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-900">
-                            <Crown className="h-5 w-5 text-emerald-600" />
+                          <div className="h-8 w-8 rounded-lg bg-brand-teal/10 flex items-center justify-center text-brand-teal">
+                             <Crown className="h-4 w-4" />
                           </div>
-                          <div className="flex-1">
-                            <p className="text-xs text-slate-600 dark:text-slate-400 font-medium">Role</p>
-                            <p className="text-base font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wide">
+                          <div>
+                            <p className="text-xs text-muted-foreground">Role</p>
+                            <p className="text-sm font-bold text-foreground uppercase tracking-wider text-[10px]">
                               {profile?.role ?? 'User'}
                             </p>
                           </div>
@@ -549,13 +510,13 @@ export default function ProfilePage() {
                     </div>
 
                     {/* Info Note */}
-                    <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
-                      <div className="flex gap-3">
-                        <Lock className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                    <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                      <div className="flex gap-2">
+                        <Lock className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
                         <div>
-                          <p className="text-xs font-semibold text-amber-900 dark:text-amber-100">Protected Information</p>
-                          <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
-                            Email and role changes require admin approval
+                          <p className="text-xs font-semibold text-amber-700 dark:text-amber-300">Protected Account</p>
+                          <p className="text-[10px] text-amber-600/80 dark:text-amber-400/80 leading-tight mt-0.5">
+                            Critical information changes require admin verification.
                           </p>
                         </div>
                       </div>
@@ -564,32 +525,27 @@ export default function ProfilePage() {
                 </Card>
               </div>
 
-              {/* Profile Stats Card */}
-              <div className="group relative">
-                <div className="absolute -inset-0.5 bg-gradient-to-r from-orange-500 to-red-600 rounded-2xl opacity-20 group-hover:opacity-30 blur transition duration-500"></div>
-                <Card className="relative border-0 shadow-xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-2xl overflow-hidden">
-                  <CardHeader>
-                    <CardTitle className="text-lg bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent flex items-center gap-2">
-                      <Sparkles className="h-5 w-5 text-orange-600" />
-                      Quick Stats
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-950/50 dark:to-blue-900/50">
-                      <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Profile Completion</span>
-                      <span className="text-lg font-bold text-blue-600">{phone ? '100%' : '85%'}</span>
-                    </div>
-                    <div className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-purple-50 to-purple-100 dark:from-purple-950/50 dark:to-purple-900/50">
-                      <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Security Score</span>
-                      <span className="text-lg font-bold text-purple-600">High</span>
-                    </div>
-                    <div className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-emerald-50 to-emerald-100 dark:from-emerald-950/50 dark:to-emerald-900/50">
-                      <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Account Status</span>
-                      <span className="text-lg font-bold text-emerald-600">Active</span>
-                    </div>
-                  </CardContent>
+            <div className="group relative">
+                <div className="absolute -inset-[1px] bg-gradient-to-br from-brand-orange/20 to-primary/20 rounded-2xl opacity-0 group-hover:opacity-100 transition duration-500 blur-sm" />
+                <Card className="relative border border-border/60 shadow-sm bg-card/50 backdrop-blur-xl rounded-2xl overflow-hidden">
+                  <div className="p-4 border-b border-border/40 flex items-center gap-2">
+                      <Sparkles className="h-4 w-4 text-brand-orange" />
+                      <span className="font-semibold text-sm">Account Status</span>
+                  </div>
+                  <div className="p-4 grid grid-cols-2 gap-4">
+                      <div className="text-center p-3 rounded-xl bg-primary/5 border border-primary/10">
+                          <div className="text-2xl font-bold text-primary mb-1">{phone ? '100%' : '85%'}</div>
+                          <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Completion</div>
+                      </div>
+                      <div className="text-center p-3 rounded-xl bg-brand-teal/5 border border-brand-teal/10">
+                          <div className="text-2xl font-bold text-brand-teal mb-1">Active</div>
+                          <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Status</div>
+                      </div>
+                  </div>
                 </Card>
-              </div>
+            </div>
+
+
             </div>
           </div>
         </div>

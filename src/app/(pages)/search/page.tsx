@@ -273,7 +273,7 @@ function SearchPageContent() {
                   }`}
                 >
                   {/* Image */}
-                  <div className={`relative bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-600 ${
+                  <div className={`relative overflow-hidden bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-600 ${
                     viewMode === 'grid' ? 'h-48' : 'w-48 h-36 flex-shrink-0'
                   }`}>
                     {business.imageUrl ? (
@@ -287,6 +287,14 @@ function SearchPageContent() {
                     ) : (
                       <div className="flex items-center justify-center h-full text-slate-400 dark:text-slate-500 text-4xl font-bold">
                         {business.name.charAt(0)}
+                      </div>
+                    )}
+                    
+                    {/* Location Badge (Overlay) */}
+                    {business.location && (
+                      <div className="absolute top-3 left-3 bg-white/60 dark:bg-black/40 backdrop-blur-md px-2.5 py-1 rounded-full text-[10px] font-bold shadow-sm border border-white/20 dark:border-white/10 flex items-center gap-1 text-slate-800 dark:text-white group-hover:bg-white/80 dark:group-hover:bg-black/60 transition-colors z-10">
+                        <MapPin className="h-3 w-3 text-[var(--color-primary)]" />
+                        {business.location}
                       </div>
                     )}
                   </div>
