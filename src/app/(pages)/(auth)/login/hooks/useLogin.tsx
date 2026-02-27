@@ -5,13 +5,14 @@ import { useAuth } from '@/(pages)/(auth)/context/AuthContext';
 import { callBackendLogin } from '../utils/index';
 import type { LoginPayload } from '../types/index';
 import { UserRole } from '../../types';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useTracking } from '@global/hooks/useTracking';
 import { logAuthEvent } from '@global/lib/authLogger';
 
 export function useLogin() {
   const auth = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { trackEvent } = useTracking();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -34,7 +35,13 @@ export function useLogin() {
         await auth.login(email, password, role);
         trackEvent('login', { method: 'email', role });
         logAuthEvent({ action: 'login_success', success: true, email, role });
-        router.push("/");
+        
+        const redirectUrl = searchParams.get('redirect');
+        if (redirectUrl) {
+          router.push(redirectUrl);
+        } else {
+          router.push("/");
+        }
         return;
       }
 

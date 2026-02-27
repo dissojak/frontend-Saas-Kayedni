@@ -50,7 +50,7 @@ export default function BusinessBookingsPage() {
 
   // Filter bookings based on active mode
   const displayedBookings = activeMode === 'staff' && user?.staffId
-    ? filteredBookings.filter(booking => booking.staffId === parseInt(user.staffId))
+    ? filteredBookings.filter(booking => booking.staffId === parseInt(user.staffId as string))
     : filteredBookings;
 
   useEffect(() => {

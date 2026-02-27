@@ -5,6 +5,7 @@ export interface Booking {
   clientEmail: string;
   clientPhone?: string;
   staffName: string;
+  staffId?: number;
   date: string;
   startTime: string;
   endTime: string;
