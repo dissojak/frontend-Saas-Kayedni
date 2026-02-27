@@ -548,13 +548,13 @@ export default function Index() {
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             {[
-              { value: '34%', label: 'Average Revenue Increase', color: 'text-emerald-600' },
-              { value: '89%', label: 'Time Saved on Admin', color: 'text-brand-blue' },
-              { value: '92%', label: 'Customer Satisfaction', color: 'text-brand-purple' },
-              { value: '15m', label: 'Setup Time', color: 'text-brand-orange' },
+              { value: '34%', label: 'Average Revenue Increase', color: 'from-green-400 to-emerald-600' },
+              { value: '89%', label: 'Time Saved on Admin', color: 'from-blue-400 to-cyan-600' },
+              { value: '92%', label: 'Customer Satisfaction', color: 'from-purple-400 to-pink-600' },
+              { value: '15m', label: 'Setup Time', color: 'from-orange-400 to-red-600' },
             ].map((stat, idx) => (
               <div key={idx} className="p-8 rounded-2xl bg-card border border-border/50 text-center hover:shadow-xl transition-all duration-300 group hover:-translate-y-1">
-                <div className={`text-4xl md:text-5xl font-bold mb-3 ${stat.color} drop-shadow-sm`}>
+                <div className={`text-4xl md:text-5xl font-bold mb-3 bg-gradient-to-r bg-clip-text text-transparent ${stat.color} drop-shadow-sm`}>
                   {stat.value}
                 </div>
                 <p className="text-muted-foreground font-medium">{stat.label}</p>
@@ -708,8 +708,8 @@ export default function Index() {
         <div className="absolute bottom-0 left-0 right-0 h-64 bg-gradient-to-t from-background to-transparent opacity-10" />
         
         <div className="container mx-auto px-4 relative z-10">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-            <div className="max-w-xl">
+          <div className="grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-16 items-center">
+            <div className="max-w-xl pl-10">
               <div className="inline-block px-4 py-1.5 rounded-full bg-white/10 text-sm font-semibold mb-8 border border-white/10 text-white backdrop-blur-sm shadow-xl">
                 📱 Mobile App
               </div>
@@ -758,7 +758,7 @@ export default function Index() {
               </div>
             </div>
 
-            <div className="relative hidden lg:block">
+            <div className="relative hidden lg:block pr-10">
               {/* Abstract Phone Mockup Presentation */}
               <div className="relative mx-auto w-[320px] h-[640px] transform rotate-[-6deg] hover:rotate-0 transition-all duration-700 z-10">
                 <div className="absolute inset-0 bg-slate-900 rounded-[3rem] border-8 border-slate-800 shadow-2xl flex flex-col overflow-hidden">
