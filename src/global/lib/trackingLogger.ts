@@ -33,7 +33,7 @@ class TrackingLogger {
     if (!this.initialized && typeof window !== "undefined") {
       this.initialized = true;
       this.bannerShown = true;
-      console.log("%c" + BOOKIFY_BANNER, "color: #10b981; font-weight: bold");
+      console.log("%c" + KAYEDNI_BANNER, "color: #10b981; font-weight: bold");
       console.log(
         "%c✓ Tracking System Ready",
         "color: #10b981; font-weight: bold; font-size: 12px"
