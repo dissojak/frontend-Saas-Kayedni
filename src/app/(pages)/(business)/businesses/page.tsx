@@ -11,10 +11,14 @@ import SearchFilter from "./components/SearchFilter";
 import type { Business } from "./types/business";
 import { fetchCategories } from "../actions/backend";
 import { Button } from "@components/ui/button";
+import { useTracking } from "@global/hooks/useTracking";
+import TimeOnPageTracker from "@components/tracking/TimeOnPageTracker";
+import ScrollDepthTracker from "@components/tracking/ScrollDepthTracker";
 
 const BusinessesPage: React.FC = () => {
   const bookingCtx = useBooking?.();
   const bookingBusinesses = (bookingCtx && (bookingCtx.businesses as Business[])) || [];
+  const { trackEvent } = useTracking();
 
   const { businesses: fetchedBusinesses, loading } = useBusinesses();
   const [categories, setCategories] = useState<string[] | undefined>(undefined);
@@ -63,8 +67,40 @@ const BusinessesPage: React.FC = () => {
     setCurrentPage(1);
   }, [searchTerm, selectedCategory, totalItems]);
 
+  // Track search usage (debounced via searchTerm dependency)
+  useEffect(() => {
+    if (searchTerm && searchTerm.length >= 2) {
+      trackEvent('search_query', { query: searchTerm, source: 'businesses_list', resultCount: filtered.length });
+    }
+  }, [searchTerm, trackEvent, filtered.length]);
+
+  useEffect(() => {
+    if (selectedCategory && selectedCategory !== 'All') {
+      trackEvent('category_browsed', { category: selectedCategory, source: 'businesses_list', resultCount: filtered.length });
+    }
+  }, [selectedCategory, trackEvent, filtered.length]);
+
+  // Track business impressions — batch all visible into a single event (debounced)
+  useEffect(() => {
+    if (pagedBusinesses.length === 0) return;
+    const timer = setTimeout(() => {
+      trackEvent('business_impression', {
+        businessIds: pagedBusinesses.map((biz: Business) => String(biz.id)),
+        businessNames: pagedBusinesses.map((biz: Business) => biz.name),
+        count: pagedBusinesses.length,
+        page: currentPage,
+        source: 'businesses_list',
+      });
+    }, 500); // 500ms debounce — avoids flooding during typing
+    return () => clearTimeout(timer);
+  }, [pagedBusinesses, currentPage, trackEvent]);
+
   return (
     <Layout>
+      {/* Tracking */}
+      <TimeOnPageTracker pageName="businesses_list" />
+      <ScrollDepthTracker pageName="businesses_list" />
+
       <div className="container mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold mb-8">Find Businesses</h1>
 
@@ -89,6 +125,7 @@ const BusinessesPage: React.FC = () => {
               value={pageSize}
               onChange={(e) => {
                 const next = Number(e.target.value);
+                trackEvent('filter_used', { filter: 'page_size', value: String(next), source: 'businesses_list' });
                 setPageSize(next);
                 setCurrentPage(1);
               }}

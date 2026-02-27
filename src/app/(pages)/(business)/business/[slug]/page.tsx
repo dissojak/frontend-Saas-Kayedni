@@ -10,6 +10,9 @@ import { Calendar } from "@components/ui/calendar";
 // (Removed searchable popovers per request; enhancing card selection UI instead)
 import { useBooking } from "@/(pages)/(booking)/context/BookingContext";
 import { extractBusinessIdFromSlug, createBusinessSlug } from "@global/lib/businessSlug";
+import { useTracking } from "@global/hooks/useTracking";
+import TimeOnPageTracker from "@components/tracking/TimeOnPageTracker";
+import ScrollDepthTracker from "@components/tracking/ScrollDepthTracker";
 
 import useBusinessDetail from "./hooks/useBusinessDetail";
 import BusinessHeader from "./components/BusinessHeader";
@@ -17,6 +20,7 @@ import BusinessHeader from "./components/BusinessHeader";
 const BusinessDetailPage = () => {
   const { slug } = useParams<{ slug: string }>();
   const router = useRouter();
+  const { trackEvent } = useTracking();
   
   // Extract the business ID from the slug (e.g., "glamour-salon-spa-1" -> "1")
   const businessId = slug ? extractBusinessIdFromSlug(slug) : undefined;
@@ -35,6 +39,18 @@ const BusinessDetailPage = () => {
   } = useBooking();
 
   const { business, staff, services, staffServices, staffAvailability, loadServicesForStaff, loadAvailabilityForStaff, clearStaffAvailability, loadTimeSlotsForDate, clearSlots, slots, slotsLoading, images, loading } = useBusinessDetail(businessId ?? undefined);
+  
+  // Track business_view when business loads
+  useEffect(() => {
+    if (business) {
+      trackEvent('business_view', {
+        businessId: String((business as any).id),
+        businessName: (business as any).name,
+        category: (business as any).category ?? 'unknown',
+        source: 'direct',
+      });
+    }
+  }, [business, trackEvent]);
   
   // Redirect to correct slug URL if business is loaded but slug doesn't match
   useEffect(() => {
@@ -206,6 +222,17 @@ const BusinessDetailPage = () => {
   const handleContinueBooking = () => {
     if (!selectedService || !selectedStaff || !selectedDate || !selectedTimeSlot) return;
     
+    // Track booking_started
+    trackEvent('booking_started', {
+      businessId: String((business as any).id),
+      businessName: (business as any).name,
+      serviceId: String(selectedService.id),
+      serviceName: selectedService.name,
+      staffId: String(selectedStaff.id),
+      staffName: selectedStaff.name,
+      price: selectedService.price,
+    });
+
     // Store all booking data in localStorage to persist across navigation
     const bookingData = {
       business: business,
@@ -242,6 +269,10 @@ const BusinessDetailPage = () => {
 
   return (
     <Layout>
+      {/* Tracking Components */}
+      <TimeOnPageTracker pageName="business_detail" />
+      <ScrollDepthTracker pageName="business_detail" />
+
       <div className="container mx-auto px-4 py-8">
         <BusinessHeader business={business as any} onBook={() => setSelectedTabId("booking")} />
 
@@ -345,7 +376,7 @@ const BusinessDetailPage = () => {
                                 ? "border-2 border-primary ring-2 ring-primary bg-primary/5 shadow-md"
                                 : "hover:bg-gray-50 hover:ring-1 hover:ring-gray-300"
                             }`}
-                            onClick={() => setSelectedStaff(member)}
+                            onClick={() => { trackEvent('click', { element: 'select_staff', staffId: String(member.id), staffName: member.name, businessId: String((business as any).id) }); setSelectedStaff(member); }}
                           >
                             <div className="flex items-center gap-3">
                               <img src={member.avatar} alt={member.name} className="w-10 h-10 rounded-full object-cover" />
@@ -375,7 +406,7 @@ const BusinessDetailPage = () => {
                                 ? "border-2 border-primary ring-2 ring-primary bg-primary/5 shadow-md"
                                 : "hover:bg-gray-50 hover:ring-1 hover:ring-gray-300"
                             }`}
-                            onClick={() => setSelectedService(service)}
+                            onClick={() => { trackEvent('service_view', { serviceId: String(service.id), serviceName: service.name, price: service.price, businessId: String((business as any).id) }); setSelectedService(service); }}
                           >
                             <div className="flex justify-between items-start">
                               <div>

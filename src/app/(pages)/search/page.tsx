@@ -6,6 +6,9 @@ import Image from 'next/image';
 import Layout from '@components/layout/Layout';
 import { Button } from '@components/ui/button';
 import { Input } from '@components/ui/input';
+import { useTracking } from '@global/hooks/useTracking';
+import TimeOnPageTracker from '@components/tracking/TimeOnPageTracker';
+import ScrollDepthTracker from '@components/tracking/ScrollDepthTracker';
 import { 
   Search, 
   MapPin, 
@@ -23,6 +26,7 @@ import { createBusinessSlug } from '@global/lib/businessSlug';
 function SearchPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { trackEvent, trackPageView } = useTracking();
   
   // Get initial values from URL
   const initialQuery = searchParams.get('q') || '';
@@ -74,6 +78,15 @@ function SearchPageContent() {
   // Handle new search
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Track search query
+    trackEvent('search_query', {
+      query,
+      location,
+      category: initialCategory,
+      source: 'search_form',
+    });
+
     const params = new URLSearchParams();
     if (query) params.set('q', query);
     if (location) params.set('location', location);
@@ -82,12 +95,23 @@ function SearchPageContent() {
 
   // Navigate to business with SEO-friendly slug
   const handleBusinessClick = (business: BusinessSearchResult) => {
+    // Track business view
+    trackEvent('business_view', {
+      businessId: business.id,
+      businessName: business.name,
+      source: 'search_results',
+    });
+
     const slug = createBusinessSlug(business.name, business.id);
     router.push(`/business/${slug}`);
   };
 
   return (
     <Layout>
+      {/* Tracking Components */}
+      <TimeOnPageTracker pageName="search" />
+      <ScrollDepthTracker pageName="search" />
+
       {/* Search Header */}
       <div className="bg-slate-950 pt-8 pb-12">
         <div className="container mx-auto px-4">
@@ -160,7 +184,15 @@ function SearchPageContent() {
               <div className="relative">
                 <select
                   value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+                  onChange={(e) => {
+                    const newSort = e.target.value as typeof sortBy;
+                    setSortBy(newSort);
+                    // Track sort usage
+                    trackEvent('sort_used', {
+                      sortBy: newSort,
+                      resultsCount: results.length,
+                    });
+                  }}
                   className="appearance-none bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg px-4 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
                 >
                   <option value="relevance">Most Relevant</option>
@@ -241,7 +273,7 @@ function SearchPageContent() {
                   }`}
                 >
                   {/* Image */}
-                  <div className={`relative bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-600 ${
+                  <div className={`relative overflow-hidden bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-600 ${
                     viewMode === 'grid' ? 'h-48' : 'w-48 h-36 flex-shrink-0'
                   }`}>
                     {business.imageUrl ? (
@@ -255,6 +287,14 @@ function SearchPageContent() {
                     ) : (
                       <div className="flex items-center justify-center h-full text-slate-400 dark:text-slate-500 text-4xl font-bold">
                         {business.name.charAt(0)}
+                      </div>
+                    )}
+                    
+                    {/* Location Badge (Overlay) */}
+                    {business.location && (
+                      <div className="absolute top-3 left-3 bg-white/60 dark:bg-black/40 backdrop-blur-md px-2.5 py-1 rounded-full text-[10px] font-bold shadow-sm border border-white/20 dark:border-white/10 flex items-center gap-1 text-slate-800 dark:text-white group-hover:bg-white/80 dark:group-hover:bg-black/60 transition-colors z-10">
+                        <MapPin className="h-3 w-3 text-[var(--color-primary)]" />
+                        {business.location}
                       </div>
                     )}
                   </div>

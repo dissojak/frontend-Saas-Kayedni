@@ -6,6 +6,7 @@ import { Toaster } from "@components/ui/toaster";
 import { Toaster as Sonner } from "@components/ui/sonner";
 import { TooltipProvider } from "@components/ui/tooltip";
 import Providers from "@global/providers";
+import GoogleAnalytics from "./ga";
 import React from "react";
 
 const geistSans = Geist({
@@ -19,8 +20,8 @@ const zain = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Bookify",
-  description: "Bookify is a Saas platform for easy booking management!",
+  title: "kayedni",
+  description: "kayedni is a Saas platform for easy booking management!",
 };
 
 
@@ -31,7 +32,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${geistSans.variable} ${zain.variable} antialiased`}>
+      <body className={`${geistSans.variable} ${zain.variable} antialiased bg-background text-foreground`}>
+        <GoogleAnalytics />
         <Providers>
           {children}
         </Providers>

@@ -2,6 +2,7 @@ import type { User } from './types';
 
 export const STORAGE_KEY = 'user';
 export const TOKEN_KEY = 'accessToken';
+export const ACTIVE_MODE_KEY = 'activeMode';
 
 export function loadStoredUser(): User | null {
   try {
@@ -22,6 +23,25 @@ export function loadStoredToken(): string | null {
   }
 }
 
+export function loadStoredActiveMode(): 'owner' | 'staff' {
+  try {
+    if (typeof window === 'undefined') return 'owner';
+    const mode = localStorage.getItem(ACTIVE_MODE_KEY);
+    return (mode === 'staff' ? 'staff' : 'owner') as 'owner' | 'staff';
+  } catch {
+    return 'owner';
+  }
+}
+
+export function storeActiveMode(mode: 'owner' | 'staff') {
+  try {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem(ACTIVE_MODE_KEY, mode);
+  } catch (error) {
+    console.error('Error storing active mode:', error);
+  }
+}
+
 export function storeUser(u: User | null) {
   try {
     if (typeof window === 'undefined') return;
@@ -31,6 +51,7 @@ export function storeUser(u: User | null) {
       // Also clear tokens when logging out
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
+      localStorage.removeItem(ACTIVE_MODE_KEY);
       return;
     }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(u));
@@ -61,6 +82,10 @@ export function buildUserFromDb(dbUser: Partial<User> & { id?: string | number; 
   const businessId = dbUser.businessId ? String(dbUser.businessId) : undefined;
   const businessName = dbUser.businessName ?? undefined;
   const hasBusiness = dbUser.hasBusiness ?? undefined;
+
+  // Include staff fields for BO acting as staff
+  const isAlsoStaff = dbUser.isAlsoStaff ?? undefined;
+  const staffId = dbUser.staffId ? String(dbUser.staffId) : undefined;
   
   return {
     id,
@@ -72,5 +97,7 @@ export function buildUserFromDb(dbUser: Partial<User> & { id?: string | number; 
     businessId,
     businessName,
     hasBusiness,
+    isAlsoStaff,
+    staffId,
   } as User;
 }

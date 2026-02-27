@@ -73,3 +73,53 @@ export interface BookingContextType {
   cancelBooking: (bookingId: string) => void;
   completeBooking: (bookingId: string) => void;
 }
+
+// Tracking Types
+export type EventType =
+  | "page_view"
+  | "click"
+  | "search"
+  | "search_query"
+  | "business_view"
+  | "business_impression"
+  | "service_view"
+  | "booking_started"
+  | "booking_completed"
+  | "booking_abandoned"
+  | "review_submitted"
+  | "review_read"
+  | "category_browsed"
+  | "scroll_depth"
+  | "time_on_page"
+  | "filter_used"
+  | "sort_used"
+  | "outbound_click"
+  | "click_phone"
+  | "click_location"
+  | "favorite_action"
+  | "login"
+  | "signup"
+  | "logout"
+  | "profile_update";
+
+export interface TrackingEvent {
+  userId?: string | null;
+  anonymousId?: string;
+  sessionId: string;
+  eventType: EventType;
+  page: string;
+  properties?: Record<string, any>;
+  userAgent?: string;
+  ipAddress?: string;
+  timestamp?: number;
+}
+
+export interface TrackingContextType {
+  sessionId: string | null;
+  trackEvent: (
+    eventType: EventType,
+    properties?: Record<string, any>
+  ) => void;
+  trackPageView: (page?: string) => void;
+  flushEvents: () => Promise<void>;
+}

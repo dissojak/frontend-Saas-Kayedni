@@ -12,7 +12,9 @@ import {
   DropdownMenuTrigger,
 } from "@components/ui/dropdown-menu";
 import { useAuth, UserRole } from "@/(pages)/(auth)/context/AuthContext";
-import { Menu, Sun, Moon } from "lucide-react";
+import { useTracking } from "@global/hooks/useTracking";
+import { Menu, Sun, Moon, Briefcase, Users } from "lucide-react";
+import Image from "next/image";
 
 // Role-specific navigation links (keys now use uppercase to match backend/user role values)
 const navLinks: Record<Exclude<UserRole, null>, { path: string; label: string }[]> = {
@@ -49,17 +51,20 @@ const defaultLinks = [
 ];
 
 const Navbar = () => {
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, logout, activeMode, switchMode } = useAuth();
   const router = useRouter();
+  const { trackEvent } = useTracking();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isDark, setIsDark] = useState(false);
+  const [isSwitchingMode, setIsSwitchingMode] = useState(false);
 
   useEffect(() => {
     // initialize theme from localStorage or existing html class
     try {
       const stored = localStorage.getItem("theme");
-      const prefersDark = stored === "dark" || (!stored && document.documentElement.classList.contains("dark"));
+      const prefersDark =
+        stored === "dark" || (!stored && document.documentElement.classList.contains("dark"));
       if (prefersDark) {
         document.documentElement.classList.add("dark");
         setIsDark(true);
@@ -75,90 +80,202 @@ const Navbar = () => {
   const toggleTheme = () => {
     try {
       const html = document.documentElement;
-      const nowDark = !html.classList.contains("dark");
-      if (nowDark) {
-        html.classList.add("dark");
-        localStorage.setItem("theme", "dark");
-        setIsDark(true);
-      } else {
+      const isDarkMode = html.classList.contains("dark");
+
+      if (isDarkMode) {
         html.classList.remove("dark");
         localStorage.setItem("theme", "light");
         setIsDark(false);
+      } else {
+        html.classList.add("dark");
+        localStorage.setItem("theme", "dark");
+        setIsDark(true);
       }
     } catch (e) {
       console.warn("Failed to toggle theme:", e);
     }
   };
 
-  // Use the user.role (now uppercase) to look up navLinks; fall back to defaultLinks.
-  const roleKey = user?.role ? String(user.role).toUpperCase() as keyof typeof navLinks : null;
-  const links = roleKey && navLinks[roleKey] ? navLinks[roleKey] : defaultLinks;
+  // Handle mode switching
+  const handleModeSwitch = async (mode: "owner" | "staff") => {
+    if (mode === activeMode) return;
+    setIsSwitchingMode(true);
+    try {
+      await switchMode(mode);
+      if (mode === "staff") {
+        router.push("/staff/dashboard");
+      } else {
+        router.push("/business/dashboard");
+      }
+    } catch (error) {
+      console.error("Failed to switch mode:", error);
+    } finally {
+      setIsSwitchingMode(false);
+    }
+  };
+
+  // Determine which links to show based on activeMode for BO+Staff users
+  const getNavLinks = () => {
+    if (user?.role === "BUSINESS_OWNER" && user?.isAlsoStaff && activeMode === "staff") {
+      return navLinks.STAFF;
+    }
+    const roleKey = user?.role ? (String(user.role).toUpperCase() as keyof typeof navLinks) : null;
+    return roleKey && navLinks[roleKey] ? navLinks[roleKey] : defaultLinks;
+  };
+
+  const links = getNavLinks();
 
   return (
-    <nav className="bg-white dark:bg-zinc-900 shadow-sm sticky top-0 z-50 transition-colors">
+    <nav className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60 shadow-sm transition-all duration-300">
       <div className="container mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-            <Link href="/" className="flex items-center space-x-2">
-              <span className="text-2xl font-bold text-primary dark:text-primary-light">Bookify</span>
+          <div className="flex items-center gap-8">
+            <Link href="/" className="flex items-center gap-2 group" onClick={() => trackEvent('click', { element: 'logo', section: 'navbar' })}>
+               <Image 
+                src="/assets/KayedniFullLogo-zain.png" 
+                alt="kayedni Logo" 
+                width={140}
+                height={40}
+                className="transition-transform duration-300 group-hover:scale-105"
+               />
             </Link>
 
             {/* Desktop Navigation */}
-            <div className="hidden md:flex space-x-6 ml-10">
-              {links.map((link) => 
+            <div className="hidden md:flex items-center gap-1">
+              {links.map((link) => (
                 <Link
                   key={link.path}
                   href={link.path}
-                  className="text-gray-600 dark:text-gray-200 hover:text-primary dark:hover:text-primary font-medium transition-colors"
+                  className="relative px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary group"
                 >
                   {link.label}
+                   <span className="absolute inset-x-0 -bottom-[13px] h-[2px] bg-primary scale-x-0 transition-transform duration-300 group-hover:scale-x-100" />
                 </Link>
-              )}
+              ))}
             </div>
           </div>
 
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center gap-4">
+             <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleTheme}
+                aria-label="Toggle theme"
+                className="rounded-full text-foreground/70 hover:text-primary hover:bg-primary/10 transition-colors"
+              >
+                {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+             </Button>
+
             {isAuthenticated ? (
               <>
-                {user && (
-                  <div className="hidden md:flex md:flex-col md:items-end md:text-right md:mr-2">
-                    <span className="text-sm text-gray-800 dark:text-gray-200 font-medium leading-tight">{user.name ?? user.email?.split('@')[0]}</span>
-                    <span className={`text-xs text-gray-500 dark:text-gray-400 mt-0.5 role-badge role-badge-${String(user.role).toLowerCase()}`}>{user.role}</span>
+                {/* Mode Switcher for BO who is also Staff */}
+                {user?.role === "BUSINESS_OWNER" && user?.isAlsoStaff && (
+                  <div className="hidden md:flex items-center bg-muted/50 dark:bg-zinc-800/50 backdrop-blur-sm rounded-full p-1 border border-border/50">
+                    <button
+                      onClick={() => handleModeSwitch("owner")}
+                      disabled={isSwitchingMode}
+                      className={`flex items-center px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-300 ${
+                        activeMode === "owner"
+                          ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25"
+                          : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                      }`}
+                    >
+                      <Briefcase className="w-3.5 h-3.5 mr-2" />
+                      Manager
+                    </button>
+                    <button
+                      onClick={() => handleModeSwitch("staff")}
+                      disabled={isSwitchingMode}
+                      className={`flex items-center px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-300 ${
+                        activeMode === "staff"
+                          ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25"
+                          : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                      }`}
+                    >
+                      <Users className="w-3.5 h-3.5 mr-2" />
+                      Staff
+                    </button>
                   </div>
                 )}
+                
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="relative rounded-full h-8 w-8 p-0 hover:bg-transparent">
+                    <Button
+                      variant="ghost"
+                      className="relative h-10 w-10 rounded-full p-0 overflow-hidden border-2 border-primary/20 hover:border-primary transition-colors focus:ring-2 focus:ring-primary/20 bg-background shadow-skeuo hover:shadow-skeuo-inner"
+                    >
                       <img
-                        src={user?.avatar || (user?.name ? `https://ui-avatars.com/api/?name=${user.name}` : "/assets/placeholder.svg")}
+                        src={
+                          user?.avatar ||
+                          (user?.name
+                            ? `https://ui-avatars.com/api/?name=${user.name}`
+                            : "/assets/placeholder.svg")
+                        }
                         alt={user?.name ?? "Profile"}
-                        className="h-8 w-8 rounded-full object-cover"
+                        width={40}
+                        height={40}
+                        className="object-cover h-full w-full"
                       />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56 bg-white dark:bg-zinc-800 dark:text-gray-100">
-                    <div className="p-2">
-                      <p className="font-medium">{user?.name ?? "User"}</p>
-                        <p className="text-sm text-gray-500 dark:text-gray-300">{user?.email ?? ""}</p>
+                  <DropdownMenuContent
+                    align="end"
+                    className="w-64 p-2 rounded-xl border border-border/50 bg-card/90 backdrop-blur-xl shadow-2xl animate-in slide-in-from-top-2"
+                  >
+                    <div className="px-3 py-2.5 bg-muted/30 rounded-lg mb-2">
+                       <p className="font-semibold text-foreground">{user?.name ?? "User"}</p>
+                       <div className="flex items-center justify-between mt-1">
+                          <p className="text-xs text-muted-foreground truncate max-w-[120px]">
+                            {user?.email ?? ""}
+                          </p>
+                          <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary`}>
+                            {user?.role}
+                          </span>
+                       </div>
                     </div>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => router.push("/profile")}>
+                    
+                    <DropdownMenuItem onClick={() => router.push("/profile")} className="rounded-lg cursor-pointer focus:bg-primary/10 focus:text-primary">
                       Profile
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => router.push("/settings")}>
+                    <DropdownMenuItem onClick={() => router.push("/settings")} className="rounded-lg cursor-pointer focus:bg-primary/10 focus:text-primary">
                       Settings
                     </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => logout()}>Logout</DropdownMenuItem>
+                    <DropdownMenuSeparator className="bg-border/50 my-2" />
+                    <DropdownMenuItem
+                      className="rounded-lg cursor-pointer text-destructive focus:bg-destructive/10 focus:text-destructive"
+                      onClick={() => {
+                        trackEvent("logout", { method: "navbar" });
+                        trackEvent("click", { element: "nav_logout", section: "navbar" });
+                        logout();
+                      }}
+                    >
+                      Logout
+                    </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </>
             ) : (
-              <div className="hidden md:block">
-                <Button variant="ghost" onClick={() => router.push("/login")}>
-                  Login
+              <div className="hidden md:flex items-center gap-3">
+                <Button
+                  variant="ghost"
+                  className="rounded-full hover:bg-primary/10 hover:text-primary"
+                  onClick={() => {
+                    trackEvent("click", { element: "nav_login", section: "navbar" });
+                    router.push("/login");
+                  }}
+                >
+                  Log in
                 </Button>
-                <Button onClick={() => router.push("/register")}>Sign Up</Button>
+                <Button
+                  variant="skeuo-primary"
+                  className="rounded-full px-6 shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 transition-all hover:-translate-y-0.5"
+                  onClick={() => {
+                    trackEvent("click", { element: "nav_signup", section: "navbar" });
+                    router.push("/register");
+                  }}
+                >
+                  Sign Up
+                </Button>
               </div>
             )}
 
@@ -166,56 +283,90 @@ const Navbar = () => {
             <Button
               variant="ghost"
               size="icon"
-              onClick={toggleTheme}
-              title={isDark ? "Switch to light mode" : "Switch to dark mode"}
-              aria-pressed={isDark}
-              className="transition-colors"
-            >
-              {isDark ? <Sun className="text-yellow-400" /> : <Moon className="text-gray-600" />}
-            </Button>
-
-            <Button
-              variant="ghost"
-              size="icon"
-              className="md:hidden"
+              className="md:hidden rounded-full hover:bg-muted"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             >
-              <Menu />
+              <Menu className="h-6 w-6" />
             </Button>
           </div>
         </div>
 
         {/* Mobile Navigation */}
         {mobileMenuOpen && (
-              <div className="md:hidden mt-3 pb-3 border-t dark:border-zinc-700">
-            <div className="flex flex-col space-y-3 mt-3">
+          <div className="md:hidden mt-4 pb-4 border-t border-border/40 space-y-4 animate-in slide-in-from-top-5 pt-4">
+            {/* Mobile Mode Switcher */}
+            {user?.role === "BUSINESS_OWNER" && user?.isAlsoStaff && (
+              <div className="flex items-center justify-center bg-muted/50 rounded-full p-1 mx-4">
+                <button
+                  onClick={() => {
+                    handleModeSwitch("owner");
+                    setMobileMenuOpen(false);
+                  }}
+                  disabled={isSwitchingMode}
+                  className={`flex-1 flex items-center justify-center px-3 py-2 rounded-full text-sm font-medium transition-colors ${
+                    activeMode === "owner"
+                      ? "bg-primary text-primary-foreground shadow-md"
+                      : "text-muted-foreground"
+                  }`}
+                >
+                  <Briefcase className="w-4 h-4 mr-2" />
+                  Manager
+                </button>
+                <button
+                  onClick={() => {
+                    handleModeSwitch("staff");
+                    setMobileMenuOpen(false);
+                  }}
+                  disabled={isSwitchingMode}
+                  className={`flex-1 flex items-center justify-center px-3 py-2 rounded-full text-sm font-medium transition-colors ${
+                    activeMode === "staff"
+                      ? "bg-primary text-primary-foreground shadow-md"
+                      : "text-muted-foreground"
+                  }`}
+                >
+                  <Users className="w-4 h-4 mr-2" />
+                  Staff
+                </button>
+              </div>
+            )}
+            
+            <div className="flex flex-col px-2 space-y-1">
               {links.map((link) => (
                 <Link
                   key={link.path}
                   href={link.path}
-                  className="text-gray-600 dark:text-gray-200 hover:text-primary dark:hover:text-primary py-2 font-medium"
+                  className="flex items-center px-4 py-3 rounded-xl text-foreground/80 hover:text-primary hover:bg-primary/5 transition-colors font-medium"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   {link.label}
                 </Link>
               ))}
+              
               {!isAuthenticated && (
-                <>
-                  <Link
-                    href="/login"
-                    className="text-gray-600 hover:text-primary py-2 font-medium"
-                    onClick={() => setMobileMenuOpen(false)}
+                <div className="flex flex-col gap-3 mt-4 pt-4 border-t border-border/40 px-2">
+                  <Button
+                    variant="skeuo"
+                    className="w-full justify-center rounded-xl"
+                    onClick={() => {
+                      trackEvent("click", { element: "nav_login", section: "navbar_mobile" });
+                      setMobileMenuOpen(false);
+                      router.push("/login");
+                    }}
                   >
-                    Login
-                  </Link>
-                  <Link
-                    href="/register"
-                    className="text-primary py-2 font-medium"
-                    onClick={() => setMobileMenuOpen(false)}
+                    Log In
+                  </Button>
+                  <Button
+                    variant="skeuo-primary"
+                    className="w-full justify-center rounded-xl"
+                    onClick={() => {
+                      trackEvent("click", { element: "nav_signup", section: "navbar_mobile" });
+                      setMobileMenuOpen(false);
+                      router.push("/register");
+                    }}
                   >
                     Sign Up
-                  </Link>
-                </>
+                  </Button>
+                </div>
               )}
             </div>
           </div>

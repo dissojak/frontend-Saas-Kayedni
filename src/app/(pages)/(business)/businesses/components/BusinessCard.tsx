@@ -6,9 +6,11 @@ import { getLogo, formatRating } from "../utils/format";
 import type { Business } from "../types/business";
 import { useRouter } from "next/navigation";
 import { createBusinessSlug } from "@global/lib/businessSlug";
+import { useTracking } from "@global/hooks/useTracking";
 
 const BusinessCard: React.FC<{ business: Business }> = ({ business }) => {
   const router = useRouter();
+  const { trackEvent } = useTracking();
   return (
     <Card key={business.id} className="overflow-hidden card-hover">
       <div className="h-48 overflow-hidden">
@@ -24,7 +26,7 @@ const BusinessCard: React.FC<{ business: Business }> = ({ business }) => {
             <span>{formatRating(business.rating)}</span>
           </div>
         </div>
-        <Button className="w-full" onClick={() => router.push(`/business/${createBusinessSlug(business.name, business.id)}`)}>
+        <Button className="w-full" onClick={() => { trackEvent('business_view', { businessId: String(business.id), businessName: business.name, category: business.category, source: 'businesses_list' }); router.push(`/business/${createBusinessSlug(business.name, business.id)}`); }}>
           View Details
         </Button>
       </CardContent>

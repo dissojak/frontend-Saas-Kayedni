@@ -55,44 +55,57 @@ export default {
 					foreground: 'hsl(var(--card-foreground))'
 				},
 				// Brand palettes added per designer input
-				'black-pearl': {
-					'50': '#eff8ff',
-					'100': '#ddf1ff',
-					'200': '#b4e3ff',
-					'300': '#72cdff',
-					'400': '#27b4ff',
-					'500': '#009afd',
-					'600': '#007ad9',
-					'700': '#0060af',
-					'800': '#005290',
-					'900': '#034477',
-					'950': '#011425',
+				'brand-purple': {
+					'50': '#f4ebff',
+					'100': '#e6d1ff',
+					'200': '#d1a8ff',
+					'300': '#b388ff', // Light Purple
+					'400': '#9b5de5',
+					'500': '#8a42d8', // Primary Purple
+					'600': '#7b33c4',
+					'700': '#6524a3',
+					'800': '#512da8', // Dark Purple
+					'900': '#45258a',
+					'950': '#2d1460',
 				},
-				'smalt-blue': {
-					'50': '#f4f7f7',
-					'100': '#e2eaeb',
-					'200': '#c7d5da',
-					'300': '#a1b8bf',
-					'400': '#73929d',
-					'500': '#5c7c89',
-					'600': '#4b636f',
-					'700': '#41535d',
-					'800': '#3b474f',
-					'900': '#343e45',
-					'950': '#20272c',
+				'brand-orange': {
+					'50': '#fff5ed',
+					'100': '#ffe6d4',
+					'200': '#ffcca8',
+					'300': '#f4a460', // Orange/Peach
+					'400': '#e89a6a', // Secondary Orange
+					'500': '#e67e22', // Darker Orange
+					'600': '#d96659', // Reddish/Coral
+					'700': '#c25247',
+					'800': '#9c4037',
+					'900': '#7d362f',
+					'950': '#421814',
 				},
-				'vivid-tangerine': {
-					'50': '#fef4f2',
-					'100': '#fde7e3',
-					'200': '#fdd3cb',
-					'300': '#fab4a7',
-					'400': '#f58f7c',
-					'500': '#ea6249',
-					'600': '#d7462b',
-					'700': '#b53720',
-					'800': '#96311e',
-					'900': '#7c2e20',
-					'950': '#43150c',
+				'brand-blue': {
+					'50': '#e0f7fa',
+					'100': '#b2ebf2',
+					'200': '#81d4fa', // Light Blue
+					'300': '#4dd0e1', // Cyan
+					'400': '#26c6da',
+					'500': '#00bcd4',
+					'600': '#00acc1',
+					'700': '#0097a7',
+					'800': '#00838f',
+					'900': '#006064',
+					'950': '#00363a',
+				},
+				'brand-pink': {
+					'50': '#fce4ec',
+					'100': '#f8bbd0',
+					'200': '#f48fb1', // Pink
+					'300': '#f06292', // Dark Pink
+					'400': '#ec407a',
+					'500': '#e91e63',
+					'600': '#d81b60',
+					'700': '#c2185b',
+					'800': '#ad1457',
+					'900': '#880e4f',
+					'950': '#560027',
 				},
 				'black-light': {
 					"800":"#2C2B30",
@@ -133,6 +146,14 @@ export default {
 			fontFamily: {
 				sans: ['"Zain"', 'sans-serif'],
 				fsans: ['Inter var', 'Inter', 'sans-serif'],
+			},
+			boxShadow: {
+				'skeuo': '6px 6px 12px #d1d5db, -6px -6px 12px #ffffff',
+				'skeuo-inner': 'inset 6px 6px 12px #d1d5db, inset -6px -6px 12px #ffffff',
+				'skeuo-dark': '6px 6px 12px #1a1a1a, -6px -6px 12px #2a2a2a',
+				'skeuo-inner-dark': 'inset 6px 6px 12px #1a1a1a, inset -6px -6px 12px #2a2a2a',
+				'premium': '0 10px 30px -10px rgba(138, 66, 216, 0.3)',
+				'premium-hover': '0 20px 40px -10px rgba(138, 66, 216, 0.4)',
 			},
 			borderRadius: {
 				lg: 'var(--radius)',

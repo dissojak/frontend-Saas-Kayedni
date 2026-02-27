@@ -9,6 +9,8 @@ import PaymentSummary from './components/PaymentSummary';
 import { apiGet } from '@/(pages)/(auth)/api/client';
 import useCheckout from './hooks/useCheckout';
 import { useAuth } from '@/(pages)/(auth)/context/AuthContext';
+import { useTracking } from '@global/hooks/useTracking';
+import TimeOnPageTracker from '@components/tracking/TimeOnPageTracker';
 
 type BookingData = {
   business: any;
@@ -22,10 +24,47 @@ const BookingCheckoutPage = () => {
   const router = useRouter();
   const { user } = useAuth();
   const { loading, submit } = useCheckout();
+  const { trackEvent } = useTracking();
   const [bookingData, setBookingData] = useState<BookingData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [displayUser, setDisplayUser] = useState<any | null>(null);
+  const [bookingCompleted, setBookingCompleted] = useState(false);
+
+  // Wrap submit to track booking_completed
+  const handleSubmit = async (paymentMethod: string) => {
+    await submit(paymentMethod);
+    // If submit didn't throw, booking was successful
+    setBookingCompleted(true);
+    trackEvent('booking_completed', {
+      businessId: String(bookingData?.business?.id),
+      businessName: bookingData?.business?.name,
+      serviceId: String(bookingData?.service?.id),
+      serviceName: bookingData?.service?.name,
+      staffId: String(bookingData?.staff?.id),
+      price: bookingData?.service?.price,
+    });
+  };
+
+  // Use a ref for tracking abandoned
+  const completedRef = React.useRef(false);
+  useEffect(() => { completedRef.current = bookingCompleted; }, [bookingCompleted]);
+  const bookingDataRef = React.useRef(bookingData);
+  useEffect(() => { bookingDataRef.current = bookingData; }, [bookingData]);
+
+  useEffect(() => {
+    return () => {
+      if (!completedRef.current && bookingDataRef.current) {
+        trackEvent('booking_abandoned', {
+          businessId: String(bookingDataRef.current?.business?.id),
+          businessName: bookingDataRef.current?.business?.name,
+          serviceId: String(bookingDataRef.current?.service?.id),
+          serviceName: bookingDataRef.current?.service?.name,
+          stage: 'checkout',
+        });
+      }
+    };
+  }, [trackEvent]);
 
   // Load booking data from localStorage directly
   useEffect(() => {
@@ -130,6 +169,9 @@ const BookingCheckoutPage = () => {
 
   return (
     <Layout>
+      {/* Tracking */}
+      <TimeOnPageTracker pageName="checkout" />
+
       <div className="container mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold mb-8">Complete Your Booking</h1>
 
@@ -154,7 +196,7 @@ const BookingCheckoutPage = () => {
           </div>
 
           <div className="space-y-6">
-            <PaymentSummary service={bookingData.service} loading={loading} onConfirm={submit} />
+            <PaymentSummary service={bookingData.service} loading={loading} onConfirm={handleSubmit} />
           </div>
         </div>
       </div>

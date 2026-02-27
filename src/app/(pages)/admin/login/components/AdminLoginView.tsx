@@ -88,7 +88,7 @@ export default function AdminLoginView({
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   type="email"
-                  placeholder="admin@bookify.com"
+                  placeholder="admin@kayedni.com"
                   required
                   className="pl-10 bg-white/10 border-white/20 text-white placeholder-gray-400 focus:border-purple-500 focus:ring-purple-500"
                 />

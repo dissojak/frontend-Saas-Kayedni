@@ -88,7 +88,7 @@ export default function BusinessSolutions() {
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold mb-4 dark:text-white">Common Problems We Solve</h2>
-            <p className="text-xl text-gray-600 dark:text-gray-300">Running a service business is complex. Bookify simplifies it.</p>
+            <p className="text-xl text-gray-600 dark:text-gray-300">Running a service business is complex. kayedni simplifies it.</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
@@ -134,7 +134,7 @@ export default function BusinessSolutions() {
               { icon: '📅', title: 'Smart Scheduling', desc: 'Real-time availability, automatic buffers, staff management, and timezone handling.' },
               { icon: '💰', title: 'Revenue Optimization', desc: 'Dynamic pricing, bulk bookings, package deals, and instant payment processing.' },
               { icon: '📊', title: 'Advanced Analytics', desc: 'Revenue tracking, customer insights, no-show metrics, and performance reporting.' },
-              { icon: '📱', title: 'Multi-Channel Presence', desc: 'Bookify widget for your website, white-label option, and mobile app integration.' },
+              { icon: '📱', title: 'Multi-Channel Presence', desc: 'kayedni widget for your website, white-label option, and mobile app integration.' },
               { icon: '🔔', title: 'Smart Notifications', desc: 'SMS & email reminders, appointment confirmations, and cancellation alerts.' },
               { icon: '🔗', title: 'Integrations', desc: 'Stripe, PayPal, Google Calendar, Slack, Zapier, and 100+ more tools.' },
             ].map((feature, idx) => (
@@ -236,8 +236,8 @@ export default function BusinessSolutions() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
-              { name: "Sarah's Beauty Salon", business: 'Hair & Beauty', story: 'Bookify helped us double our bookings in 3 months. The automated reminders alone reduced our no-shows by 50%.', metric: '+92% Revenue' },
-              { name: 'Dr. James Consulting', business: 'Professional Services', story: 'As a consultant, my time is money. Bookify freed up 10+ hours per week. Best investment ever.', metric: '+40% Capacity' },
+              { name: "Sarah's Beauty Salon", business: 'Hair & Beauty', story: 'kayedni helped us double our bookings in 3 months. The automated reminders alone reduced our no-shows by 50%.', metric: '+92% Revenue' },
+              { name: 'Dr. James Consulting', business: 'Professional Services', story: 'As a consultant, my time is money. kayedni freed up 10+ hours per week. Best investment ever.', metric: '+40% Capacity' },
               { name: 'Zen Fitness Studio', business: 'Fitness & Wellness', story: "Our members love the app. We're now at 95% capacity, and our staff finally has breathing room.", metric: '+3 New Staff' },
             ].map((story, idx) => (
               <div key={idx} className="p-8 rounded-2xl bg-gradient-to-br from-slate-50 to-gray-100 dark:from-slate-900 dark:to-slate-800 border border-gray-200 dark:border-slate-700">
@@ -290,7 +290,7 @@ export default function BusinessSolutions() {
           <div className="max-w-3xl mx-auto text-center">
             <h2 className="text-4xl md:text-5xl font-bold mb-6 dark:text-white">Ready to Scale Your Business?</h2>
             <p className="text-xl text-gray-600 dark:text-gray-300 mb-8">
-              Join 500+ service businesses already using Bookify to grow revenue and delight customers.
+              Join 500+ service businesses already using kayedni to grow revenue and delight customers.
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
               {!isAuthenticated && (
@@ -306,7 +306,7 @@ export default function BusinessSolutions() {
                 variant="outline"
                 size="lg"
                 className="border-2 border-amber-500 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20"
-                onClick={() => window.location.href = 'mailto:sales@bookify.com'}
+                onClick={() => window.location.href = 'mailto:sales@kayedni.com'}
               >
                 Talk to Sales
               </Button>

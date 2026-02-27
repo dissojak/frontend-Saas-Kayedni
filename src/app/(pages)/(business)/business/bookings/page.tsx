@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@components/ui/tabs";
 import { Calendar, Search, CheckCircle, UserCheck, XCircle } from "lucide-react";
 import { fetchBookingsForBusiness, updateBookingStatus } from "../../actions/backend";
+import { useAuth } from "@/(pages)/(auth)/context/AuthContext";
 
 // Import types from shared location
 import { Booking, ConfirmDialogState } from '../../../shared/bookings/types';
@@ -29,6 +30,7 @@ import {
 } from '../../../shared/bookings/components';
 
 export default function BusinessBookingsPage() {
+  const { activeMode, user } = useAuth();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -45,6 +47,11 @@ export default function BusinessBookingsPage() {
     bookingId: null, 
     clientName: '' 
   });
+
+  // Filter bookings based on active mode
+  const displayedBookings = activeMode === 'staff' && user?.staffId
+    ? filteredBookings.filter(booking => booking.staffId === parseInt(user.staffId))
+    : filteredBookings;
 
   useEffect(() => {
     // Get businessId from localStorage (user's business)
@@ -123,7 +130,7 @@ export default function BusinessBookingsPage() {
   };
 
   // Categorize bookings using utility function
-  const { upcomingBookings, todayBookings, pastBookings, cancelledBookings } = categorizeBookings(filteredBookings, currentTime);
+  const { upcomingBookings, todayBookings, pastBookings, cancelledBookings } = categorizeBookings(displayedBookings, currentTime);
 
   // Get the currently active booking and next up booking
   const activeBooking = todayBookings.find(b => isCurrentlyActive(b, currentTime));

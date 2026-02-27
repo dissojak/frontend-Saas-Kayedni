@@ -10,10 +10,13 @@ import { ReviewDialog, type ReviewBookingInfo } from '@components/reviews';
 import useBookingsData from './hooks/useBookingsData';
 import UpcomingList from './components/UpcomingList';
 import PastList from './components/PastList';
+import { useTracking } from '@global/hooks/useTracking';
+import TimeOnPageTracker from '@components/tracking/TimeOnPageTracker';
 
 const BookingsPage = () => {
   const { user, token } = useAuth();
   const router = useRouter();
+  const { trackEvent } = useTracking();
   const {
     getBookingsForUser,
     getBusinessName,
@@ -45,12 +48,23 @@ const BookingsPage = () => {
   };
 
   const handleReviewSuccess = () => {
+    // Track review_submitted
+    if (selectedBookingForReview) {
+      trackEvent('review_submitted', {
+        bookingId: String(selectedBookingForReview.id),
+        businessName: selectedBookingForReview.businessName,
+        source: 'bookings_page',
+      });
+    }
     // Optionally refresh bookings data here if needed
     setSelectedBookingForReview(null);
   };
 
   return (
     <Layout>
+      {/* Tracking */}
+      <TimeOnPageTracker pageName="bookings" />
+
       <div className="container mx-auto px-4 py-8">
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-8">
           <h1 className="text-3xl font-bold">Your Bookings</h1>
