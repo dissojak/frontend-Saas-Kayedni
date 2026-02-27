@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 
@@ -17,6 +17,18 @@ import ScrollDepthTracker from '@components/tracking/ScrollDepthTracker';
 import { ArrowRight, Clock, Users, TrendingUp, Sparkles, Search, Calendar, CheckCircle, Shield, RefreshCw, Smartphone, Bell, CreditCard, BarChart, Globe, MapPin, Loader2, Star } from 'lucide-react';
 import { Input } from '@components/ui/input';
 import { createBusinessSlug } from '@global/lib/businessSlug';
+import { apiGet } from './(pages)/(auth)/api/client';
+
+interface Testimonial {
+  clientName: string;
+  serviceComment?: string;
+  businessComment?: string;
+  serviceRating?: number;
+  businessRating?: number;
+  serviceName?: string;
+  businessName?: string;
+  businessId?: number;
+}
 
 export default function Index() {
   const router = useRouter();
@@ -68,6 +80,16 @@ export default function Index() {
 
   const [loading, setLoading] = useState(true);
 
+  // Testimonials state with default fallback
+  const [testimonials, setTestimonials] = useState<Testimonial[]>([
+    { clientName: 'Sarah Johnson', serviceComment: 'The platform transformed how I manage appointments. My revenue increased by 40% in the first month alone.', serviceRating: 5, businessName: 'Style Studio' },
+    { clientName: 'Mike Chen', businessComment: 'Finally, a booking platform that actually works! Easy to find services, fast booking, and reliable reminders.', businessRating: 5, serviceName: 'Tech Support' },
+    { clientName: 'Emma Davis', serviceComment: 'The best tool for managing my schedule. My clients love the instant confirmations and I love the automated admin.', serviceRating: 5, businessName: 'GameZone' },
+  ]);
+  const [testimonialsLoading, setTestimonialsLoading] = useState(false);
+  const testimonialsSectionRef = useRef<HTMLElement | null>(null);
+  const testimonialsImpressedRef = useRef(false);
+
   // Search functionality with real-time typeahead
   const {
     query: searchQuery,
@@ -115,6 +137,53 @@ export default function Index() {
       .finally(() => mounted && setLoading(false));
     return () => { mounted = false; };
   }, []);
+
+  // Fetch real testimonials from backend
+  useEffect(() => {
+    let mounted = true;
+    setTestimonialsLoading(true);
+    apiGet<Testimonial[]>('/v1/ratings/recent?limit=6', false)
+      .then((data) => {
+        if (!mounted) return;
+        if (Array.isArray(data) && data.length >= 3) {
+          setTestimonials(data.slice(0, 6));
+        }
+      })
+      .catch(() => {
+        // silently fall back to default testimonials on error
+      })
+      .finally(() => mounted && setTestimonialsLoading(false));
+    return () => { mounted = false; };
+  }, []);
+
+  // Track testimonials section impression (once, when it first enters the viewport)
+  useEffect(() => {
+    const el = testimonialsSectionRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (entry.isIntersecting && !testimonialsImpressedRef.current) {
+          testimonialsImpressedRef.current = true;
+          trackEvent('testimonial_section_view', {
+            section: 'home_testimonials',
+            page: 'home',
+            count: testimonials.slice(0, 3).length,
+            source: testimonialsLoading ? 'loading' : 'loaded',
+            has_real_data: testimonials.some((t) => t.businessId != null),
+            businesses_shown: testimonials
+              .slice(0, 3)
+              .map((t) => t.businessName)
+              .filter(Boolean),
+          });
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.3 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [trackEvent, testimonials, testimonialsLoading]);
 
   return (
     <Layout>
@@ -381,7 +450,7 @@ export default function Index() {
       </section>
 
       {/* Testimonials Section - SOCIAL PROOF */}
-      <section className="py-24 bg-primary text-primary-foreground relative overflow-hidden">
+      <section ref={testimonialsSectionRef} className="py-24 bg-primary text-primary-foreground relative overflow-hidden">
         {/* Background Glow */}
         <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary-foreground/20 via-transparent to-transparent pointer-events-none" />
         
@@ -391,29 +460,80 @@ export default function Index() {
             <p className="text-xl text-primary-foreground/80 max-w-2xl mx-auto">Real stories from our happy customers and businesses who use platform daily.</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[
-              { name: 'Sarah Johnson', role: 'Business Owner', content: 'The platform transformed how I manage appointments. My revenue increased by 40% in the first month alone.', rating: 5 },
-              { name: 'Mike Chen', role: 'Customer', content: 'Finally, a booking platform that actually works! Easy to find services, fast booking, and reliable reminders.', rating: 5 },
-              { name: 'Emma Davis', role: 'Service Professional', content: 'The best tool for managing my schedule. My clients love the instant confirmations and I love the automated admin.', rating: 5 },
-            ].map((testimonial, idx) => (
-              <div key={idx} className="p-8 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/15 transition-all duration-300 shadow-lg">
-                <div className="flex gap-1 mb-4">
-                  {[...Array(testimonial.rating)].map((_, i) => (
-                    <Star key={i} className="h-5 w-5 text-brand-orange fill-brand-orange" />
-                  ))}
-                </div>
-                <p className="text-lg text-white/90 mb-6 italicLeading-relaxed">"{testimonial.content}"</p>
-                <div className="flex items-center gap-4">
-                  <div className="h-10 w-10 rounded-full bg-white/20 flex items-center justify-center font-bold text-white">
-                    {testimonial.name.charAt(0)}
+            {testimonialsLoading ? (
+              new Array(3).fill(null).map((_, idx) => (
+                <div key={`skeleton-${idx}`} className="p-8 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 animate-pulse">
+                  <div className="flex gap-1 mb-4">
+                    {new Array(5).fill(null).map((__, i) => (
+                      <div key={`star-${i}`} className="h-5 w-5 rounded bg-white/20" />
+                    ))}
                   </div>
-                  <div>
-                    <p className="font-bold text-white">{testimonial.name}</p>
-                    <p className="text-white/70 text-sm">{testimonial.role}</p>
+                  <div className="h-20 bg-white/10 rounded mb-6" />
+                  <div className="flex items-center gap-4">
+                    <div className="h-10 w-10 rounded-full bg-white/20" />
+                    <div className="space-y-2">
+                      <div className="h-4 w-24 bg-white/20 rounded" />
+                      <div className="h-3 w-16 bg-white/10 rounded" />
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))
+            ) : (
+              testimonials.slice(0, 3).map((testimonial, idx) => {
+                const comment = testimonial.serviceComment || testimonial.businessComment || '';
+                const rating = testimonial.serviceRating ?? testimonial.businessRating ?? 5;
+                const bizName = testimonial.businessName;
+                const bizId = testimonial.businessId;
+                const bizSlug = bizName && bizId ? createBusinessSlug(bizName, String(bizId)) : null;
+                const role = bizName ? `Customer · ${bizName}` : 'Customer';
+                const cardContent = (
+                  <>
+                    <div className="flex gap-1 mb-4 flex-shrink-0">
+                      {new Array(5).fill(null).map((__, i) => (
+                        <Star
+                          key={`star-${i}`}
+                          className={`h-5 w-5 ${i < rating ? 'text-white fill-white' : 'text-white/40'}`}
+                        />
+                      ))}
+                    </div>
+                    <p className="text-lg text-white/90 mb-6 italic leading-relaxed flex-grow">"{comment}"</p>
+                    <div className="flex items-center gap-4 flex-shrink-0">
+                      <div className="h-10 w-10 rounded-full bg-white/20 flex items-center justify-center font-bold text-white">
+                        {testimonial.clientName.charAt(0)}
+                      </div>
+                      <div>
+                        <p className="font-bold text-white">{testimonial.clientName}</p>
+                        <p className={`text-sm ${bizSlug ? 'text-white/90 underline underline-offset-2' : 'text-white/70'}`}>{role}</p>
+                      </div>
+                    </div>
+                  </>
+                );
+                const baseClass = 'flex flex-col h-full p-8 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/15 transition-all duration-300 shadow-lg';
+                const handleClick = () => {
+                  trackEvent('testimonial_business_click', {
+                    businessId: String(bizId),
+                    businessName: bizName,
+                    ratingScore: rating,
+                    source: 'home_testimonials',
+                  });
+                  router.push(`/business/${bizSlug}`);
+                };
+                return bizSlug ? (
+                  <button
+                    key={`testimonial-${idx}`}
+                    type="button"
+                    className={`${baseClass} cursor-pointer hover:-translate-y-1 text-left w-full`}
+                    onClick={handleClick}
+                  >
+                    {cardContent}
+                  </button>
+                ) : (
+                  <div key={`testimonial-${idx}`} className={baseClass}>
+                    {cardContent}
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
       </section>
@@ -555,8 +675,7 @@ export default function Index() {
       </section>
 
       {/* Browse Categories Section - EXPLORE OPTIONS */}
-      {/* Browse Categories Section - EXPLORE OPTIONS */}
-      <section className="py-24 bg-gradient-to-b from-background to-muted/20 relative overflow-hidden">
+      {/* <section className="py-24 bg-gradient-to-b from-background to-muted/20 relative overflow-hidden">
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-border to-transparent opacity-50" />
         <div className="container mx-auto px-4 relative z-10">
           <div className="text-center mb-16">
@@ -580,7 +699,7 @@ export default function Index() {
             </Button>
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* Mobile App Promotion Section - EXTRA CHANNEL */}
       <section className="py-24 relative overflow-hidden bg-slate-950">

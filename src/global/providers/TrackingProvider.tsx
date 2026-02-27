@@ -10,6 +10,10 @@ const GA4_FORWARDED_EVENTS = new Set([
   "page_view", "business_view", "booking_started", "booking_completed",
   "booking_abandoned", "search_query", "login", "signup", "logout",
   "review_submitted", "category_browsed",
+  "testimonial_section_view", "testimonial_business_click",
+  "login_failed", "signup_failed", "signup_validation_error",
+  "forgot_password_requested", "forgot_password_failed",
+  "reset_password_completed", "reset_password_failed",
 ]);
 
 // Branded logging utilities
@@ -81,7 +85,17 @@ export type EventType =
   | "login"
   | "signup"
   | "logout"
-  | "profile_update";
+  | "profile_update"
+  | "testimonial_section_view"
+  | "testimonial_business_click"
+  | "login_attempt"
+  | "login_failed"
+  | "signup_validation_error"
+  | "signup_failed"
+  | "forgot_password_requested"
+  | "forgot_password_failed"
+  | "reset_password_completed"
+  | "reset_password_failed";
 
 export interface TrackingEvent {
   userId?: string | null;
