@@ -1026,13 +1026,14 @@ export default function Index() {
               <Button
                 variant="skeuo-primary"
                 size="xl"
-                className="w-full sm:w-auto shadow-xl shadow-primary/20 hover:shadow-2xl hover:shadow-primary/30 transition-all text-lg px-8 py-6"
+                className="group rounded-full px-8 hover:bg-primary/90"
                 onClick={() => {
                   trackEvent("click", { element: "cta_start_booking", section: "final_cta" });
                   router.push("/register");
                 }}
               >
-                Start Booking Free <ArrowRight className="ml-2 h-5 w-5" />
+                Start Booking Free
+                <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
               </Button>
               <Button
                 variant="skeuo"
