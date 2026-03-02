@@ -21,6 +21,7 @@ import ScrollDepthTracker from "@components/tracking/ScrollDepthTracker";
 
 import useBusinessDetail from "./hooks/useBusinessDetail";
 import BusinessHeader from "./components/BusinessHeader";
+import InlinePhotoGallery from "./components/InlinePhotoGallery";
 
 const BusinessDetailPage = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -121,7 +122,6 @@ const BusinessDetailPage = () => {
   // New state for modals and multi-step booking
   const [bookingStep, setBookingStep] = useState(1);
   const [isReviewsModalOpen, setIsReviewsModalOpen] = useState(false);
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [reviewText, setReviewText] = useState("");
   const [isBookingMode, setIsBookingMode] = useState(false);
   const [isCancelAlertOpen, setIsCancelAlertOpen] = useState(false);
@@ -320,21 +320,6 @@ useEffect(() => {
 
   // Page state is declared earlier to keep hook order stable.
 
-  // Get the main image to display (first from images array, or fallback to logo/placeholder)
-  const mainImage = images.length > 0 
-    ? images[currentImageIndex]?.imageUrl || images[0].imageUrl
-    : (business as any).logo || (business as any).imageUrl || "/assets/placeholder.svg";
-
-  const handleNextImage = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setCurrentImageIndex((prev) => (prev + 1) % images.length);
-  };
-
-  const handlePrevImage = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
-  };
-
   return (
     <Layout>
       {/* Tracking Components */}
@@ -348,48 +333,11 @@ useEffect(() => {
 
         {!isBookingMode ? (
           <>
-            {/* Hero Image Gallery */}
-            <div className="mb-12 mt-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-2 h-[400px] rounded-xl overflow-hidden">
-            <div className="md:col-span-3 h-full relative group">
-              <img src={mainImage} alt={(business as any).name} className="w-full h-full object-cover transition-transform duration-500" />
-              <div className="absolute inset-0 bg-black/10 transition-colors" />
-              {images.length > 1 && (
-                <>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/50 hover:bg-white/80 text-black rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={handlePrevImage}
-                  >
-                    <ChevronLeft className="w-6 h-6" />
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/50 hover:bg-white/80 text-black rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={handleNextImage}
-                  >
-                    <ChevronRight className="w-6 h-6" />
-                  </Button>
-                </>
-              )}
-            </div>
-            <div className="hidden md:flex flex-col gap-2 h-full">
-              {images.slice(0, 2).map((img: any, idx: number) => (
-                <div key={`image-${idx}`} className="h-[calc(50%-0.25rem)] relative group cursor-pointer" onClick={() => setCurrentImageIndex(idx)}>
-                  <img src={img.imageUrl} alt={(business as any).name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
-                  <div className={`absolute inset-0 transition-colors ${currentImageIndex === idx ? 'bg-transparent ring-2 ring-primary inset-0' : 'bg-black/20 group-hover:bg-transparent'}`} />
-                </div>
-              ))}
-              {images.length <= 1 && (
-                 <div className="h-full bg-gray-100 flex items-center justify-center text-gray-400">
-                   <ImageIcon className="w-8 h-8 opacity-50" />
-                 </div>
-              )}
-            </div>
-          </div>
-        </div>
+            {/* Inline Photo Gallery */}
+            <InlinePhotoGallery
+              images={images}
+              businessName={(business as any).name ?? ""}
+            />
 
         {/* Main Content Stack */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
