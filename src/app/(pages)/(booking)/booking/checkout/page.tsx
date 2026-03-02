@@ -31,6 +31,13 @@ const BookingCheckoutPage = () => {
   const [displayUser, setDisplayUser] = useState<any | null>(null);
   const [bookingCompleted, setBookingCompleted] = useState(false);
 
+  // Check if user is authenticated, if not redirect to login
+  useEffect(() => {
+    if (!user) {
+      router.push(`/login?redirect=${encodeURIComponent('/booking/checkout')}`);
+    }
+  }, [user, router]);
+
   // Wrap submit to track booking_completed
   const handleSubmit = async (paymentMethod: string) => {
     await submit(paymentMethod);
