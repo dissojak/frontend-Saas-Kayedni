@@ -1,3 +1,5 @@
+import { User } from "../context/auth/types";
+
 // Backend uses uppercase roles: CLIENT, BUSINESS_OWNER, STAFF, ADMIN
 export type BackendUserRole = 'CLIENT' | 'BUSINESS_OWNER' | 'STAFF' | 'ADMIN';
 // Frontend will now use the same uppercase role values as the backend
@@ -40,14 +42,7 @@ export interface BackendAuthResponse {
 export interface AuthResponse {
   success: boolean;
   message?: string;
-  user?: {
-    id: string;
-    name: string;
-    email: string;
-    role: UserRole;
-    token?: string;
-    refreshToken?: string;
-  };
+  user?: User;
   error?: string;
 }
 
