@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { useTracking } from "@global/hooks/useTracking";
 import { logAuthEvent } from "@global/lib/authLogger";
 
-export function useRegister() {
+export function useRegister(defaultRole: UserRole = "CLIENT") {
   const auth = useAuth();
   const router = useRouter();
   const { trackEvent } = useTracking();
@@ -16,7 +16,7 @@ export function useRegister() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [role, setRole] = useState<UserRole>("CLIENT");
+  const [role, setRole] = useState<UserRole>(defaultRole);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
