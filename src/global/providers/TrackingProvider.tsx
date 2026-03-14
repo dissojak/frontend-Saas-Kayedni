@@ -135,17 +135,20 @@ interface TrackingProviderProps {
 
 const BATCH_SIZE = 10;
 const FLUSH_INTERVAL = 5000; // 5 seconds
+const HEARTBEAT_INTERVAL = 45_000; // 45 seconds
 const TRACKING_SERVICE_URL = process.env.NEXT_PUBLIC_TRACKING_SERVICE_URL || "http://localhost:4000";
 const SESSION_STORAGE_KEY = "kayedni_session_id";
-const ANONYMOUS_USER_KEY = "kayedni_anonymous_id";
 
 // Module-level flag — survives HMR (prevents double banner on hot reload)
 let __trackingLoggerInitialized = false;
 
 /**
- * Generates a UUID v4 for anonymous user identification
+ * Generates a UUID v4 (fallback for environments without crypto.randomUUID)
  */
 function generateUUID(): string {
+  if (typeof crypto !== "undefined" && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
   return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
     const r = (Math.random() * 16) | 0;
     const v = c === "x" ? r : (r & 0x3) | 0x8;
@@ -239,6 +242,7 @@ export const TrackingProvider: React.FC<TrackingProviderProps> = ({
     if (!sId || userJustLoggedIn) {
       // End old session on login transition (fire-and-forget via sendBeacon)
       if (sId && userJustLoggedIn) {
+        stopHeartbeat();
         try {
           navigator.sendBeacon(
             `${trackingServiceUrl}/api/session/${sId}/end`,
@@ -290,35 +294,43 @@ export const TrackingProvider: React.FC<TrackingProviderProps> = ({
     };
   }, [sessionId, trackingServiceUrl]);
 
-  // Setup beforeunload listener for reliable flushing on tab close
+  // End session reliably via visibilitychange + sendBeacon
+  // visibilitychange fires more reliably than beforeunload on mobile browsers
   useEffect(() => {
     if (typeof window === "undefined" || !sessionId) return;
 
-    const handleBeforeUnload = () => {
-      const beaconApiKey = process.env.NEXT_PUBLIC_TRACKING_API_KEY || "";
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        stopHeartbeat();
+        const beaconApiKey = process.env.NEXT_PUBLIC_TRACKING_API_KEY || "";
 
-      // Flush events using sendBeacon (text/plain avoids CORS preflight)
-      if (eventQueueRef.current.length > 0) {
+        // Flush events using sendBeacon (text/plain avoids CORS preflight)
+        if (eventQueueRef.current.length > 0) {
+          navigator.sendBeacon(
+            `${trackingServiceUrl}/api/track/batch`,
+            new Blob(
+              [JSON.stringify({ events: eventQueueRef.current, apiKey: beaconApiKey })],
+              { type: "text/plain" }
+            )
+          );
+          eventQueueRef.current = [];
+        }
+
+        // End session using sendBeacon
         navigator.sendBeacon(
-          `${trackingServiceUrl}/api/track/batch`,
-          new Blob(
-            [JSON.stringify({ events: eventQueueRef.current, apiKey: beaconApiKey })],
-            { type: "text/plain" }
-          )
+          `${trackingServiceUrl}/api/session/${sessionId}/end`,
+          new Blob([JSON.stringify({ apiKey: beaconApiKey })], { type: "text/plain" })
         );
+      } else if (document.visibilityState === "visible" && sessionId) {
+        // Tab came back — restart heartbeat
+        startHeartbeat(sessionId, trackingServiceUrl);
       }
-
-      // End session using sendBeacon
-      navigator.sendBeacon(
-        `${trackingServiceUrl}/api/session/${sessionId}/end`,
-        new Blob([JSON.stringify({ apiKey: beaconApiKey })], { type: "text/plain" })
-      );
     };
 
-    window.addEventListener("beforeunload", handleBeforeUnload);
+    window.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
+      window.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [sessionId, trackingServiceUrl]);
 
