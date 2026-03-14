@@ -3,6 +3,7 @@
 import React, { useState, useCallback } from "react";
 import { ChevronLeft, ChevronRight, Image as ImageIcon } from "lucide-react";
 import { Button } from "@components/ui/button";
+import Image from "next/image";
 
 interface GalleryImage {
   imageUrl: string;
@@ -73,10 +74,13 @@ const InlinePhotoGallery: React.FC<InlinePhotoGalleryProps> = ({
     return (
       <div className="mb-12 mt-6">
         <div className="rounded-xl overflow-hidden h-[420px]">
-          <img
+          <Image
             src={visibleImages[0].imageUrl}
             alt={businessName}
-            loading="lazy"
+            loading="eager"
+            fetchPriority="high"
+            width={960}
+            height={420}
             className="w-full h-full object-cover"
           />
         </div>
@@ -88,10 +92,13 @@ const InlinePhotoGallery: React.FC<InlinePhotoGalleryProps> = ({
     <div className="mb-12 mt-6 space-y-2">
       {/* Main viewer */}
       <div className="relative rounded-xl overflow-hidden h-[420px] group bg-black">
-        <img
+        <Image
           src={visibleImages[activeIndex].imageUrl}
           alt={`${businessName} – ${activeIndex + 1}`}
-          loading="lazy"
+          loading={activeIndex === 0 ? "eager" : "lazy"}
+          fetchPriority={activeIndex === 0 ? "high" : undefined}
+          width={960}
+          height={420}
           className="w-full h-full object-cover transition-opacity duration-500 ease-in-out"
         />
 
@@ -162,6 +169,8 @@ const InlinePhotoGallery: React.FC<InlinePhotoGalleryProps> = ({
               src={img.imageUrl}
               alt={`${businessName} – ${idx + 1}`}
               loading="lazy"
+              width={160}
+              height={96}
               className="w-full h-full object-cover"
             />
           </button>
