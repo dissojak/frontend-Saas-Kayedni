@@ -355,10 +355,10 @@ useEffect(() => {
             <section>
               <h2 className="text-2xl font-bold mb-6">Meet Our Team</h2>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                {staff.map((member: any, idx: number) => (
-                  <div key={`team-${idx}`} className="flex flex-col items-center text-center group">
+                {staff.map((member: any) => (
+                  <div key={member.id ?? member.name} className="flex flex-col items-center text-center group">
                     <div className="w-24 h-24 rounded-full overflow-hidden mb-3 ring-4 ring-transparent group-hover:ring-primary/20 transition-all">
-                      <img src={member.avatar} alt={member.name} className="w-full h-full object-cover" />
+                      <img src={member.avatar} alt={member.name} width={96} height={96} className="w-full h-full object-cover" />
                     </div>
                     <h3 className="font-semibold text-gray-900">{member.name}</h3>
                     <p className="text-sm text-gray-500">{member.role}</p>
@@ -386,15 +386,15 @@ useEffect(() => {
                   <div key={review.id} className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm">
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-3">
-                        <img src={review.avatar} alt={review.author} className="w-10 h-10 rounded-full" />
+                        <img src={review.avatar} alt={review.author} width={40} height={40} className="w-10 h-10 rounded-full" />
                         <div>
                           <h4 className="font-semibold text-sm">{review.author}</h4>
                           <p className="text-xs text-gray-500">{review.date}</p>
                         </div>
                       </div>
                       <div className="flex">
-                        {[...Array(5)].map((_, i) => (
-                          <Star key={i} className={`w-4 h-4 ${i < review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} />
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <Star key={`star-${review.id}-${star}`} className={`w-4 h-4 ${star <= review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} />
                         ))}
                       </div>
                     </div>
@@ -492,13 +492,14 @@ useEffect(() => {
                     <div className={`p-6 transition-all duration-500 ease-in-out ${selectedStaff ? 'md:w-1/3 border-b md:border-b-0 md:border-r border-gray-100 bg-gray-50/50' : 'w-full'}`}>
                       <h3 className="font-semibold mb-4 flex items-center gap-2">
                         <span className="bg-primary text-white w-6 h-6 rounded-full flex items-center justify-center text-xs">1</span>
-                        Select Professional
+                        <span>Select Professional</span>
                       </h3>
                       <div className={`grid gap-3 ${selectedStaff ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'}`}>
                         {staff.map((member: any, idx: number) => (
-                          <div
-                            key={`book-staff-${idx}`}
-                            className={`p-3 rounded-xl border-2 cursor-pointer transition-all flex items-center gap-3 bg-white relative overflow-hidden ${
+                          <button
+                            type="button"
+                            key={member.id ?? `book-staff-${idx}`}
+                            className={`p-3 rounded-xl border-2 cursor-pointer transition-all flex items-center gap-3 bg-white relative overflow-hidden text-left ${
                               selectedStaff?.id === member.id
                                 ? "border-primary bg-primary/10 shadow-md ring-1 ring-primary"
                                 : "border-transparent shadow-sm hover:border-gray-200"
@@ -510,12 +511,12 @@ useEffect(() => {
                                 <Check className="w-3 h-3" />
                               </div>
                             )}
-                            <img src={member.avatar} alt={member.name} className="w-10 h-10 rounded-full object-cover" />
+                            <img src={member.avatar} alt={member.name} width={40} height={40} className="w-10 h-10 rounded-full object-cover" />
                             <div>
                               <h4 className="font-medium text-sm text-gray-900">{member.name}</h4>
                               {!selectedStaff && <p className="text-xs text-gray-500">{member.role}</p>}
                             </div>
-                          </div>
+                          </button>
                         ))}
                       </div>
                     </div>
@@ -525,13 +526,14 @@ useEffect(() => {
                       <div className="p-6 md:w-2/3 animate-in slide-in-from-right-8 duration-500">
                         <h3 className="font-semibold mb-4 flex items-center gap-2">
                           <span className="bg-primary text-white w-6 h-6 rounded-full flex items-center justify-center text-xs">2</span>
-                          Select Service
+                          <span>Select Service</span>
                         </h3>
                         <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
                           {(staffServices || []).map((service: any, idx: number) => (
-                            <div
-                              key={`book-service-${idx}`}
-                              className={`p-4 rounded-xl border-2 cursor-pointer transition-all bg-white relative overflow-hidden ${
+                            <button
+                              type="button"
+                              key={service.id ?? `book-service-${idx}`}
+                              className={`p-4 rounded-xl border-2 cursor-pointer transition-all bg-white relative overflow-hidden text-left w-full ${
                                 selectedService?.id === service.id
                                   ? "border-primary bg-primary/10 shadow-md ring-1 ring-primary"
                                   : "border-transparent shadow-sm hover:border-gray-200"
@@ -552,7 +554,7 @@ useEffect(() => {
                                 </div>
                                 <span className="font-bold text-lg">${service.price}</span>
                               </div>
-                            </div>
+                            </button>
                           ))}
                           {(!staffServices || staffServices.length === 0) && (
                             <div className="text-center py-8 text-gray-500">No services available for {selectedStaff.name}.</div>
@@ -628,37 +630,45 @@ useEffect(() => {
                     
                     <div className="flex-1">
                       <h4 className="font-medium mb-4 text-gray-900">Available Times</h4>
-                      {!selectedDate ? (
-                        <div className="text-center py-12 text-gray-500 bg-gray-50 rounded-xl border border-dashed border-gray-200 h-[300px] flex items-center justify-center">
-                          Select a date on the calendar
-                        </div>
-                      ) : slotsLoading ? (
-                        <div className="flex items-center justify-center py-12 bg-gray-50 rounded-xl border border-dashed border-gray-200 h-[300px]">
-                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                        </div>
-                      ) : (
-                        <div className="grid grid-cols-2 gap-3 max-h-[300px] overflow-y-auto pr-2">
-                          {filteredTimeSlots.length > 0 ? filteredTimeSlots.map((slot: any, idx: number) => (
-                            <Button
-                              key={`book-slot-${idx}`}
-                              variant={selectedTimeSlot?.id === slot.id ? "default" : "outline"}
-                              className={`w-full h-12 relative overflow-hidden transition-all ${selectedTimeSlot?.id === slot.id ? "ring-2 ring-primary ring-offset-2 shadow-md bg-primary text-primary-foreground" : "bg-white hover:border-primary/50"}`}
-                              onClick={() => setSelectedTimeSlot(slot)}
-                            >
-                              {selectedTimeSlot?.id === slot.id && (
-                                <div className="absolute top-0 right-0 bg-white/20 text-white p-0.5 rounded-bl-lg">
-                                  <Check className="w-3 h-3" />
-                                </div>
-                              )}
-                              {formatTimeSlot(slot.startTime)}
-                            </Button>
-                          )) : (
-                            <div className="col-span-2 text-center py-12 text-gray-500 bg-gray-50 rounded-xl border border-dashed border-gray-200">
-                              No slots available for this date
+                      {(() => {
+                        if (!selectedDate) {
+                          return (
+                            <div className="text-center py-12 text-gray-500 bg-gray-50 rounded-xl border border-dashed border-gray-200 h-[300px] flex items-center justify-center">
+                              Select a date on the calendar
                             </div>
-                          )}
-                        </div>
-                      )}
+                          );
+                        }
+                        if (slotsLoading) {
+                          return (
+                            <div className="flex items-center justify-center py-12 bg-gray-50 rounded-xl border border-dashed border-gray-200 h-[300px]">
+                              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+                            </div>
+                          );
+                        }
+                        return (
+                          <div className="grid grid-cols-2 gap-3 max-h-[300px] overflow-y-auto pr-2">
+                            {filteredTimeSlots.length > 0 ? filteredTimeSlots.map((slot: any) => (
+                              <Button
+                                key={slot.id ?? `slot-${slot.startTime}`}
+                                variant={selectedTimeSlot?.id === slot.id ? "default" : "outline"}
+                                className={`w-full h-12 relative overflow-hidden transition-all ${selectedTimeSlot?.id === slot.id ? "ring-2 ring-primary ring-offset-2 shadow-md bg-primary text-primary-foreground" : "bg-white hover:border-primary/50"}`}
+                                onClick={() => setSelectedTimeSlot(slot)}
+                              >
+                                {selectedTimeSlot?.id === slot.id && (
+                                  <div className="absolute top-0 right-0 bg-white/20 text-white p-0.5 rounded-bl-lg">
+                                    <Check className="w-3 h-3" />
+                                  </div>
+                                )}
+                                {formatTimeSlot(slot.startTime)}
+                              </Button>
+                            )) : (
+                              <div className="col-span-2 text-center py-12 text-gray-500 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                                No slots available for this date
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
 
@@ -713,7 +723,7 @@ useEffect(() => {
                           
                           <div className="flex items-start gap-4">
                             <div className="w-12 h-12 rounded-full bg-purple-50 flex items-center justify-center text-purple-500 shrink-0">
-                              <img src={selectedStaff.avatar} alt={selectedStaff.name} className="w-full h-full rounded-full object-cover" />
+                              <img src={selectedStaff.avatar} alt={selectedStaff.name} width={48} height={48} className="w-full h-full rounded-full object-cover" />
                             </div>
                             <div>
                               <p className="text-sm text-gray-500 mb-1">Professional</p>
@@ -772,15 +782,15 @@ useEffect(() => {
               <div key={review.id} className="bg-gray-50 p-5 rounded-xl">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-3">
-                    <img src={review.avatar} alt={review.author} className="w-10 h-10 rounded-full" />
+                    <img src={review.avatar} alt={review.author} width={40} height={40} className="w-10 h-10 rounded-full" />
                     <div>
                       <h4 className="font-semibold text-sm">{review.author}</h4>
                       <p className="text-xs text-gray-500">{review.date}</p>
                     </div>
                   </div>
                   <div className="flex">
-                    {[...Array(5)].map((_, i) => (
-                      <Star key={i} className={`w-4 h-4 ${i < review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} />
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <Star key={`modal-star-${review.id}-${star}`} className={`w-4 h-4 ${star <= review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} />
                     ))}
                   </div>
                 </div>
