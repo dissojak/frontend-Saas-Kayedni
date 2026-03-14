@@ -98,6 +98,10 @@ export type EventType =
   | "reset_password_completed"
   | "reset_password_failed";
 
+/**
+ * Tracking event payload — server-side fingerprinting means we no longer send
+ * userAgent, ipAddress, browser, os, or deviceType from the client.
+ */
 export interface TrackingEvent {
   userId?: string | null;
   anonymousId?: string;
@@ -105,8 +109,6 @@ export interface TrackingEvent {
   eventType: EventType;
   page: string;
   properties?: Record<string, any>;
-  userAgent?: string;
-  ipAddress?: string;
   timestamp?: number;
 }
 
@@ -190,9 +192,6 @@ export const TrackingProvider: React.FC<TrackingProviderProps> = ({
   const [anonymousId, setAnonymousId] = useState<string | null>(null);
   const eventQueueRef = useRef<TrackingEvent[]>([]);
   const flushTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const userAgentRef = useRef<{ browser: string; os: string; deviceType: "desktop" | "tablet" | "mobile" } | null>(
-    null
-  );
   const sessionIdRef = useRef<string | null>(null);
   const prevUserIdRef = useRef<string | null | undefined>(undefined); // undefined = not yet initialized
   const lastTrackedPageRef = useRef<string | null>(null); // for auto page_view dedup
@@ -258,12 +257,15 @@ export const TrackingProvider: React.FC<TrackingProviderProps> = ({
       startSessionOnBackend(newSessionId, anonId);
     }
 
+    // Start heartbeat for the active session
+    startHeartbeat(sId, trackingServiceUrl);
+
     setSessionId(sId);
   }, [user?.id]);
 
   // Cleanup timer + flush on unmount — NEVER end the session here
   // (React Strict Mode and HMR both unmount/remount, which would prematurely kill sessions)
-  // Session ending is handled ONLY by: beforeunload listener OR login transition above
+  // Session ending is handled ONLY by: visibilitychange listener OR login transition above
   useEffect(() => {
     return () => {
       if (flushTimerRef.current) {
@@ -338,7 +340,6 @@ export const TrackingProvider: React.FC<TrackingProviderProps> = ({
       eventType: "page_view",
       page: pathname,
       properties: { pathname, auto: true },
-      userAgent: typeof window !== "undefined" ? navigator.userAgent : undefined,
       timestamp: Date.now(),
     };
 
@@ -366,16 +367,20 @@ export const TrackingProvider: React.FC<TrackingProviderProps> = ({
     }
   }, [pathname, sessionId, user?.id, anonymousId, trackingServiceUrl]);
 
+  /**
+   * Start a new session on the backend.
+   * Only sends: sessionId, userId, anonymousId, entryPage.
+   * Server extracts device info, IP, referrer, language from HTTP headers automatically.
+   */
   const startSessionOnBackend = useCallback(
     async (sId: string, anonId: string) => {
       try {
         const payload = {
           sessionId: sId,
-          userId: user?.id ? String(user.id) : undefined,
+          userId: user?.id ? String(user.id) : null,
           anonymousId: anonId,
-          browser: userAgentRef.current?.browser || 'unknown',
-          os: userAgentRef.current?.os || 'unknown',
-          deviceType: userAgentRef.current?.deviceType || 'desktop',
+          entryPage: typeof window !== "undefined" ? window.location.pathname : "/",
+          // Server extracts: browser, os, deviceType, ipAddress, referrer, userAgent
         };
 
         await fetch(`${trackingServiceUrl}/api/session/start`, {
@@ -409,6 +414,7 @@ export const TrackingProvider: React.FC<TrackingProviderProps> = ({
           "x-api-key": process.env.NEXT_PUBLIC_TRACKING_API_KEY || "",
         },
         body: JSON.stringify({
+          // No top-level userAgent or ipAddress — server handles these
           events: eventsToSend,
         }),
       });
@@ -445,8 +451,7 @@ export const TrackingProvider: React.FC<TrackingProviderProps> = ({
         eventType,
         page: typeof window !== "undefined" ? window.location.pathname : "/",
         properties: properties || {},
-        userAgent:
-          typeof window !== "undefined" ? navigator.userAgent : undefined,
+        // No userAgent or ipAddress — server extracts these from HTTP headers
         timestamp: Date.now(),
       };
 
