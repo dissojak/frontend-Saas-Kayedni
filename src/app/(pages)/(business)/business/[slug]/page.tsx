@@ -3,12 +3,11 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Layout from "@components/layout/Layout";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@components/ui/tabs";
 import { Button } from "@components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@components/ui/card";
 import { Calendar } from "@components/ui/calendar";
 import { Textarea } from "@components/ui/textarea";
-import { Clock, ArrowRight, Tag, ChevronLeft, ChevronRight, Star, MessageSquare, ThumbsUp, Image as ImageIcon, Check } from "lucide-react";
+import { Clock, ArrowRight, Tag, ChevronLeft, Star, MessageSquare, ThumbsUp, Check } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@components/ui/alert-dialog";
 // (Removed searchable popovers per request; enhancing card selection UI instead)
@@ -42,10 +41,9 @@ const BusinessDetailPage = () => {
     setSelectedDate,
     selectedTimeSlot,
     setSelectedTimeSlot,
-    setSelectedBusiness,
   } = useBooking();
 
-  const { business, staff, services, staffServices, staffAvailability, loadServicesForStaff, loadAvailabilityForStaff, clearStaffAvailability, loadTimeSlotsForDate, clearSlots, slots, slotsLoading, images, loading } = useBusinessDetail(businessId ?? undefined);
+  const { business, staff, staffServices, staffAvailability, loadServicesForStaff, loadAvailabilityForStaff, clearStaffAvailability, loadTimeSlotsForDate, clearSlots, slots, slotsLoading, images, loading } = useBusinessDetail(businessId ?? undefined);
   
   // Track business_view when business loads
   useEffect(() => {
@@ -103,21 +101,13 @@ const BusinessDetailPage = () => {
   // When date or service changes, generate time slots
   useEffect(() => {
     if (!selectedStaff?.id || !selectedDate) {
-      console.log('[page.tsx] Skipping slot load - missing:', { staffId: selectedStaff?.id, date: selectedDate });
       return;
     }
     const staffId = String(selectedStaff.id);
     // Use service duration from selected service, or default to 30 minutes
     const serviceDuration = selectedService?.duration || 30;
-    const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`;
-    console.log('[page.tsx] Loading slots for:', { staffId, date: dateStr, serviceDuration });
     loadTimeSlotsForDate(staffId, selectedDate, serviceDuration);
   }, [selectedStaff, selectedDate, selectedService]);
-
-  // Page state (moved up so hooks order is stable)
-  const [selectedTabId, setSelectedTabId] = useState<string>("about");
-  const [hoveredTooltip, setHoveredTooltip] = useState<{ status: string; date: string; x: number; y: number } | null>(null);
-  const [hoveredDay, setHoveredDay] = useState<Date | null>(null);
 
   // New state for modals and multi-step booking
   const [bookingStep, setBookingStep] = useState(1);
@@ -302,10 +292,6 @@ useEffect(() => {
 
   const formatTimeSlot = (date: Date) => date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-  // Stable keys/identifiers for items that may lack IDs
-  const staffKey = (m: any, i: number) => String(m?.id ?? m?.email ?? m?.name ?? `staff-${i}`);
-  const serviceKey = (s: any, i: number) => String(s?.id ?? s?.name ?? `service-${i}`);
-
   const handleContinueBooking = () => {
     if (!selectedService || !selectedStaff || !selectedDate || !selectedTimeSlot) return;
     
@@ -336,13 +322,6 @@ useEffect(() => {
     };
     
     localStorage.setItem('bookingData', JSON.stringify(bookingData));
-    console.log('[page.tsx] Stored booking data:', {
-      business: bookingData.business?.name,
-      staff: bookingData.staff?.name,
-      service: bookingData.service?.name,
-      date: bookingData.date,
-      timeSlot: bookingData.timeSlot,
-    });
     
     router.push("/booking/checkout");
   };
@@ -360,6 +339,7 @@ useEffect(() => {
           setIsBookingMode(true);
         }} />
 
+        {/* eslint-disable-next-line no-negated-condition */}
         {!isBookingMode ? (
           <>
             {/* Inline Photo Gallery */}
@@ -463,7 +443,7 @@ useEffect(() => {
                     <div className="bg-white p-6 rounded-xl shadow-lg text-center max-w-sm mx-4">
                       <h4 className="font-bold text-lg mb-2">Join the conversation</h4>
                       <p className="text-gray-500 text-sm mb-4">You need to be logged in to leave a review and share your experience.</p>
-                      <Button onClick={() => router.push('/login?redirect=' + encodeURIComponent(window.location.pathname))} className="w-full">
+                      <Button onClick={() => router.push('/login?redirect=' + encodeURIComponent(globalThis.location.pathname))} className="w-full">
                         Login to Review
                       </Button>
                     </div>
@@ -612,7 +592,7 @@ useEffect(() => {
                   <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
                     <h3 className="font-semibold flex items-center gap-2">
                       <span className="bg-primary text-white w-6 h-6 rounded-full flex items-center justify-center text-xs">3</span>
-                      Choose Date & Time
+                      <span>Choose Date & Time</span>
                     </h3>
                     <Button variant="ghost" size="sm" onClick={() => setBookingStep(1)}>
                       <ChevronLeft className="w-4 h-4 mr-1" /> Back
@@ -728,7 +708,7 @@ useEffect(() => {
                   <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
                     <h3 className="font-semibold flex items-center gap-2">
                       <span className="bg-primary text-white w-6 h-6 rounded-full flex items-center justify-center text-xs">4</span>
-                      Confirm Details
+                      <span>Confirm Details</span>
                     </h3>
                     <Button variant="ghost" size="sm" onClick={() => setBookingStep(2)}>
                       <ChevronLeft className="w-4 h-4 mr-1" /> Back
@@ -858,17 +838,6 @@ useEffect(() => {
           </div>
         </DialogContent>
       </Dialog>
-
-      {hoveredTooltip && (
-        <div
-          className="pointer-events-none fixed z-50 inline-flex items-center gap-2 rounded-md border bg-white px-3 py-2 text-sm shadow-lg"
-          style={{ top: hoveredTooltip.y, left: hoveredTooltip.x }}
-        >
-          <span className={`h-2.5 w-2.5 rounded-full ${statusDotClass(hoveredTooltip.status)}`} />
-          <span className="font-medium">{statusLabel(hoveredTooltip.status)}</span>
-          <span className="text-xs text-gray-500">{hoveredTooltip.date}</span>
-        </div>
-      )}
 
       {/* Cancel Confirmation Alert */}
       <AlertDialog open={isCancelAlertOpen} onOpenChange={setIsCancelAlertOpen}>

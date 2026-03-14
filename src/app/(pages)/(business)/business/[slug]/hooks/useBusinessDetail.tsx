@@ -39,7 +39,7 @@ export default function useBusinessDetail(businessId?: string | null) {
     ])
       .then(([b, s, sv, imgs]) => {
         if (!mounted) return;
-        setBusiness(b as Business | null);
+        setBusiness(b);
         setStaff(s as any[]);
         setServices(sv as any[]);
         // Don't set slots here - let loadTimeSlotsForDate handle it
@@ -69,12 +69,9 @@ export default function useBusinessDetail(businessId?: string | null) {
 
   const loadAvailabilityForStaff = async (staffId: string, from: string, to: string) => {
     try {
-      console.log(`[loadAvailabilityForStaff] Fetching for staff=${staffId}, from=${from}, to=${to}`);
       const avail = await fetchStaffAvailability(staffId, from, to);
-      console.log(`[loadAvailabilityForStaff] Got ${avail.length} availability records:`, avail.map(a => `${a.date}:${a.status}`));
       setStaffAvailability(avail as any[]);
-    } catch (error) {
-      console.error('[loadAvailabilityForStaff] Error:', error);
+    } catch {
       setStaffAvailability([]);
     }
   };
@@ -91,20 +88,15 @@ export default function useBusinessDetail(businessId?: string | null) {
     try {
       // Format date in local timezone (not UTC) to avoid +/-1 day shifting
       const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-      console.log(`[loadTimeSlotsForDate] Fetching slots for staff=${staffId}, date=${dateStr}, duration=${serviceDuration}`);
       
       const timeSlots = await fetchAvailableTimeSlotsForStaffDate(staffId, dateStr, serviceDuration);
       
       // Only update state if this is still the latest request (avoid race conditions)
       if (requestId === slotRequestRef.current) {
-        console.log(`[loadTimeSlotsForDate] Got ${timeSlots.length} slots`);
         setSlots(timeSlots as any[]);
         setSlotsLoading(false);
-      } else {
-        console.log(`[loadTimeSlotsForDate] Ignoring stale response (request ${requestId}, current ${slotRequestRef.current})`);
       }
-    } catch (error) {
-      console.error('[loadTimeSlotsForDate] Error:', error);
+    } catch {
       if (requestId === slotRequestRef.current) {
         setSlots([]);
         setSlotsLoading(false);
