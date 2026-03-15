@@ -13,8 +13,13 @@ import {
 } from "@components/ui/dropdown-menu";
 import { useAuth, UserRole } from "@/(pages)/(auth)/context/AuthContext";
 import { useTracking } from "@global/hooks/useTracking";
-import { Menu, Sun, Moon, Briefcase, Users } from "lucide-react";
+import { Menu, Sun, Moon, Briefcase, Users, MessageCircle } from "lucide-react";
 import Image from "next/image";
+
+const CLIENT_BOT_LABEL = "KayedniBot";
+const STAFF_BOT_LABEL = "KayedniBuissnessBot";
+const CLIENT_BOT_URL = "https://t.me/KayedniBot";
+const STAFF_BOT_URL = "https://t.me/KayedniBuissnessBot";
 
 // Role-specific navigation links (keys now use uppercase to match backend/user role values)
 const navLinks: Record<Exclude<UserRole, null>, { path: string; label: string }[]> = {
@@ -124,6 +129,17 @@ const Navbar = () => {
   };
 
   const links = getNavLinks();
+
+  const canEnableClientTelegram = isAuthenticated;
+  const canEnableStaffTelegram =
+    user?.role === "STAFF" || user?.role === "BUSINESS_OWNER";
+
+  const openTelegramBot = (botUrl: string) => {
+    if (globalThis.window === undefined) {
+      return;
+    }
+    globalThis.open(botUrl, "_blank", "noopener,noreferrer");
+  };
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60 shadow-sm transition-all duration-300">
@@ -240,6 +256,30 @@ const Navbar = () => {
                     <DropdownMenuItem onClick={() => router.push("/settings")} className="rounded-lg cursor-pointer focus:bg-primary/10 focus:text-primary">
                       Settings
                     </DropdownMenuItem>
+                    {canEnableClientTelegram && (
+                      <DropdownMenuItem
+                        onClick={() => {
+                          trackEvent("click", { element: "enable_client_telegram", section: "navbar_profile_menu" });
+                          openTelegramBot(CLIENT_BOT_URL);
+                        }}
+                        className="rounded-lg cursor-pointer focus:bg-primary/10 focus:text-primary"
+                      >
+                        <MessageCircle className="h-4 w-4 mr-2" />
+                        Enable Client Telegram (@{CLIENT_BOT_LABEL})
+                      </DropdownMenuItem>
+                    )}
+                    {canEnableStaffTelegram && (
+                      <DropdownMenuItem
+                        onClick={() => {
+                          trackEvent("click", { element: "enable_staff_telegram", section: "navbar_profile_menu" });
+                          openTelegramBot(STAFF_BOT_URL);
+                        }}
+                        className="rounded-lg cursor-pointer focus:bg-primary/10 focus:text-primary"
+                      >
+                        <MessageCircle className="h-4 w-4 mr-2" />
+                        Enable Staff Telegram (@{STAFF_BOT_LABEL})
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuSeparator className="bg-border/50 my-2" />
                     <DropdownMenuItem
                       className="rounded-lg cursor-pointer text-destructive focus:bg-destructive/10 focus:text-destructive"
@@ -341,6 +381,39 @@ const Navbar = () => {
                   {link.label}
                 </Link>
               ))}
+
+              {isAuthenticated && (
+                <>
+                  {canEnableClientTelegram && (
+                    <button
+                      type="button"
+                      className="flex items-center px-4 py-3 rounded-xl text-foreground/80 hover:text-primary hover:bg-primary/5 transition-colors font-medium text-left"
+                      onClick={() => {
+                        trackEvent("click", { element: "enable_client_telegram", section: "navbar_mobile" });
+                        openTelegramBot(CLIENT_BOT_URL);
+                        setMobileMenuOpen(false);
+                      }}
+                    >
+                      <MessageCircle className="h-4 w-4 mr-2" />
+                      Enable Client Telegram (@{CLIENT_BOT_LABEL})
+                    </button>
+                  )}
+                  {canEnableStaffTelegram && (
+                    <button
+                      type="button"
+                      className="flex items-center px-4 py-3 rounded-xl text-foreground/80 hover:text-primary hover:bg-primary/5 transition-colors font-medium text-left"
+                      onClick={() => {
+                        trackEvent("click", { element: "enable_staff_telegram", section: "navbar_mobile" });
+                        openTelegramBot(STAFF_BOT_URL);
+                        setMobileMenuOpen(false);
+                      }}
+                    >
+                      <MessageCircle className="h-4 w-4 mr-2" />
+                      Enable Staff Telegram (@{STAFF_BOT_LABEL})
+                    </button>
+                  )}
+                </>
+              )}
               
               {!isAuthenticated && (
                 <div className="flex flex-col gap-3 mt-4 pt-4 border-t border-border/40 px-2">

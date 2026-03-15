@@ -4,6 +4,7 @@ import React, { createContext, useCallback, useEffect, useMemo, useRef, useState
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/(pages)/(auth)/context/AuthContext";
 import { sendGA4Event } from "@/ga";
+import { getOrCreateAnonymousId } from "@global/utils/anonymousId";
 
 // GA4-forwarded event types — only key conversion/engagement events go to GA4
 const GA4_FORWARDED_EVENTS = new Set([
@@ -97,6 +98,10 @@ export type EventType =
   | "reset_password_completed"
   | "reset_password_failed";
 
+/**
+ * Tracking event payload — server-side fingerprinting means we no longer send
+ * userAgent, ipAddress, browser, os, or deviceType from the client.
+ */
 export interface TrackingEvent {
   userId?: string | null;
   anonymousId?: string;
@@ -104,8 +109,6 @@ export interface TrackingEvent {
   eventType: EventType;
   page: string;
   properties?: Record<string, any>;
-  userAgent?: string;
-  ipAddress?: string;
   timestamp?: number;
 }
 
@@ -132,17 +135,20 @@ interface TrackingProviderProps {
 
 const BATCH_SIZE = 10;
 const FLUSH_INTERVAL = 5000; // 5 seconds
+const HEARTBEAT_INTERVAL = 45_000; // 45 seconds
 const TRACKING_SERVICE_URL = process.env.NEXT_PUBLIC_TRACKING_SERVICE_URL || "http://localhost:4000";
 const SESSION_STORAGE_KEY = "kayedni_session_id";
-const ANONYMOUS_USER_KEY = "kayedni_anonymous_id";
 
 // Module-level flag — survives HMR (prevents double banner on hot reload)
 let __trackingLoggerInitialized = false;
 
 /**
- * Generates a UUID v4 for anonymous user identification
+ * Generates a UUID v4 (fallback for environments without crypto.randomUUID)
  */
 function generateUUID(): string {
+  if (typeof crypto !== "undefined" && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
   return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
     const r = (Math.random() * 16) | 0;
     const v = c === "x" ? r : (r & 0x3) | 0x8;
@@ -150,50 +156,31 @@ function generateUUID(): string {
   });
 }
 
-/**
- * Parses user-agent string to extract browser, OS, and device type
- */
-function parseUserAgent(userAgent: string): {
-  browser: string;
-  os: string;
-  deviceType: "desktop" | "tablet" | "mobile";
-} {
-  let browser = "Unknown";
-  let os = "Unknown";
-  let deviceType: "desktop" | "tablet" | "mobile" = "desktop";
+// ─── Heartbeat ────────────────────────────────────────────────────────────────
+// Keeps the session alive on the server (prevents premature expiry on long
+// browsing sessions). Calls PATCH /api/session/:sessionId/activity every 45s.
 
-  // Device type detection
-  if (/mobile|android|webos|iphone|ipod|blackberry|iemobile|opera mini/i.test(userAgent)) {
-    deviceType = "mobile";
-  } else if (/tablet|ipad|playbook|silk|(android(?!.*mobi))/i.test(userAgent)) {
-    deviceType = "tablet";
+let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
+
+function startHeartbeat(sessionId: string, trackingServiceUrl: string) {
+  stopHeartbeat();
+  heartbeatTimer = setInterval(async () => {
+    try {
+      await fetch(`${trackingServiceUrl}/api/session/${sessionId}/activity`, {
+        method: "PATCH",
+        headers: { "x-api-key": process.env.NEXT_PUBLIC_TRACKING_API_KEY || "" },
+      });
+    } catch {
+      // non-fatal — session will still be usable
+    }
+  }, HEARTBEAT_INTERVAL);
+}
+
+function stopHeartbeat() {
+  if (heartbeatTimer) {
+    clearInterval(heartbeatTimer);
+    heartbeatTimer = null;
   }
-
-  // Browser detection
-  if (/chrome|chromium|crios/i.test(userAgent)) {
-    browser = "Chrome";
-  } else if (/safari/i.test(userAgent) && !/chrome/i.test(userAgent)) {
-    browser = "Safari";
-  } else if (/firefox|fxios/i.test(userAgent)) {
-    browser = "Firefox";
-  } else if (/edg/i.test(userAgent)) {
-    browser = "Edge";
-  }
-
-  // OS detection
-  if (/windows nt/i.test(userAgent)) {
-    os = "Windows";
-  } else if (/macintosh|mac os x/i.test(userAgent)) {
-    os = "macOS";
-  } else if (/iphone os|ios/i.test(userAgent)) {
-    os = "iOS";
-  } else if (/android/i.test(userAgent)) {
-    os = "Android";
-  } else if (/linux/i.test(userAgent)) {
-    os = "Linux";
-  }
-
-  return { browser, os, deviceType };
 }
 
 export const TrackingProvider: React.FC<TrackingProviderProps> = ({
@@ -208,9 +195,6 @@ export const TrackingProvider: React.FC<TrackingProviderProps> = ({
   const [anonymousId, setAnonymousId] = useState<string | null>(null);
   const eventQueueRef = useRef<TrackingEvent[]>([]);
   const flushTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const userAgentRef = useRef<{ browser: string; os: string; deviceType: "desktop" | "tablet" | "mobile" } | null>(
-    null
-  );
   const sessionIdRef = useRef<string | null>(null);
   const prevUserIdRef = useRef<string | null | undefined>(undefined); // undefined = not yet initialized
   const lastTrackedPageRef = useRef<string | null>(null); // for auto page_view dedup
@@ -245,18 +229,9 @@ export const TrackingProvider: React.FC<TrackingProviderProps> = ({
       previousUserId !== currentUserId &&
       currentUserId !== null;
 
-    // Generate or retrieve anonymous ID
-    let anonId = localStorage.getItem(ANONYMOUS_USER_KEY);
-    if (!anonId) {
-      anonId = generateUUID();
-      localStorage.setItem(ANONYMOUS_USER_KEY, anonId);
-    }
+    // Generate or retrieve anonymous ID (shared utility, persisted in localStorage)
+    const anonId = getOrCreateAnonymousId();
     setAnonymousId(anonId);
-
-    // Parse user-agent once
-    if (!userAgentRef.current) {
-      userAgentRef.current = parseUserAgent(navigator.userAgent);
-    }
 
     // Try to get existing session from storage
     let sId = sessionStorage.getItem(SESSION_STORAGE_KEY);
@@ -267,6 +242,7 @@ export const TrackingProvider: React.FC<TrackingProviderProps> = ({
     if (!sId || userJustLoggedIn) {
       // End old session on login transition (fire-and-forget via sendBeacon)
       if (sId && userJustLoggedIn) {
+        stopHeartbeat();
         try {
           navigator.sendBeacon(
             `${trackingServiceUrl}/api/session/${sId}/end`,
@@ -285,12 +261,15 @@ export const TrackingProvider: React.FC<TrackingProviderProps> = ({
       startSessionOnBackend(newSessionId, anonId);
     }
 
+    // Start heartbeat for the active session
+    startHeartbeat(sId, trackingServiceUrl);
+
     setSessionId(sId);
   }, [user?.id]);
 
   // Cleanup timer + flush on unmount — NEVER end the session here
   // (React Strict Mode and HMR both unmount/remount, which would prematurely kill sessions)
-  // Session ending is handled ONLY by: beforeunload listener OR login transition above
+  // Session ending is handled ONLY by: visibilitychange listener OR login transition above
   useEffect(() => {
     return () => {
       if (flushTimerRef.current) {
@@ -315,35 +294,43 @@ export const TrackingProvider: React.FC<TrackingProviderProps> = ({
     };
   }, [sessionId, trackingServiceUrl]);
 
-  // Setup beforeunload listener for reliable flushing on tab close
+  // End session reliably via visibilitychange + sendBeacon
+  // visibilitychange fires more reliably than beforeunload on mobile browsers
   useEffect(() => {
     if (typeof window === "undefined" || !sessionId) return;
 
-    const handleBeforeUnload = () => {
-      const beaconApiKey = process.env.NEXT_PUBLIC_TRACKING_API_KEY || "";
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        stopHeartbeat();
+        const beaconApiKey = process.env.NEXT_PUBLIC_TRACKING_API_KEY || "";
 
-      // Flush events using sendBeacon (text/plain avoids CORS preflight)
-      if (eventQueueRef.current.length > 0) {
+        // Flush events using sendBeacon (text/plain avoids CORS preflight)
+        if (eventQueueRef.current.length > 0) {
+          navigator.sendBeacon(
+            `${trackingServiceUrl}/api/track/batch`,
+            new Blob(
+              [JSON.stringify({ events: eventQueueRef.current, apiKey: beaconApiKey })],
+              { type: "text/plain" }
+            )
+          );
+          eventQueueRef.current = [];
+        }
+
+        // End session using sendBeacon
         navigator.sendBeacon(
-          `${trackingServiceUrl}/api/track/batch`,
-          new Blob(
-            [JSON.stringify({ events: eventQueueRef.current, apiKey: beaconApiKey })],
-            { type: "text/plain" }
-          )
+          `${trackingServiceUrl}/api/session/${sessionId}/end`,
+          new Blob([JSON.stringify({ apiKey: beaconApiKey })], { type: "text/plain" })
         );
+      } else if (document.visibilityState === "visible" && sessionId) {
+        // Tab came back — restart heartbeat
+        startHeartbeat(sessionId, trackingServiceUrl);
       }
-
-      // End session using sendBeacon
-      navigator.sendBeacon(
-        `${trackingServiceUrl}/api/session/${sessionId}/end`,
-        new Blob([JSON.stringify({ apiKey: beaconApiKey })], { type: "text/plain" })
-      );
     };
 
-    window.addEventListener("beforeunload", handleBeforeUnload);
+    window.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
+      window.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [sessionId, trackingServiceUrl]);
 
@@ -365,7 +352,6 @@ export const TrackingProvider: React.FC<TrackingProviderProps> = ({
       eventType: "page_view",
       page: pathname,
       properties: { pathname, auto: true },
-      userAgent: typeof window !== "undefined" ? navigator.userAgent : undefined,
       timestamp: Date.now(),
     };
 
@@ -393,16 +379,20 @@ export const TrackingProvider: React.FC<TrackingProviderProps> = ({
     }
   }, [pathname, sessionId, user?.id, anonymousId, trackingServiceUrl]);
 
+  /**
+   * Start a new session on the backend.
+   * Only sends: sessionId, userId, anonymousId, entryPage.
+   * Server extracts device info, IP, referrer, language from HTTP headers automatically.
+   */
   const startSessionOnBackend = useCallback(
     async (sId: string, anonId: string) => {
       try {
         const payload = {
           sessionId: sId,
-          userId: user?.id ? String(user.id) : undefined,
+          userId: user?.id ? String(user.id) : null,
           anonymousId: anonId,
-          browser: userAgentRef.current?.browser || 'unknown',
-          os: userAgentRef.current?.os || 'unknown',
-          deviceType: userAgentRef.current?.deviceType || 'desktop',
+          entryPage: typeof window !== "undefined" ? window.location.pathname : "/",
+          // Server extracts: browser, os, deviceType, ipAddress, referrer, userAgent
         };
 
         await fetch(`${trackingServiceUrl}/api/session/start`, {
@@ -436,6 +426,7 @@ export const TrackingProvider: React.FC<TrackingProviderProps> = ({
           "x-api-key": process.env.NEXT_PUBLIC_TRACKING_API_KEY || "",
         },
         body: JSON.stringify({
+          // No top-level userAgent or ipAddress — server handles these
           events: eventsToSend,
         }),
       });
@@ -472,8 +463,7 @@ export const TrackingProvider: React.FC<TrackingProviderProps> = ({
         eventType,
         page: typeof window !== "undefined" ? window.location.pathname : "/",
         properties: properties || {},
-        userAgent:
-          typeof window !== "undefined" ? navigator.userAgent : undefined,
+        // No userAgent or ipAddress — server extracts these from HTTP headers
         timestamp: Date.now(),
       };
 

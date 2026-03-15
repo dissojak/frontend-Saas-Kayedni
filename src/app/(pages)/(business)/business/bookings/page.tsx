@@ -28,6 +28,7 @@ import {
   UpNextBookingBanner,
   QuickStats,
 } from '../../../shared/bookings/components';
+import TelegramOnboardingPrompt from '@components/telegram/TelegramOnboardingPrompt';
 
 export default function BusinessBookingsPage() {
   const { activeMode, user } = useAuth();
@@ -190,6 +191,14 @@ export default function BusinessBookingsPage() {
               completedCount={pastBookings.length}
             />
           </div>
+
+          <TelegramOnboardingPrompt
+            audience="staff"
+            userId={user?.id}
+            phone={user?.phone}
+            botLabel="KayedniBuissnessBot"
+            botUrl="https://t.me/KayedniBuissnessBot"
+          />
 
           {/* CURRENTLY ACTIVE BOOKING */}
           {activeBooking && (

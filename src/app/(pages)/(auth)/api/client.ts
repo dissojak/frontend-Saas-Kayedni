@@ -17,6 +17,28 @@ export interface ApiRequestOptions {
   credentials?: RequestCredentials;
 }
 
+function notifySessionExpired(reason: string): void {
+  if (globalThis.window === undefined) return;
+
+  try {
+    globalThis.dispatchEvent(
+      new CustomEvent('auth:session-expired', {
+        detail: { reason },
+      })
+    );
+  } catch {
+    // no-op
+  }
+
+  try {
+    if (!globalThis.location.pathname.startsWith('/login')) {
+      globalThis.location.href = '/login';
+    }
+  } catch {
+    // no-op
+  }
+}
+
 /**
  * Make an authenticated API request
  */
@@ -85,11 +107,8 @@ export async function apiRequest<T = any>(
     // Handle 401 Unauthorized - token expired
     if (response.status === 401) {
       clearTokens();
-      // Redirect to login
-      if (typeof globalThis !== 'undefined') {
-        try { globalThis.location.href = '/login'; } catch (e) { /* ignore */ }
-      }
-      throw new Error((data && data.message) || 'Session expired. Please login again.');
+      notifySessionExpired('unauthorized');
+      throw new Error(data?.message || 'Session expired. Please login again.');
     }
 
     // Handle 403 Forbidden - permission denied

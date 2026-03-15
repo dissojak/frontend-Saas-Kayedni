@@ -30,6 +30,7 @@ import {
   QuickStats
 } from '../../../shared/bookings/components';
 import WalkInBooking from './WalkInBooking';
+import TelegramOnboardingPrompt from '@components/telegram/TelegramOnboardingPrompt';
 
 export default function StaffBookingsPage() {
   const { user, token, logout } = useAuth();
@@ -214,6 +215,14 @@ export default function StaffBookingsPage() {
               completedCount={pastBookings.length}
             />
           </div>
+
+          <TelegramOnboardingPrompt
+            audience="staff"
+            userId={user?.id}
+            phone={user?.phone}
+            botLabel="KayedniBuissnessBot"
+            botUrl="https://t.me/KayedniBuissnessBot"
+          />
 
           {/* Walk-in Booking - NEW Feature */}
           {user?.id && token && businessId && (

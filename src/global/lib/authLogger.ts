@@ -7,7 +7,8 @@
  *
  * Key design decisions:
  *  - Never throws — this must NEVER crash or block the auth flow.
- *  - IP is captured server-side via `req.ip` (trust proxy is enabled on Express).
+ *  - Server-side request fingerprinting: browser, os, deviceType, ipAddress,
+ *    userAgent are all extracted server-side from HTTP headers (req.context).
  *  - sessionId links these logs to analytics events for cross-collection queries.
  */
 
@@ -56,67 +57,14 @@ export interface AuthLogPayload {
   metadata?: Record<string, any>;
 }
 
-// ─── UA parser (mirrors server-side parseUA, avoids round-trip) ───────────────
-
-function parseUAClient(ua: string): { browser: string; os: string; deviceType: string } {
-  if (!ua) return { browser: "unknown", os: "unknown", deviceType: "desktop" };
-
-  const isTablet = /ipad|tablet|(android(?!.*mobile))/i.test(ua);
-  const isMobile = !isTablet && /mobile|android|iphone|ipod|blackberry|windows phone/i.test(ua);
-
-  // UA-based browser detection (order matters — Edge/Opera/Brave must come before Chrome)
-  let browser = "unknown";
-  if (/edg\//i.test(ua))             browser = "Edge";
-  else if (/opr\//i.test(ua))        browser = "Opera";
-  // Note: Brave has the same UA as Chrome — detected separately via navigator.brave below
-  else if (/chrome\//i.test(ua))     browser = "Chrome";
-  else if (/firefox\//i.test(ua))    browser = "Firefox";
-  else if (/safari\//i.test(ua))     browser = "Safari";
-  else if (/msie|trident/i.test(ua)) browser = "IE";
-  else if (/curl/i.test(ua))         browser = "curl";
-  else if (/python/i.test(ua))       browser = "python-bot";
-  else if (/go-http/i.test(ua))      browser = "go-bot";
-  else if (/java\//i.test(ua))       browser = "java-bot";
-
-  let os = "unknown";
-  if (/windows nt 10/i.test(ua))    os = "Windows 10/11";
-  else if (/windows/i.test(ua))     os = "Windows";
-  else if (/mac os x/i.test(ua))    os = "macOS";
-  else if (/android/i.test(ua))     os = "Android";
-  else if (/iphone|ipad/i.test(ua)) os = "iOS";
-  else if (/linux/i.test(ua))       os = "Linux";
-
-  return {
-    browser,
-    os,
-    deviceType: isTablet ? "tablet" : isMobile ? "mobile" : "desktop",
-  };
-}
-
-/**
- * Brave is Chromium-based and has an identical UA to Chrome.
- * The only reliable client-side detection is navigator.brave.isBrave() (async Promise).
- * Returns "Brave" if confirmed, otherwise returns the UA-parsed browser name.
- */
-async function resolveBrowser(uaParsed: string): Promise<string> {
-  if (uaParsed === "Chrome") {
-    try {
-      const nav = navigator as typeof navigator & { brave?: { isBrave: () => Promise<boolean> } };
-      if (nav.brave && typeof nav.brave.isBrave === "function") {
-        const isBrave = await nav.brave.isBrave();
-        if (isBrave) return "Brave";
-      }
-    } catch {
-      // navigator.brave exists in some Chromium builds but may throw — ignore
-    }
-  }
-  return uaParsed;
-}
-
 // ─── Core function ────────────────────────────────────────────────────────────
 
 /**
  * Log an auth security event to the dedicated `auth_logs` collection.
+ *
+ * Server-side fingerprinting means we do NOT send browser, os, deviceType,
+ * userAgent, or ipAddress from the client — the server fills these from
+ * HTTP headers automatically via req.context.
  *
  * Usage:
  * ```ts
@@ -124,26 +72,24 @@ async function resolveBrowser(uaParsed: string): Promise<string> {
  * ```
  */
 export function logAuthEvent(payload: AuthLogPayload): void {
-  // SSR guard — sessionStorage and navigator are not available on the server
+  // SSR guard — sessionStorage is not available on the server
   if (typeof window === "undefined") return;
 
-  // Run everything async internally so Brave detection (async) doesn't block the caller
   (async () => {
     try {
-      const sessionId = sessionStorage.getItem(SESSION_STORAGE_KEY) ?? undefined;
-      const ua = navigator.userAgent;
-      const { browser: uaBrowser, os, deviceType } = parseUAClient(ua);
-      // Brave has identical UA to Chrome — needs async navigator.brave.isBrave() check
-      const browser = await resolveBrowser(uaBrowser);
+      const sessionId = sessionStorage.getItem(SESSION_STORAGE_KEY) ?? null;
 
       const body: Record<string, any> = {
-        ...payload,
+        action: payload.action,
+        success: payload.success ?? null,
+        failReason: payload.failReason ?? null,
+        failStage: payload.failStage ?? null,
+        email: payload.email ?? null,
+        userId: payload.userId ?? null,
         sessionId,
-        userAgent: ua,
-        browser,
-        os,
-        deviceType,
-        // IP is intentionally NOT sent from the client — Express reads req.ip server-side
+        metadata: payload.metadata ?? {},
+        // DO NOT send: browser, os, deviceType, userAgent, ipAddress
+        // Server fills these from HTTP headers automatically (req.context)
       };
 
       await fetch(AUTH_LOG_URL, {

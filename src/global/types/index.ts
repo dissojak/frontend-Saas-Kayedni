@@ -109,8 +109,6 @@ export interface TrackingEvent {
   eventType: EventType;
   page: string;
   properties?: Record<string, any>;
-  userAgent?: string;
-  ipAddress?: string;
   timestamp?: number;
 }
 

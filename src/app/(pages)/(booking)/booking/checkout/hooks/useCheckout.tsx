@@ -4,7 +4,11 @@ import { useState } from 'react';
 import { useToast } from '@global/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/(pages)/(auth)/context/AuthContext';
-import { createBooking as createBookingAPI, type CreateBookingRequest } from '@/(pages)/(business)/actions/backend';
+import {
+  createBooking as createBookingAPI,
+  fetchMyBookings,
+  type CreateBookingRequest,
+} from '@/(pages)/(business)/actions/backend';
 import { apiGet } from '@/(pages)/(auth)/api/client';
 
 export default function useCheckout() {
@@ -68,6 +72,16 @@ export default function useCheckout() {
 
       console.log('[useCheckout] Final resolved clientId:', clientId);
       
+      let hadPreviousBookings = false;
+      if (token) {
+        try {
+          const existingBookings = await fetchMyBookings(token);
+          hadPreviousBookings = existingBookings.length > 0;
+        } catch (error) {
+          console.warn('[useCheckout] Unable to pre-check existing bookings:', error);
+        }
+      }
+
       // Build the backend request payload
       const request: CreateBookingRequest = {
         serviceId: Number(bookingData.service.id),
@@ -89,6 +103,10 @@ export default function useCheckout() {
         : 'Your appointment has been successfully booked.';
       
       toast({ title: 'Booking Confirmed!', description: successMessage });
+
+      if (!hadPreviousBookings) {
+        localStorage.setItem(`telegram_onboarding:client:${user.id}:first-booking-prompt`, '1');
+      }
       
       // Clear booking data from localStorage after successful booking
       localStorage.removeItem('bookingData');

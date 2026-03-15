@@ -12,6 +12,7 @@ import UpcomingList from './components/UpcomingList';
 import PastList from './components/PastList';
 import { useTracking } from '@global/hooks/useTracking';
 import TimeOnPageTracker from '@components/tracking/TimeOnPageTracker';
+import TelegramOnboardingPrompt from '@components/telegram/TelegramOnboardingPrompt';
 
 const BookingsPage = () => {
   const { user, token } = useAuth();
@@ -69,6 +70,17 @@ const BookingsPage = () => {
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-8">
           <h1 className="text-3xl font-bold">Your Bookings</h1>
           <Button onClick={() => router.push('/businesses')} className="mt-4 md:mt-0">Book New Appointment</Button>
+        </div>
+
+        <div className="mb-6">
+          <TelegramOnboardingPrompt
+            audience="client"
+            userId={user?.id}
+            phone={user?.phone}
+            botLabel="KayedniBot"
+            botUrl="https://t.me/KayedniBot"
+            firstPromptStorageKey={`telegram_onboarding:client:${user?.id}:first-booking-prompt`}
+          />
         </div>
 
         <Tabs defaultValue="upcoming" className="space-y-6">
