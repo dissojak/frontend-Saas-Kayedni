@@ -8,6 +8,21 @@ import { useRouter } from 'next/navigation';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8088/api';
 
+function parseJwtExpMs(token: string | null): number | null {
+  if (!token) return null;
+
+  try {
+    const parts = token.split('.');
+    if (parts.length < 2) return null;
+
+    const payload = JSON.parse(atob(parts[1]));
+    if (!payload?.exp) return null;
+    return Number(payload.exp) * 1000;
+  } catch {
+    return null;
+  }
+}
+
 export function useAuthImplementation() {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
@@ -66,16 +81,45 @@ export function useAuthImplementation() {
     }
   };
 
-  const logout = () => {
+  const logout = useCallback(() => {
     updateUser(null);
     setToken(null);
     setActiveMode('owner');
     storeUser(null);
     router.push('/');
-  };
+  }, [router, updateUser]);
+
+  // Auto-logout when JWT is expired (covers routes not using shared api client)
+  useEffect(() => {
+    if (!token) return;
+
+    const checkExpiry = () => {
+      const expMs = parseJwtExpMs(token);
+      if (!expMs) return;
+
+      if (Date.now() >= expMs) {
+        logout();
+      }
+    };
+
+    checkExpiry();
+    const timer = globalThis.setInterval(checkExpiry, 15000);
+    return () => globalThis.clearInterval(timer);
+  }, [token, logout]);
+
+  // Auto-logout when shared API client detects unauthorized/expired token
+  useEffect(() => {
+    const onSessionExpired = () => {
+      logout();
+      router.push('/login');
+    };
+
+    globalThis.addEventListener('auth:session-expired', onSessionExpired);
+    return () => globalThis.removeEventListener('auth:session-expired', onSessionExpired);
+  }, [logout, router]);
 
   const switchMode = async (mode: 'owner' | 'staff') => {
-    if (!user || !user.isAlsoStaff) {
+    if (!user?.isAlsoStaff) {
       throw new Error('Cannot switch mode: user is not a staff member');
     }
 
