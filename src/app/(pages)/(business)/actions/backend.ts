@@ -1031,7 +1031,8 @@ export async function fetchMyBookings(authToken: string): Promise<BookingRespons
 export async function cancelBooking(
   bookingId: number,
   reason?: string,
-  authToken?: string
+  authToken?: string,
+  initiatedByClient: boolean = false
 ): Promise<void> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -1045,7 +1046,7 @@ export async function cancelBooking(
     const response = await fetch(`${API_BASE_URL}/bookings/${bookingId}/cancel`, {
       method: 'POST',
       headers,
-      body: JSON.stringify({ reason: reason || '' }),
+      body: JSON.stringify({ reason: reason || '', initiatedByClient }),
     });
 
     if (!response.ok) {
@@ -1119,7 +1120,8 @@ export async function rescheduleBooking(
   newDate: string,
   newStartTime: string,
   newEndTime?: string,
-  authToken?: string
+  authToken?: string,
+  initiatedByClient: boolean = false
 ): Promise<BookingResponse> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -1136,7 +1138,8 @@ export async function rescheduleBooking(
       body: JSON.stringify({ 
         date: newDate, 
         startTime: newStartTime,
-        endTime: newEndTime 
+        endTime: newEndTime,
+        initiatedByClient
       }),
     });
 
