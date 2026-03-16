@@ -86,7 +86,13 @@ export default function TelegramOnboardingPrompt({
   }, [firstPromptStorageKey, normalizedPhone, storageKey]);
 
   const openBot = () => {
-    globalThis.open(botUrl, "_blank", "noopener,noreferrer");
+    let targetUrl = botUrl;
+    if (audience === "client" && userId) {
+      const separator = botUrl.includes("?") ? "&" : "?";
+      targetUrl = `${botUrl}${separator}start=${encodeURIComponent(`kyd_u_${userId}`)}`;
+    }
+
+    globalThis.open(targetUrl, "_blank", "noopener,noreferrer");
   };
 
   const markAsStarted = () => {
