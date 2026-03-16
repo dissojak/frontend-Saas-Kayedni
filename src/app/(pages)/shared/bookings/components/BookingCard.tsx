@@ -34,13 +34,17 @@ export const BookingCard: React.FC<BookingCardProps> = ({
   currentTime = new Date(),
   onStatusUpdate,
   onCancel,
-  onMarkNoShow
+  onMarkNoShow,
+  onSendReminderNow
 }) => {
   const bookingIsToday = isToday(booking.date, currentTime);
   const isActive = isCurrentlyActive(booking, currentTime);
   const isNext = isUpNext(booking, currentTime);
   const bookingStartDateTime = new Date(`${booking.date}T${booking.startTime}`);
-  const canSendComeNowReminder = booking.status.toLowerCase() === 'confirmed' && bookingStartDateTime.getTime() > currentTime.getTime();
+  const canSendComeNowReminder =
+    bookingIsToday &&
+    booking.status.toLowerCase() === 'confirmed' &&
+    bookingStartDateTime.getTime() > currentTime.getTime();
   
   let cardStyle = 'bg-card border-border';
   if (variant === 'cancelled') {
@@ -53,10 +57,6 @@ export const BookingCard: React.FC<BookingCardProps> = ({
     cardStyle = 'bg-amber-50/50 dark:bg-amber-950/20 border-amber-300 dark:border-amber-700';
   } else if (bookingIsToday) {
     cardStyle = 'bg-primary/5 dark:bg-primary/10 border-primary/20 dark:border-primary/30';
-  }
-
-  function onSendReminderNow(id: number): void {
-    throw new Error('Function not implemented.');
   }
 
   return (
