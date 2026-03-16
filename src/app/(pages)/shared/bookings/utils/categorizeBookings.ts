@@ -19,7 +19,7 @@ export const categorizeBookings = (bookings: Booking[], currentTime: Date = new 
     });
 
   const cancelledBookings = bookings
-    .filter(booking => booking.status.toLowerCase() === 'cancelled')
+    .filter(booking => ['cancelled', 'rejected'].includes(booking.status.toLowerCase()))
     .sort((a, b) => {
       const dateCompare = new Date(b.date).getTime() - new Date(a.date).getTime();
       if (dateCompare !== 0) return dateCompare;

@@ -1,16 +1,17 @@
 
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Layout from "@components/layout/Layout";
 import { Button } from "@components/ui/button";
 import { Badge } from "@components/ui/badge";
 import { Input } from "@components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@components/ui/tabs";
-import { Calendar, Search, CheckCircle, UserCheck, XCircle, UserPlus, Clock } from "lucide-react";
-import { fetchBookingsForStaff, updateBookingStatus } from "../../../(business)/actions/backend";
+import { Calendar, Search, CheckCircle, UserCheck, XCircle, UserPlus, Clock, Bell } from "lucide-react";
+import { fetchBookingsForStaff, updateBookingStatus, cancelBooking, sendStaffReminderNow } from "../../../(business)/actions/backend";
 import { useAuth } from "@/(pages)/(auth)/context/AuthContext";
+import { useToast } from "@global/hooks/use-toast";
 
 // Import types from shared location
 import { Booking, ConfirmDialogState } from '../../../shared/bookings/types';
@@ -34,36 +35,28 @@ import TelegramOnboardingPrompt from '@components/telegram/TelegramOnboardingPro
 
 export default function StaffBookingsPage() {
   const { user, token, logout } = useAuth();
+  const { toast } = useToast();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [businessId, setBusinessId] = useState<number | null>(null);
+  const [sendingReminderIds, setSendingReminderIds] = useState<Record<number, boolean>>({});
+  const bootstrapFetchKeyRef = useRef<string | null>(null);
   
   // Use custom hooks
   const currentTime = useCurrentTime(30000);
   const { filteredBookings, searchTerm, setSearchTerm, statusFilter, setStatusFilter, sortBy, setSortBy } = useBookingFilters(bookings);
   
   // Confirmation dialog state
-  const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState>({ 
-    open: false, 
-    type: null, 
-    bookingId: null, 
-    clientName: '' 
+  const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState>({
+    open: false,
+    type: null,
+    bookingId: null,
+    clientName: '',
+    bookingStatus: undefined,
   });
 
-  useEffect(() => {
-    if (user?.id && token) {
-      console.log('[Staff Bookings Page] User detected:', user);
-      console.log('[Staff Bookings Page] Staff ID:', user.id);
-      console.log('[Staff Bookings Page] Token available:', token ? `${token.substring(0, 20)}...` : 'null');
-      loadBookings();
-    } else {
-      console.warn('[Staff Bookings Page] Missing:', { userId: user?.id, hasToken: !!token });
-      setLoading(false);
-    }
-  }, [user?.id, token]);
-
-  const loadBookings = async () => {
+  const loadBookings = useCallback(async () => {
     if (!user?.id || !token) {
       console.warn('[Staff Bookings Page] Missing user ID or token');
       setLoading(false);
@@ -107,11 +100,26 @@ export default function StaffBookingsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [token, user?.id]);
 
   useEffect(() => {
-    // Filtering is now handled by the useBookingFilters hook
-  }, [bookings, searchTerm, statusFilter, sortBy]);
+    if (user?.id && token) {
+      const fetchKey = `${user.id}:${token}`;
+      if (bootstrapFetchKeyRef.current === fetchKey) {
+        return;
+      }
+
+      bootstrapFetchKeyRef.current = fetchKey;
+      console.log('[Staff Bookings Page] User detected:', user);
+      console.log('[Staff Bookings Page] Staff ID:', user.id);
+      console.log('[Staff Bookings Page] Token available:', token ? `${token.substring(0, 20)}...` : 'null');
+      loadBookings();
+    } else {
+      bootstrapFetchKeyRef.current = null;
+      console.warn('[Staff Bookings Page] Missing:', { userId: user?.id, hasToken: !!token });
+      setLoading(false);
+    }
+  }, [loadBookings, token, user]);
 
   const handleStatusUpdate = async (bookingId: number, newStatus: string) => {
     if (!token) return;
@@ -124,23 +132,52 @@ export default function StaffBookingsPage() {
     }
   };
 
+  const handleSendReminderNow = async (bookingId: number) => {
+    if (!token) return;
+
+    try {
+      setSendingReminderIds((prev) => ({ ...prev, [bookingId]: true }));
+      await sendStaffReminderNow(bookingId, token);
+      toast({
+        title: 'Reminder sent',
+        description: 'Telegram reminder was sent to the client.',
+      });
+    } catch (error: any) {
+      console.error('Error sending immediate reminder:', error);
+      toast({
+        title: 'Failed to send reminder',
+        description: error?.message || 'Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setSendingReminderIds((prev) => ({ ...prev, [bookingId]: false }));
+    }
+  };
+
   // Show confirmation before cancel
-  const handleCancelBooking = (bookingId: number, clientName: string) => {
-    setConfirmDialog({ open: true, type: 'cancel', bookingId, clientName });
+  const handleCancelBooking = (bookingId: number, clientName: string, bookingStatus?: string) => {
+    setConfirmDialog({ open: true, type: 'cancel', bookingId, clientName, bookingStatus });
   };
   
   // Show confirmation before marking as no-show
   const handleMarkNotShown = (bookingId: number, clientName: string) => {
-    setConfirmDialog({ open: true, type: 'no_show', bookingId, clientName });
+    setConfirmDialog({ open: true, type: 'no_show', bookingId, clientName, bookingStatus: undefined });
   };
-  
-  // Confirm the action
-  const confirmAction = async () => {
+
+  const confirmActionWithReason = async (reason: string) => {
     if (!confirmDialog.bookingId || !confirmDialog.type) return;
-    
-    const status = confirmDialog.type === 'cancel' ? 'CANCELLED' : 'NO_SHOW';
-    await handleStatusUpdate(confirmDialog.bookingId, status);
-    setConfirmDialog({ open: false, type: null, bookingId: null, clientName: '' });
+    try {
+      if (confirmDialog.type === 'cancel') {
+        await cancelBooking(confirmDialog.bookingId, reason || undefined, token || undefined);
+        await loadBookings();
+      } else {
+        await handleStatusUpdate(confirmDialog.bookingId, 'NO_SHOW');
+      }
+    } catch (error) {
+      console.error('Error in confirmActionWithReason:', error);
+    } finally {
+      setConfirmDialog({ open: false, type: null, bookingId: null, clientName: '', bookingStatus: undefined });
+    }
   };
 
   // Categorize bookings using utility function
@@ -153,6 +190,11 @@ export default function StaffBookingsPage() {
   // Get the currently active booking and next up booking
   const activeBooking = todayBookings.find(b => isCurrentlyActive(b, currentTime));
   const nextUpBooking = todayBookings.find(b => isUpNext(b, currentTime));
+
+  const isFutureBooking = (booking: Booking) => {
+    const bookingStart = new Date(`${booking.date}T${booking.startTime}`);
+    return bookingStart.getTime() > currentTime.getTime();
+  };
 
   if (loading) {
     return (
@@ -352,15 +394,28 @@ export default function StaffBookingsPage() {
                             </Button>
                           )}
                           {booking.status.toLowerCase() === 'confirmed' && (
-                            <Button
-                              className="flex-1 sm:flex-none bg-emerald-600 hover:bg-emerald-700 text-white font-semibold h-11 px-5 rounded-xl"
-                              onClick={() => handleStatusUpdate(booking.id, 'COMPLETED')}
-                            >
-                              <CheckCircle className="w-4 h-4 mr-2" />
-                              Complete
-                            </Button>
+                            <>
+                              <Button
+                                className="flex-1 sm:flex-none bg-emerald-600 hover:bg-emerald-700 text-white font-semibold h-11 px-5 rounded-xl"
+                                onClick={() => handleStatusUpdate(booking.id, 'COMPLETED')}
+                              >
+                                <CheckCircle className="w-4 h-4 mr-2" />
+                                Complete
+                              </Button>
+                              {isFutureBooking(booking) && (
+                                <Button
+                                  variant="outline"
+                                  className="border-amber-300 text-amber-700 hover:bg-amber-50 dark:border-amber-700 dark:text-amber-300 dark:hover:bg-amber-900/20 font-medium h-11 px-4 rounded-xl"
+                                  onClick={() => handleSendReminderNow(booking.id)}
+                                  disabled={!!sendingReminderIds[booking.id]}
+                                >
+                                  <Bell className="w-4 h-4 mr-2" />
+                                  {sendingReminderIds[booking.id] ? 'Sending...' : 'Call Client Now'}
+                                </Button>
+                              )}
+                            </>
                           )}
-                          {!['cancelled', 'completed', 'no_show'].includes(booking.status.toLowerCase()) && (
+                          {!['cancelled', 'rejected', 'completed', 'no_show'].includes(booking.status.toLowerCase()) && (
                             <>
                               <Button
                                 variant="outline"
@@ -372,9 +427,9 @@ export default function StaffBookingsPage() {
                               <Button
                                 variant="outline"
                                 className="border-border hover:bg-destructive/10 hover:text-destructive hover:border-destructive/50 text-muted-foreground font-medium h-11 px-4 rounded-xl"
-                                onClick={() => handleCancelBooking(booking.id, booking.clientName)}
+                                onClick={() => setConfirmDialog({ open: true, type: 'cancel', bookingId: booking.id, clientName: booking.clientName, bookingStatus: booking.status })}
                               >
-                                Cancel
+                                {booking.status.toUpperCase() === 'PENDING' ? 'Reject' : 'Cancel'}
                               </Button>
                             </>
                           )}
@@ -423,6 +478,7 @@ export default function StaffBookingsPage() {
                       <SelectItem value="confirmed">Confirmed</SelectItem>
                       <SelectItem value="completed">Completed</SelectItem>
                       <SelectItem value="cancelled">Cancelled</SelectItem>
+                      <SelectItem value="rejected">Rejected</SelectItem>
                       <SelectItem value="no_show">No Show</SelectItem>
                     </SelectContent>
                   </Select>
@@ -507,6 +563,7 @@ export default function StaffBookingsPage() {
                       onStatusUpdate={handleStatusUpdate}
                       onCancel={handleCancelBooking}
                       onMarkNoShow={handleMarkNotShown}
+                      onSendReminderNow={handleSendReminderNow}
                     />
                   ))}
                 </div>
@@ -534,6 +591,7 @@ export default function StaffBookingsPage() {
                       onStatusUpdate={handleStatusUpdate}
                       onCancel={handleCancelBooking}
                       onMarkNoShow={handleMarkNotShown}
+                      onSendReminderNow={handleSendReminderNow}
                     />
                   ))}
                 </div>
@@ -599,8 +657,10 @@ export default function StaffBookingsPage() {
 
       <ConfirmationDialog
         dialogState={confirmDialog}
-        onClose={() => setConfirmDialog({ open: false, type: null, bookingId: null, clientName: '' })}
-        onConfirm={confirmAction}
+        onClose={() => setConfirmDialog({ open: false, type: null, bookingId: null, clientName: '', bookingStatus: undefined })}
+        onConfirm={confirmActionWithReason}
+        businessId={businessId}
+        authToken={token || undefined}
       />
     </Layout>
   );

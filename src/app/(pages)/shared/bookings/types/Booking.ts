@@ -12,5 +12,7 @@ export interface Booking {
   status: string;
   price: number;
   notes?: string;
+  cancellationReason?: string;
+  businessId?: number;
   createdAt: string;
 }

@@ -1060,6 +1060,58 @@ export async function cancelBooking(
 }
 
 /**
+ * Get predefined cancellation/rejection reason templates for a business.
+ */
+export async function getCancellationReasons(
+  businessId: number,
+  authToken?: string
+): Promise<{ id: number; reason: string }[]> {
+  const headers: Record<string, string> = {};
+  if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+  const response = await fetch(`${API_BASE_URL}/cancellation-reasons?businessId=${businessId}`, { headers });
+  if (!response.ok) return [];
+  return response.json();
+}
+
+/**
+ * Add a new predefined cancellation reason for a business.
+ */
+export async function addCancellationReason(
+  businessId: number,
+  reason: string,
+  authToken?: string
+): Promise<{ id: number; reason: string }> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+  const response = await fetch(`${API_BASE_URL}/cancellation-reasons`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ businessId, reason }),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.error || 'Failed to add reason');
+  }
+  return response.json();
+}
+
+/**
+ * Delete a predefined cancellation reason by ID.
+ */
+export async function deleteCancellationReason(
+  id: number,
+  authToken?: string
+): Promise<void> {
+  const headers: Record<string, string> = {};
+  if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+  const response = await fetch(`${API_BASE_URL}/cancellation-reasons/${id}`, {
+    method: 'DELETE',
+    headers,
+  });
+  if (!response.ok) throw new Error('Failed to delete reason');
+}
+
+/**
  * Reschedule a booking to a new date/time.
  */
 export async function rescheduleBooking(
@@ -1242,6 +1294,37 @@ export async function updateBookingStatus(
     }
   } catch (error: any) {
     console.error('updateBookingStatus exception:', error);
+    throw error;
+  }
+}
+
+/**
+ * Send an immediate staff-triggered reminder for an upcoming booking.
+ */
+export async function sendStaffReminderNow(
+  bookingId: number,
+  authToken?: string
+): Promise<void> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+
+  if (authToken) {
+    headers['Authorization'] = `Bearer ${authToken}`;
+  }
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/bookings/${bookingId}/staff-reminder-now`, {
+      method: 'POST',
+      headers,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || 'Failed to send reminder');
+    }
+  } catch (error: any) {
+    console.error('sendStaffReminderNow exception:', error);
     throw error;
   }
 }

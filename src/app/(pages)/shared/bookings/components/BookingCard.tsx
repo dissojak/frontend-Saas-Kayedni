@@ -3,6 +3,7 @@ import { Badge } from '@components/ui/badge';
 import { Button } from '@components/ui/button';
 import { 
   Clock, 
+  Bell,
   CheckCircle, 
   UserCheck, 
   Ban, 
@@ -22,6 +23,7 @@ const getStatusIcon = (status: string) => {
     case 'pending': return <AlertCircle className="w-3.5 h-3.5" />;
     case 'completed': return <CheckCircle className="w-3.5 h-3.5" />;
     case 'cancelled': return <XCircle className="w-3.5 h-3.5" />;
+    case 'rejected': return <XCircle className="w-3.5 h-3.5" />;
     default: return null;
   }
 };
@@ -37,6 +39,8 @@ export const BookingCard: React.FC<BookingCardProps> = ({
   const bookingIsToday = isToday(booking.date, currentTime);
   const isActive = isCurrentlyActive(booking, currentTime);
   const isNext = isUpNext(booking, currentTime);
+  const bookingStartDateTime = new Date(`${booking.date}T${booking.startTime}`);
+  const canSendComeNowReminder = booking.status.toLowerCase() === 'confirmed' && bookingStartDateTime.getTime() > currentTime.getTime();
   
   let cardStyle = 'bg-card border-border';
   if (variant === 'cancelled') {
@@ -49,6 +53,10 @@ export const BookingCard: React.FC<BookingCardProps> = ({
     cardStyle = 'bg-amber-50/50 dark:bg-amber-950/20 border-amber-300 dark:border-amber-700';
   } else if (bookingIsToday) {
     cardStyle = 'bg-primary/5 dark:bg-primary/10 border-primary/20 dark:border-primary/30';
+  }
+
+  function onSendReminderNow(id: number): void {
+    throw new Error('Function not implemented.');
   }
 
   return (
@@ -162,16 +170,29 @@ export const BookingCard: React.FC<BookingCardProps> = ({
               </Button>
             )}
             {booking.status.toLowerCase() === 'confirmed' && (
-              <Button
-                size="lg"
-                className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl h-12 text-base"
-                onClick={() => onStatusUpdate(booking.id, 'COMPLETED')}
-              >
-                <CheckCircle className="w-5 h-5 mr-2" />
-                Mark Complete
-              </Button>
+              <div className="flex flex-col sm:flex-row gap-3 flex-1">
+                <Button
+                  size="lg"
+                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl h-12 text-base"
+                  onClick={() => onStatusUpdate(booking.id, 'COMPLETED')}
+                >
+                  <CheckCircle className="w-5 h-5 mr-2" />
+                  Mark Complete
+                </Button>
+                {canSendComeNowReminder && onSendReminderNow && (
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="flex-1 border-2 border-amber-300 text-amber-700 hover:bg-amber-50 dark:border-amber-700 dark:text-amber-300 dark:hover:bg-amber-900/20 font-semibold rounded-xl h-12 text-base"
+                    onClick={() => onSendReminderNow(booking.id)}
+                  >
+                    <Bell className="w-4 h-4 mr-2" />
+                    Call Client Now
+                  </Button>
+                )}
+              </div>
             )}
-            {!['cancelled', 'completed', 'no_show'].includes(booking.status.toLowerCase()) && (
+            {!['cancelled', 'rejected', 'completed', 'no_show'].includes(booking.status.toLowerCase()) && (
               <div className="flex gap-3 flex-1 sm:flex-none">
                 <Button
                   variant="outline"
@@ -186,10 +207,10 @@ export const BookingCard: React.FC<BookingCardProps> = ({
                   variant="outline"
                   size="lg"
                   className="flex-1 border-2 border-border hover:bg-destructive/10 hover:text-destructive hover:border-destructive/50 text-muted-foreground font-semibold rounded-xl h-12 text-base"
-                  onClick={() => onCancel(booking.id, booking.clientName)}
+                  onClick={() => onCancel(booking.id, booking.clientName, booking.status)}
                 >
                   <XCircle className="w-4 h-4 mr-2" />
-                  Cancel
+                  {booking.status.toUpperCase() === 'PENDING' ? 'Reject' : 'Cancel'}
                 </Button>
               </div>
             )}
