@@ -181,7 +181,23 @@ export default function StaffBookingsPage() {
   };
 
   // Categorize bookings using utility function
-  const { upcomingBookings, todayBookings, pastBookings, cancelledBookings } = categorizeBookings(filteredBookings, currentTime);
+  const { upcomingBookings, todayBookings, pastBookings } = categorizeBookings(filteredBookings, currentTime);
+
+  const cancelledBookings = filteredBookings
+    .filter((booking) => booking.status.toLowerCase() === 'cancelled')
+    .sort((a, b) => {
+      const dateCompare = new Date(b.date).getTime() - new Date(a.date).getTime();
+      if (dateCompare !== 0) return dateCompare;
+      return b.startTime.localeCompare(a.startTime);
+    });
+
+  const rejectedBookings = filteredBookings
+    .filter((booking) => booking.status.toLowerCase() === 'rejected')
+    .sort((a, b) => {
+      const dateCompare = new Date(b.date).getTime() - new Date(a.date).getTime();
+      if (dateCompare !== 0) return dateCompare;
+      return b.startTime.localeCompare(a.startTime);
+    });
   
   // Separate pending from confirmed upcomingBookings
   const pendingBookings = upcomingBookings.filter(b => b.status === 'PENDING');
@@ -499,7 +515,7 @@ export default function StaffBookingsPage() {
 
           {/* Tabs */}
           <Tabs defaultValue="upcoming" className="space-y-4">
-            <TabsList className="bg-card border border-border rounded-2xl p-1.5 h-auto w-full grid grid-cols-4 gap-1">
+            <TabsList className="bg-card border border-border rounded-2xl p-1.5 h-auto w-full grid grid-cols-5 gap-1">
               <TabsTrigger 
                 value="upcoming" 
                 className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground py-3 text-sm font-semibold text-muted-foreground shadow-none transition-all"
@@ -538,6 +554,16 @@ export default function StaffBookingsPage() {
                 <span className="sm:hidden">Canceled</span>
                 <span className="ml-2 bg-red-500/20 data-[state=active]:bg-white/20 px-2 py-0.5 rounded-full text-xs">
                   {cancelledBookings.length}
+                </span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="rejected" 
+                className="rounded-xl data-[state=active]:bg-rose-700 data-[state=active]:text-white py-3 text-sm font-semibold text-muted-foreground shadow-none transition-all"
+              >
+                <span className="hidden sm:inline">Rejected</span>
+                <span className="sm:hidden">Reject</span>
+                <span className="ml-2 bg-rose-500/20 data-[state=active]:bg-white/20 px-2 py-0.5 rounded-full text-xs">
+                  {rejectedBookings.length}
                 </span>
               </TabsTrigger>
             </TabsList>
@@ -638,6 +664,33 @@ export default function StaffBookingsPage() {
               ) : (
                 <div className="space-y-4">
                   {cancelledBookings.map((booking) => (
+                    <BookingCard 
+                      key={booking.id} 
+                      booking={booking} 
+                      variant="cancelled"
+                      currentTime={currentTime}
+                      onStatusUpdate={handleStatusUpdate}
+                      onCancel={handleCancelBooking}
+                      onMarkNoShow={handleMarkNotShown}
+                    />
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+
+            {/* Rejected */}
+            <TabsContent value="rejected" className="mt-6 space-y-4">
+              {rejectedBookings.length === 0 ? (
+                <div className="text-center py-16 bg-card rounded-2xl border border-border">
+                  <div className="w-16 h-16 rounded-2xl bg-rose-500/10 flex items-center justify-center mx-auto mb-4">
+                    <XCircle className="w-8 h-8 text-rose-500/60" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-foreground mb-2">No rejected bookings</h3>
+                  <p className="text-muted-foreground">Rejected requests will appear here</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {rejectedBookings.map((booking) => (
                     <BookingCard 
                       key={booking.id} 
                       booking={booking} 
