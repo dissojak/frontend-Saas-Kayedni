@@ -384,7 +384,7 @@ export default function ClientDashboard() {
     setSubmitError(null);
     
     try {
-      await cancelBooking(Number.parseInt(selectedBooking.id, 10), undefined, token);
+      await cancelBooking(Number.parseInt(selectedBooking.id, 10), undefined, token, true);
       await refreshBookings();
       setCancelDialogOpen(false);
       setSelectedBooking(null);
@@ -418,7 +418,8 @@ export default function ClientDashboard() {
         rescheduleDate,
         startTime24,
         endTime,
-        token
+        token,
+        true
       );
       await refreshBookings();
       setRescheduleDialogOpen(false);
