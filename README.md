@@ -100,3 +100,13 @@ App runs at `http://localhost:3000` by default.
   - Verify `NEXT_PUBLIC_TRACKING_API_KEY` matches tracking backend `API_KEY`.
 - Empty analytics in GA4:
   - Confirm `NEXT_PUBLIC_GA_MEASUREMENT_ID` is valid and enabled in GA.
+
+## License and Copyright
+
+This repository is proprietary.
+
+Copyright (c) 2026 StoonProduction. All rights reserved.
+
+No right is granted to use, copy, edit, modify, distribute, or create derivative works without prior written permission from StoonProduction.
+
+See `LICENSE` in this repository and `../LICENSE` at workspace root for full terms.
