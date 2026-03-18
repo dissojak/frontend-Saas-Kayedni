@@ -964,6 +964,18 @@ export interface BookingResponse {
   updatedAt: string | null;
 }
 
+export class BookingApiError extends Error {
+  code?: string;
+  minLeadMinutes?: number;
+
+  constructor(message: string, code?: string, minLeadMinutes?: number) {
+    super(message);
+    this.name = 'BookingApiError';
+    this.code = code;
+    this.minLeadMinutes = minLeadMinutes;
+  }
+}
+
 export async function createBooking(
   request: CreateBookingRequest,
   authToken?: string
@@ -984,7 +996,11 @@ export async function createBooking(
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.error || 'Failed to create booking');
+    throw new BookingApiError(
+      errorData.error || 'Failed to create booking',
+      errorData.errorCode,
+      errorData.minLeadMinutes,
+    );
   }
 
   return await response.json();

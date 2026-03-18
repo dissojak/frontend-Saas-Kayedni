@@ -32,6 +32,8 @@ export interface TimeSlot {
   startTime: Date;
   endTime: Date;
   isAvailable: boolean;
+  isSoon?: boolean;
+  isCriticalSoon?: boolean;
 }
 
 export interface Booking {

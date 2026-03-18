@@ -7,7 +7,7 @@ import { Button } from "@components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@components/ui/card";
 import { Calendar } from "@components/ui/calendar";
 import { Textarea } from "@components/ui/textarea";
-import { Clock, ArrowRight, Tag, ChevronLeft, Star, MessageSquare, ThumbsUp, Check } from "lucide-react";
+import { Clock, ArrowRight, Tag, ChevronLeft, Star, MessageSquare, ThumbsUp, Check, AlertTriangle } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@components/ui/alert-dialog";
 // (Removed searchable popovers per request; enhancing card selection UI instead)
@@ -21,6 +21,44 @@ import ScrollDepthTracker from "@components/tracking/ScrollDepthTracker";
 import useBusinessDetail from "./hooks/useBusinessDetail";
 import BusinessHeader from "./components/BusinessHeader";
 import InlinePhotoGallery from "./components/InlinePhotoGallery";
+
+const CRITICAL_MINUTES_THRESHOLD = 3;
+const SOON_MINUTES_THRESHOLD = 10;
+const LIVE_SLOT_TICK_MS = 15_000;
+
+const isSameLocalDate = (a: Date, b: Date) => (
+  a.getFullYear() === b.getFullYear()
+  && a.getMonth() === b.getMonth()
+  && a.getDate() === b.getDate()
+);
+
+const toDate = (value: Date | string) => (value instanceof Date ? value : new Date(value));
+
+const getSlotTimingMeta = (slot: any, now: Date, bookingDate: Date | null) => {
+  const slotStart = toDate(slot.startTime);
+
+  if (!bookingDate || !isSameLocalDate(slotStart, bookingDate)) {
+    return {
+      isPast: false,
+      isSoon: false,
+      isCriticalSoon: false,
+      minutesUntilStart: null as number | null,
+    };
+  }
+
+  const diffMs = slotStart.getTime() - now.getTime();
+  const isPast = diffMs < 0;
+  const isCriticalSoon = !isPast && diffMs <= CRITICAL_MINUTES_THRESHOLD * 60 * 1000;
+  const isSoon = !isPast && diffMs <= SOON_MINUTES_THRESHOLD * 60 * 1000;
+  const minutesUntilStart = isPast ? 0 : Math.ceil(diffMs / (60 * 1000));
+
+  return {
+    isPast,
+    isSoon,
+    isCriticalSoon,
+    minutesUntilStart,
+  };
+};
 
 const BusinessDetailPage = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -115,6 +153,9 @@ const BusinessDetailPage = () => {
   const [reviewText, setReviewText] = useState("");
   const [isBookingMode, setIsBookingMode] = useState(false);
   const [isCancelAlertOpen, setIsCancelAlertOpen] = useState(false);
+  const [currentTime, setCurrentTime] = useState<Date>(() => new Date());
+  const [activeWarningSlotId, setActiveWarningSlotId] = useState<string | null>(null);
+  const [highlightWarning, setHighlightWarning] = useState(false);
 
   // Fake reviews data
   const fakeReviews = [
@@ -207,6 +248,95 @@ useEffect(() => {
     return `${year}-${month}-${day}`;
   };
 
+  useEffect(() => {
+    const shouldRunLiveClock = Boolean(
+      isBookingMode
+      && bookingStep === 2
+      && selectedDate
+      && selectedStaff?.id
+      && isSameLocalDate(selectedDate, new Date())
+    );
+
+    if (!shouldRunLiveClock) return;
+
+    setCurrentTime(new Date());
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, LIVE_SLOT_TICK_MS);
+
+    return () => clearInterval(timer);
+  }, [isBookingMode, bookingStep, selectedDate, selectedStaff?.id]);
+
+  // Time slots are already filtered by date from loadTimeSlotsForDate
+  // Just filter to ensure isAvailable is true (should already be, but extra safety)
+  const filteredTimeSlots = useMemo(() => (
+    selectedDate && selectedStaff
+      ? slots.filter((slot: any) => slot.isAvailable !== false)
+      : []
+  ), [selectedDate, selectedStaff, slots]);
+
+  const visibleTimeSlots = useMemo(() => (
+    filteredTimeSlots
+      .map((slot: any) => ({
+        slot,
+        meta: getSlotTimingMeta(slot, currentTime, selectedDate),
+      }))
+      .filter(({ meta }) => !meta.isPast)
+  ), [filteredTimeSlots, currentTime, selectedDate]);
+
+  useEffect(() => {
+    if (!selectedTimeSlot || !selectedDate) return;
+
+    const selectedMeta = getSlotTimingMeta(selectedTimeSlot, currentTime, selectedDate);
+    const slotStillVisible = visibleTimeSlots.some(({ slot }) => slot.id === selectedTimeSlot.id);
+
+    if (selectedMeta.isPast || selectedMeta.isCriticalSoon || !slotStillVisible) {
+      setSelectedTimeSlot(null);
+    }
+  }, [selectedTimeSlot, selectedDate, currentTime, visibleTimeSlots, setSelectedTimeSlot]);
+
+  useEffect(() => {
+    if (!activeWarningSlotId) return;
+    const exists = visibleTimeSlots.some(({ slot }) => slot.id === activeWarningSlotId);
+    if (!exists) {
+      setActiveWarningSlotId(null);
+    }
+  }, [activeWarningSlotId, visibleTimeSlots]);
+
+  useEffect(() => {
+    if (!highlightWarning) return;
+    const timer = setTimeout(() => setHighlightWarning(false), 1200);
+    return () => clearTimeout(timer);
+  }, [highlightWarning]);
+
+  const activeWarningSlot = useMemo(() => {
+    if (!selectedDate || !isSameLocalDate(selectedDate, currentTime)) return null;
+
+    if (activeWarningSlotId) {
+      const matched = visibleTimeSlots.find(({ slot }) => slot.id === activeWarningSlotId);
+      if (matched?.meta?.isSoon) return matched;
+    }
+
+    return visibleTimeSlots.find(({ meta }) => meta.isCriticalSoon)
+      || visibleTimeSlots.find(({ meta }) => meta.isSoon)
+      || null;
+  }, [selectedDate, currentTime, activeWarningSlotId, visibleTimeSlots]);
+
+  const warningCountdown = useMemo(() => {
+    const minutes = activeWarningSlot?.meta.minutesUntilStart;
+    if (minutes == null) return "";
+    if (minutes <= 1) return "less than 1 minute";
+    return `${minutes} minutes`;
+  }, [activeWarningSlot]);
+
+  const triggerWarningFocus = (slotId: string) => {
+    setActiveWarningSlotId(slotId);
+    setHighlightWarning(false);
+    globalThis.requestAnimationFrame(() => {
+      setHighlightWarning(true);
+    });
+  };
+
   // If still loading – render a skeleton that matches the final layout dimensions
   // to avoid a large Cumulative Layout Shift (CLS).
   if (loading) {
@@ -284,16 +414,16 @@ useEffect(() => {
     );
   }
 
-  // Time slots are already filtered by date from loadTimeSlotsForDate
-  // Just filter to ensure isAvailable is true (should already be, but extra safety)
-  const filteredTimeSlots = selectedDate && selectedStaff
-    ? slots.filter((slot: any) => slot.isAvailable !== false)
-    : [];
-
-  const formatTimeSlot = (date: Date) => date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const formatTimeSlot = (date: Date | string) => toDate(date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
   const handleContinueBooking = () => {
     if (!selectedService || !selectedStaff || !selectedDate || !selectedTimeSlot) return;
+
+    const selectedSlotMeta = getSlotTimingMeta(selectedTimeSlot, new Date(), selectedDate);
+    if (selectedSlotMeta.isPast || selectedSlotMeta.isCriticalSoon) {
+      setSelectedTimeSlot(null);
+      return;
+    }
     
     // Track booking_started
     trackEvent('booking_started', {
@@ -326,6 +456,8 @@ useEffect(() => {
     router.push("/booking/checkout");
   };
 
+  const showBusinessProfile = !isBookingMode;
+
   // Page state is declared earlier to keep hook order stable.
 
   return (
@@ -339,8 +471,7 @@ useEffect(() => {
           setIsBookingMode(true);
         }} />
 
-        {/* eslint-disable-next-line no-negated-condition */}
-        {!isBookingMode ? (
+        {showBusinessProfile ? (
           <>
             {/* Inline Photo Gallery */}
             <InlinePhotoGallery
@@ -639,6 +770,25 @@ useEffect(() => {
                     
                     <div className="flex-1">
                       <h4 className="font-medium mb-4 text-gray-900">Available Times</h4>
+                      {selectedDate && isSameLocalDate(selectedDate, currentTime) && activeWarningSlot && (
+                        <div
+                          className={`booking-warning-card mb-4 text-xs ${activeWarningSlot.meta.isCriticalSoon ? "booking-warning-card--critical" : "booking-warning-card--soon"} ${highlightWarning ? "booking-warning-card--active" : ""}`}
+                        >
+                          <div className="booking-warning-card__content flex items-start gap-2 px-3 py-2">
+                            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                            {activeWarningSlot.meta.isCriticalSoon ? (
+                              <span>
+                                This appointment starts in {warningCountdown}. This time is very close. If you are near the business, go now.
+                                This slot is free right now but cannot be booked online.
+                              </span>
+                            ) : (
+                              <span>
+                                This appointment starts in {warningCountdown}. You can still book it, but keep this in mind and be ready to go soon.
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )}
                       {(() => {
                         if (!selectedDate) {
                           return (
@@ -656,21 +806,62 @@ useEffect(() => {
                         }
                         return (
                           <div className="grid grid-cols-2 gap-3 max-h-[300px] overflow-y-auto pr-2">
-                            {filteredTimeSlots.length > 0 ? filteredTimeSlots.map((slot: any) => (
-                              <Button
-                                key={slot.id ?? `slot-${slot.startTime}`}
-                                variant={selectedTimeSlot?.id === slot.id ? "default" : "outline"}
-                                className={`w-full h-12 relative overflow-hidden transition-all ${selectedTimeSlot?.id === slot.id ? "ring-2 ring-primary ring-offset-2 shadow-md bg-primary text-primary-foreground" : "bg-white hover:border-primary/50"}`}
-                                onClick={() => setSelectedTimeSlot(slot)}
-                              >
-                                {selectedTimeSlot?.id === slot.id && (
-                                  <div className="absolute top-0 right-0 bg-white/20 text-white p-0.5 rounded-bl-lg">
-                                    <Check className="w-3 h-3" />
-                                  </div>
-                                )}
-                                {formatTimeSlot(slot.startTime)}
-                              </Button>
-                            )) : (
+                            {visibleTimeSlots.length > 0 ? visibleTimeSlots.map(({ slot, meta }) => {
+                              const isSelected = selectedTimeSlot?.id === slot.id;
+                              const isDisabled = meta.isCriticalSoon;
+                              return (
+                                <Button
+                                  key={slot.id ?? `slot-${slot.startTime}`}
+                                  variant={isSelected ? "default" : "outline"}
+                                  aria-disabled={isDisabled}
+                                  data-slot-disabled={isDisabled ? "true" : "false"}
+                                  style={{ cursor: isDisabled ? "not-allowed" : "pointer" }}
+                                  className={`w-full min-h-12 relative overflow-hidden transition-all py-2 ${isSelected ? "ring-2 ring-primary ring-offset-2 shadow-md bg-primary text-primary-foreground" : "bg-white hover:border-primary/50"} ${isDisabled ? "!cursor-not-allowed border-[#7a1e12]/40 bg-[#fef2f2] text-[#7a1e12] opacity-100 hover:bg-[#fef2f2] hover:shadow-[0_0_0_1px_rgba(122,30,18,0.35),0_0_16px_rgba(122,30,18,0.18)]" : "cursor-pointer"} ${meta.isSoon && !isDisabled && !isSelected ? "border-amber-300 bg-amber-50 text-amber-900" : ""}`}
+                                  onPointerEnter={() => {
+                                    if (meta.isSoon) triggerWarningFocus(slot.id);
+                                  }}
+                                  onMouseEnter={() => {
+                                    if (meta.isSoon) triggerWarningFocus(slot.id);
+                                  }}
+                                  onTouchStart={() => {
+                                    if (meta.isSoon) triggerWarningFocus(slot.id);
+                                  }}
+                                  onFocus={() => {
+                                    if (meta.isSoon) triggerWarningFocus(slot.id);
+                                  }}
+                                  onKeyDown={(e) => {
+                                    if (!isDisabled) return;
+                                    if (e.key === "Enter" || e.key === " ") {
+                                      e.preventDefault();
+                                      triggerWarningFocus(slot.id);
+                                    }
+                                  }}
+                                  onClick={() => {
+                                    if (isDisabled) {
+                                      triggerWarningFocus(slot.id);
+                                      return;
+                                    }
+                                    setSelectedTimeSlot(slot);
+                                    if (meta.isSoon) triggerWarningFocus(slot.id);
+                                  }}
+                                >
+                                  {isSelected && (
+                                    <div className="absolute top-0 right-0 bg-white/20 text-white p-0.5 rounded-bl-lg">
+                                      <Check className="w-3 h-3" />
+                                    </div>
+                                  )}
+                                  <span className="flex flex-col items-center leading-tight">
+                                    <span>{formatTimeSlot(slot.startTime)}</span>
+                                    {meta.isCriticalSoon && (
+                                      <span className="mt-1 text-[10px] font-medium">Too close: go now if nearby</span>
+                                    )}
+                                    {meta.isSoon && !meta.isCriticalSoon && (
+                                      <span className="mt-1 text-[10px] font-medium">Starts in {meta.minutesUntilStart} min</span>
+                                    )}
+                                  </span>
+                                </Button>
+                              );
+                            }) : (
                               <div className="col-span-2 text-center py-12 text-gray-500 bg-gray-50 rounded-xl border border-dashed border-gray-200">
                                 No slots available for this date
                               </div>
@@ -858,6 +1049,122 @@ useEffect(() => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <style jsx global>{`
+        .booking-warning-card {
+          position: relative;
+          border-radius: 0.75rem;
+          overflow: hidden;
+          isolation: isolate;
+          --warn-bg: #fffbeb;
+          --warn-text: #78350f;
+          --warn-border-1: #f59e0b;
+          --warn-border-2: #fbbf24;
+          --warn-border-3: #fb923c;
+          --warn-glow: rgba(245, 158, 11, 0.35);
+          border: 1px solid color-mix(in oklab, var(--warn-border-1) 35%, transparent);
+          transition: box-shadow 1s ease-out, transform 1s ease-out;
+        }
+
+        .booking-warning-card::before {
+          content: "";
+          position: absolute;
+          left: -85%;
+          top: -120%;
+          width: 70%;
+          height: 340%;
+          background: linear-gradient(
+            110deg,
+            transparent 10%,
+            color-mix(in oklab, var(--warn-border-2) 55%, transparent) 35%,
+            color-mix(in oklab, var(--warn-border-1) 85%, transparent) 50%,
+            color-mix(in oklab, var(--warn-border-3) 65%, transparent) 62%,
+            transparent 90%
+          );
+          filter: blur(10px);
+          animation: bookingWarnBeam 3.2s linear infinite;
+          opacity: 0.55;
+          z-index: 0;
+          transition: opacity 620ms ease-out, filter 1.5s ease-out;
+        }
+
+        .booking-warning-card::after {
+          content: "";
+          position: absolute;
+          inset: 1px;
+          border-radius: calc(0.75rem - 1px);
+          background:
+            radial-gradient(circle at 8% 6%, color-mix(in oklab, var(--warn-border-2) 22%, transparent), transparent 42%),
+            radial-gradient(circle at 92% 94%, color-mix(in oklab, var(--warn-border-1) 16%, transparent), transparent 48%),
+            var(--warn-bg);
+          z-index: 1;
+        }
+
+        .booking-warning-card > :global(*) {
+          position: relative;
+          z-index: 2;
+        }
+
+        .booking-warning-card__content {
+          position: relative;
+          z-index: 2;
+          color: var(--warn-text);
+          text-shadow: 0 0 0.01px currentColor;
+        }
+
+        .booking-warning-card--soon {
+          --warn-bg: #fffbeb;
+          --warn-text: #78350f;
+          --warn-border-1: #f59e0b;
+          --warn-border-2: #fbbf24;
+          --warn-border-3: #fb923c;
+          --warn-glow: rgba(245, 158, 11, 0.34);
+        }
+
+        .booking-warning-card--critical {
+          --warn-bg: #fef2f2;
+          --warn-text: #7a1e12;
+          --warn-border-1: #7a1e12;
+          --warn-border-2: #9f2618;
+          --warn-border-3: #c2410c;
+          --warn-glow: rgba(122, 30, 18, 0.42);
+        }
+
+        .booking-warning-card--active::before,
+        .booking-warning-card:hover::before,
+        .booking-warning-card:focus-within::before {
+          animation-duration: 0.9s;
+          opacity: 0.95;
+          filter: blur(8px) saturate(1.2);
+        }
+
+        .booking-warning-card--active {
+          transform: translateY(-1px);
+          box-shadow:
+            0 0 0 1px color-mix(in oklab, var(--warn-border-2) 55%, transparent),
+            0 0 20px var(--warn-glow),
+            inset 0 0 24px color-mix(in oklab, var(--warn-border-1) 18%, transparent);
+        }
+
+        .booking-warning-card:hover,
+        .booking-warning-card:focus-within {
+          box-shadow:
+            0 0 0 1px color-mix(in oklab, var(--warn-border-2) 42%, transparent),
+            0 0 14px color-mix(in oklab, var(--warn-glow) 70%, transparent);
+        }
+
+        @keyframes bookingWarnBeam {
+          0% {
+            transform: translateX(-8%) rotate(8deg);
+          }
+          50% {
+            transform: translateX(170%) rotate(8deg);
+          }
+          100% {
+            transform: translateX(340%) rotate(8deg);
+          }
+        }
+      `}</style>
     </Layout>
   );
 };
