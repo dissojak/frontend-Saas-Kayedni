@@ -46,7 +46,7 @@ export async function callBackendRegister(payload: RegisterPayload): Promise<Aut
 
     // Successful immediate activation/creation
     if (status >= 200 && status < 300) {
-  const frontendRole = reverseRoleMapping[(data.role as BackendUserRole) ?? 'CLIENT'];
+      const frontendRole = reverseRoleMapping[(data.role as BackendUserRole) ?? 'CLIENT'];
       return {
         success: true,
         message: data.message,

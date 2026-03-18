@@ -8,6 +8,15 @@ on:
         required: false
         default: false
         type: boolean
+  # to allow CI/CD to run auttomatically on main push.
+  #####################################################
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  #####################################################
 
 concurrency:
   group: frontend-manual-cicd-${{ github.ref }}
@@ -28,7 +37,7 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install --no-audit --no-fund
 
       - name: Lint
         run: npm run lint

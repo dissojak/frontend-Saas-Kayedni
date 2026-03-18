@@ -10,6 +10,7 @@ import CategoryCard from "../components/home/CategoryCard";
 import SearchResults from "../components/home/SearchResults";
 import { useAuth } from "@/(pages)/(auth)/context/AuthContext";
 import { fetchBusinesses, fetchCategories } from "./(pages)/(business)/actions/backend";
+import type { Business } from "./(pages)/(business)/businesses/types/business";
 import { useSearch } from "@global/hooks/useSearch";
 import { useTracking } from "@global/hooks/useTracking";
 import TimeOnPageTracker from "@components/tracking/TimeOnPageTracker";
@@ -207,11 +208,11 @@ export default function Index() {
         }
 
         if (Array.isArray(businesses) && businesses.length > 0) {
-          const mapped = businesses.slice(0, 3).map((b: Buissness) => ({
+          const mapped = businesses.slice(0, 3).map((b: Business) => ({
             id: b.id,
             name: b.name,
             category: b.category ?? "Unknown",
-            rating: b.rating ?? 0,
+            rating: typeof b.rating === "string" ? Number(b.rating) || 0 : b.rating ?? 0,
             reviewCount: b.reviewCount ?? 0,
             location: b.location ?? "City Center",
             image: b.logo ?? "/assets/placeholder.svg",
@@ -558,7 +559,7 @@ export default function Index() {
                     <div className="absolute top-4 left-4 flex gap-2">
                       <div className="bg-white/50 dark:bg-slate-900/90 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold shadow-lg border border-white/20 text-slate-900 dark:text-white flex items-center gap-1">
                         <MapPin className="h-3 w-3 text-primary" />
-                        <span className="truncate max-w-[120px]">{(business as Buissness).location || "Near by"}</span>
+                        <span className="truncate max-w-[120px]">{(business as Business).location || "Near by"}</span>
                       </div>
                     </div>
                     <div className="absolute top-4 right-4 flex gap-2">

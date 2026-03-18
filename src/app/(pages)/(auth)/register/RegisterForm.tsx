@@ -3,7 +3,7 @@
 import React from 'react';
 import RegisterView from './components/RegisterView';
 import { useRegister } from './hooks/useRegister';
-import type { UserRole } from '../../types';
+import type { UserRole } from '../types';
 
 interface RegisterFormProps {
   defaultRole?: UserRole;

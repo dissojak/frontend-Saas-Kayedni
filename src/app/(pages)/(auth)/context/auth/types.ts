@@ -5,6 +5,8 @@ export interface User {
   name: string;
   email: string;
   phone?: string;
+  token?: string;
+  refreshToken?: string;
   role: UserRole;
   avatar?: string;
   // Business owner specific fields
