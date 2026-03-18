@@ -11,14 +11,14 @@ import type {
   TrackingPayload,
 } from "../../types/businessDetailPage";
 
-const isValidBookingData = (
-  business: BusinessDetailBusiness | null,
-  service: BusinessService | null,
-  staff: BusinessStaff | null,
-  date: Date | null,
-  timeSlot: BusinessTimeSlot | null
-) => {
-  return Boolean(business && service && staff && date && timeSlot);
+const isValidBookingData = (data: {
+  business: BusinessDetailBusiness | null;
+  service: BusinessService | null;
+  staff: BusinessStaff | null;
+  date: Date | null;
+  timeSlot: BusinessTimeSlot | null;
+}) => {
+  return Boolean(data.business && data.service && data.staff && data.date && data.timeSlot);
 };
 
 const formatTimeSlotForStorage = (slot: BusinessTimeSlot) => ({
@@ -72,7 +72,13 @@ export const useBookingFlowActions = ({
   };
 
   const handleContinueBooking = () => {
-    if (!isValidBookingData(business, selectedService, selectedStaff, selectedDate, selectedTimeSlot)) return;
+    if (!isValidBookingData({
+      business,
+      service: selectedService,
+      staff: selectedStaff,
+      date: selectedDate,
+      timeSlot: selectedTimeSlot
+    })) return;
 
     const validTimeSlot = selectedTimeSlot as BusinessTimeSlot;
     const validDate = selectedDate as Date;
