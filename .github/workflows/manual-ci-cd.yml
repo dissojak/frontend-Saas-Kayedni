@@ -10,12 +10,12 @@ on:
         type: boolean
   # to allow CI/CD to run auttomatically on main push.
   #####################################################
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+#   push:
+#     branches:
+#       - main
+#   pull_request:
+#     branches:
+#       - main
   #####################################################
 
 concurrency:
