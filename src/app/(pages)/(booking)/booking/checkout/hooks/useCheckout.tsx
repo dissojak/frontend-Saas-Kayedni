@@ -5,6 +5,7 @@ import { useToast } from '@global/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/(pages)/(auth)/context/AuthContext';
 import {
+  BookingApiError,
   createBooking as createBookingAPI,
   fetchMyBookings,
   type CreateBookingRequest,
@@ -12,6 +13,7 @@ import {
 import { apiGet } from '@/(pages)/(auth)/api/client';
 
 export default function useCheckout() {
+  const MIN_BOOKING_LEAD_MINUTES = 3;
   const { toast } = useToast();
   const router = useRouter();
   const { user, token } = useAuth();
@@ -47,6 +49,14 @@ export default function useCheckout() {
         const h = String(timeObj.getHours()).padStart(2, '0');
         const m = String(timeObj.getMinutes()).padStart(2, '0');
         return `${h}:${m}`;
+      };
+
+      const isSlotTooSoon = (dateStr: string, startTimeStr: string) => {
+        const [year, month, day] = dateStr.split('-').map(Number);
+        const [hour, minute] = startTimeStr.split(':').map(Number);
+        const slotStart = new Date(year, month - 1, day, hour, minute, 0, 0);
+        const minAllowed = new Date(Date.now() + MIN_BOOKING_LEAD_MINUTES * 60 * 1000);
+        return slotStart.getTime() <= minAllowed.getTime();
       };
 
       // Resolve numeric clientId (fallback to /me if local/non-numeric)
@@ -93,6 +103,15 @@ export default function useCheckout() {
         price: bookingData.service.price,
       };
 
+      if (isSlotTooSoon(request.date, request.startTime)) {
+        const tooSoonError = new BookingApiError(
+          'This slot starts too soon. Please choose a time at least 3 minutes from now.',
+          'BOOKING_TOO_SOON',
+          MIN_BOOKING_LEAD_MINUTES,
+        );
+        throw tooSoonError;
+      }
+
       console.log('[useCheckout] Submitting booking request:', request);
 
       // Call the backend API (server-side validation handles conflicts)
@@ -114,7 +133,10 @@ export default function useCheckout() {
       router.push('/bookings');
     } catch (err: any) {
       console.error('Booking failed:', err);
-      const errorMessage = err?.message || 'There was an error processing your booking. Please try again.';
+      const minLead = Number(err?.minLeadMinutes) || MIN_BOOKING_LEAD_MINUTES;
+      const errorMessage = err?.code === 'BOOKING_TOO_SOON'
+        ? `This time is too close to now. Please choose a slot at least ${minLead} minutes ahead.`
+        : (err?.message || 'There was an error processing your booking. Please try again.');
       toast({ title: 'Booking Failed', description: errorMessage, variant: 'destructive' });
     } finally {
       setLoading(false);
