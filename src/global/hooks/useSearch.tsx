@@ -1,19 +1,31 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { searchBusinesses, BusinessSearchResult, SearchParams } from '@global/lib/api/business.api';
+import {
+  searchBusinesses,
+  searchCategories,
+  BusinessSearchResult,
+  CategorySearchResult,
+  SearchParams,
+} from '@global/lib/api/business.api';
 
 // Debounce delay in milliseconds (300ms is optimal for typeahead)
 const DEBOUNCE_DELAY = 300;
 // Minimum characters before triggering search
 const MIN_SEARCH_LENGTH = 2;
 
+export type SearchMode = 'categories' | 'businesses' | 'mixed';
+
 export interface UseSearchReturn {
   query: string;
   setQuery: (value: string) => void;
   location: string;
   setLocation: (value: string) => void;
+  selectedDate: string;
+  setSelectedDate: (value: string) => void;
   results: BusinessSearchResult[];
+  categoryResults: CategorySearchResult[];
+  mode: SearchMode;
   loading: boolean;
   error: string | null;
   hasSearched: boolean;
@@ -21,6 +33,7 @@ export interface UseSearchReturn {
   searchWithParams: (params: SearchParams) => Promise<void>;
   clearResults: () => void;
   // New: Real-time search handlers
+  handleQueryFocus: () => void;
   handleQueryChange: (value: string) => void;
   handleLocationChange: (value: string) => void;
   isTyping: boolean;
@@ -29,7 +42,10 @@ export interface UseSearchReturn {
 export function useSearch(): UseSearchReturn {
   const [query, setQuery] = useState('');
   const [location, setLocation] = useState('');
+  const [selectedDate, setSelectedDate] = useState('');
   const [results, setResults] = useState<BusinessSearchResult[]>([]);
+  const [categoryResults, setCategoryResults] = useState<CategorySearchResult[]>([]);
+  const [mode, setMode] = useState<SearchMode>('categories');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
@@ -37,7 +53,6 @@ export function useSearch(): UseSearchReturn {
 
   // Refs for debouncing
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const abortControllerRef = useRef<AbortController | null>(null);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -45,29 +60,33 @@ export function useSearch(): UseSearchReturn {
       if (debounceTimerRef.current) {
         clearTimeout(debounceTimerRef.current);
       }
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
     };
   }, []);
 
-  // Core search function (internal)
-  const performSearchInternal = useCallback(async (searchQuery: string, searchLocation: string) => {
-    // Cancel any pending request
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
+  const performBusinessSearch = useCallback(async (
+    searchQuery: string,
+    searchLocation: string,
+    date: string,
+    categoryId?: number,
+    nextMode: SearchMode = 'businesses',
+  ) => {
+    const cleanQuery = searchQuery.trim();
+    const cleanLocation = searchLocation.trim();
+
+    if (cleanQuery.length > 0 && cleanQuery.length < MIN_SEARCH_LENGTH && !cleanLocation) {
+      setResults([]);
+      setHasSearched(true);
+      setMode('categories');
+      return;
     }
 
-    // Don't search if query is too short (but allow location-only search)
-    if (searchQuery.length < MIN_SEARCH_LENGTH && !searchLocation.trim()) {
+    if (!cleanQuery && !cleanLocation && !categoryId) {
       setResults([]);
       setHasSearched(false);
       return;
     }
 
-    // Create new abort controller for this request
-    abortControllerRef.current = new AbortController();
-
+    setMode(nextMode);
     setLoading(true);
     setError(null);
     setHasSearched(true);
@@ -75,15 +94,13 @@ export function useSearch(): UseSearchReturn {
 
     try {
       const searchResults = await searchBusinesses({
-        query: searchQuery.trim() || undefined,
-        location: searchLocation.trim() || undefined,
+        query: cleanQuery || undefined,
+        location: cleanLocation || undefined,
+        categoryId,
+        date: date || undefined,
       });
       setResults(searchResults);
     } catch (err) {
-      // Ignore abort errors
-      if (err instanceof Error && err.name === 'AbortError') {
-        return;
-      }
       setError(err instanceof Error ? err.message : 'Search failed. Please try again.');
       setResults([]);
     } finally {
@@ -91,52 +108,106 @@ export function useSearch(): UseSearchReturn {
     }
   }, []);
 
-  // Debounced search trigger
-  const triggerDebouncedSearch = useCallback((newQuery: string, newLocation: string) => {
-    // Clear existing timer
+  const performCategorySearch = useCallback(async (
+    categoryQuery: string,
+    nextMode: SearchMode = 'categories',
+    withLoading = true,
+  ) => {
+    setMode(nextMode);
+    if (withLoading) {
+      setLoading(true);
+      setError(null);
+      setHasSearched(true);
+      setIsTyping(false);
+    }
+
+    try {
+      const categoryData = await searchCategories(categoryQuery.trim() || undefined, 12);
+      setCategoryResults(categoryData);
+    } catch (err) {
+      if (withLoading) {
+        setError(err instanceof Error ? err.message : 'Failed to load categories.');
+      }
+      setCategoryResults([]);
+    } finally {
+      if (withLoading) {
+        setLoading(false);
+      }
+    }
+  }, []);
+
+  const triggerDebouncedCategorySearch = useCallback((categoryQuery: string) => {
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
     }
-
     setIsTyping(true);
-
-    // Set new timer
     debounceTimerRef.current = setTimeout(() => {
-      performSearchInternal(newQuery, newLocation);
+      performCategorySearch(categoryQuery);
     }, DEBOUNCE_DELAY);
-  }, [performSearchInternal]);
+  }, [performCategorySearch]);
+
+  const triggerDebouncedBusinessSearch = useCallback((newQuery: string, newLocation: string, date: string, nextMode: SearchMode = 'businesses') => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    setLoading(true);
+    setError(null);
+    setIsTyping(true);
+    debounceTimerRef.current = setTimeout(() => {
+      performBusinessSearch(newQuery, newLocation, date, undefined, nextMode);
+    }, DEBOUNCE_DELAY);
+  }, [performBusinessSearch]);
+
+  const handleQueryFocus = useCallback(() => {
+    if (query.trim()) {
+      return;
+    }
+    setResults([]);
+    performCategorySearch('');
+  }, [performCategorySearch, query]);
 
   // Handle query change with real-time search
   const handleQueryChange = useCallback((value: string) => {
     setQuery(value);
-    
-    // Clear results if empty
-    if (!value.trim() && !location.trim()) {
+
+    const clean = value.trim();
+    if (!clean) {
       setResults([]);
-      setHasSearched(false);
-      setIsTyping(false);
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current);
-      }
+      performCategorySearch('');
       return;
     }
 
-    triggerDebouncedSearch(value, location);
-  }, [location, triggerDebouncedSearch]);
+    if (clean.length < MIN_SEARCH_LENGTH) {
+      setResults([]);
+      triggerDebouncedCategorySearch(clean);
+      return;
+    }
+
+    setMode('mixed');
+    setHasSearched(true);
+    setError(null);
+    void performCategorySearch(clean, 'mixed', false);
+    triggerDebouncedBusinessSearch(value, location, selectedDate, 'mixed');
+  }, [location, performCategorySearch, selectedDate, triggerDebouncedBusinessSearch, triggerDebouncedCategorySearch]);
 
   // Handle location change with real-time search
   const handleLocationChange = useCallback((value: string) => {
     setLocation(value);
-    
-    // Only trigger search if we have some query text or location
-    if (query.trim() || value.trim()) {
-      triggerDebouncedSearch(query, value);
+
+    if (query.trim().length >= MIN_SEARCH_LENGTH || value.trim()) {
+      if (query.trim().length >= MIN_SEARCH_LENGTH) {
+        setMode('mixed');
+        void performCategorySearch(query.trim(), 'mixed', false);
+        triggerDebouncedBusinessSearch(query, value, selectedDate, 'mixed');
+      } else {
+        triggerDebouncedBusinessSearch(query, value, selectedDate, 'businesses');
+      }
     } else {
       setResults([]);
       setHasSearched(false);
       setIsTyping(false);
     }
-  }, [query, triggerDebouncedSearch]);
+  }, [performCategorySearch, query, selectedDate, triggerDebouncedBusinessSearch]);
 
   // Manual search (for form submit / button click)
   const search = useCallback(async () => {
@@ -144,14 +215,19 @@ export function useSearch(): UseSearchReturn {
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
     }
-    
+
+    if (query.trim().length > 0 && query.trim().length < MIN_SEARCH_LENGTH && !location.trim()) {
+      setError('Type at least 2 characters to search businesses');
+      return;
+    }
+
     if (!query.trim() && !location.trim()) {
       setError('Please enter a search term or location');
       return;
     }
 
-    await performSearchInternal(query, location);
-  }, [query, location, performSearchInternal]);
+    await performBusinessSearch(query, location, selectedDate);
+  }, [location, performBusinessSearch, query, selectedDate]);
 
   const searchWithParams = useCallback(async (params: SearchParams) => {
     // Clear any pending debounce
@@ -164,28 +240,23 @@ export function useSearch(): UseSearchReturn {
       return;
     }
 
-    setLoading(true);
-    setError(null);
-    setHasSearched(true);
-    setIsTyping(false);
-
     // Update state with params
     if (params.query !== undefined) setQuery(params.query);
     if (params.location !== undefined) setLocation(params.location);
+    if (params.date !== undefined) setSelectedDate(params.date);
 
-    try {
-      const searchResults = await searchBusinesses(params);
-      setResults(searchResults);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Search failed. Please try again.');
-      setResults([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    await performBusinessSearch(
+      params.query ?? '',
+      params.location ?? '',
+      params.date ?? '',
+      params.categoryId,
+    );
+  }, [performBusinessSearch]);
 
   const clearResults = useCallback(() => {
     setResults([]);
+    setCategoryResults([]);
+    setMode('categories');
     setHasSearched(false);
     setError(null);
     setIsTyping(false);
@@ -195,12 +266,23 @@ export function useSearch(): UseSearchReturn {
     }
   }, []);
 
+  useEffect(() => {
+    if (!query.trim() && !location.trim()) {
+      setResults([]);
+      setMode('categories');
+    }
+  }, [location, query]);
+
   return {
     query,
     setQuery,
     location,
     setLocation,
+    selectedDate,
+    setSelectedDate,
     results,
+    categoryResults,
+    mode,
     loading,
     error,
     hasSearched,
@@ -208,6 +290,7 @@ export function useSearch(): UseSearchReturn {
     searchWithParams,
     clearResults,
     // New real-time search handlers
+    handleQueryFocus,
     handleQueryChange,
     handleLocationChange,
     isTyping,

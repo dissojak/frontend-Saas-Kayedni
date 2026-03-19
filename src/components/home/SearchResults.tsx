@@ -4,28 +4,66 @@ import React from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Button } from '@components/ui/button';
-import { Star, MapPin, X, ArrowRight } from 'lucide-react';
-import type { BusinessSearchResult } from '@global/lib/api/business.api';
+import { Star, MapPin, X, ArrowRight, Grid2x2, Search as SearchIcon } from 'lucide-react';
+import type { BusinessSearchResult, CategorySearchResult } from '@global/lib/api/business.api';
+import type { SearchMode } from '@global/hooks/useSearch';
 import { createBusinessSlug } from '@global/lib/businessSlug';
 
 interface SearchResultsProps {
   results: BusinessSearchResult[];
+  categories: CategorySearchResult[];
+  mode: SearchMode;
   loading: boolean;
   error: string | null;
   hasSearched: boolean;
   onClose: () => void;
+  onCategorySelect: (category: CategorySearchResult) => void;
   searchQuery?: string;
   searchLocation?: string;
+  searchDate?: string;
 }
 
-export function SearchResults({ results, loading, error, hasSearched, onClose, searchQuery, searchLocation }: SearchResultsProps) {
+export function SearchResults({
+  results,
+  categories,
+  mode,
+  loading,
+  error,
+  hasSearched,
+  onClose,
+  onCategorySelect,
+  searchQuery,
+  searchLocation,
+  searchDate,
+}: Readonly<SearchResultsProps>) {
   const router = useRouter();
+  const showCategories = mode === 'categories' || mode === 'mixed';
+  const showBusinesses = mode === 'businesses' || mode === 'mixed';
+
+  let headerTitle = 'All treatments and venues';
+  if (loading && showBusinesses) {
+    headerTitle = 'Searching...';
+  } else if (showBusinesses) {
+    headerTitle = `${results.length} Results Found`;
+  }
 
   // Navigate to search page with current query
   const handleViewAll = () => {
     const params = new URLSearchParams();
-    if (searchQuery) params.set('q', searchQuery);
+    if (mode !== 'categories' && searchQuery) params.set('q', searchQuery);
+    params.set('page', '1');
     if (searchLocation) params.set('location', searchLocation);
+    if (searchDate) params.set('date', searchDate);
+    onClose();
+    router.push(`/search?${params.toString()}`);
+  };
+
+  const handleViewAllTreatments = () => {
+    const params = new URLSearchParams();
+    params.set('all', '1');
+    params.set('page', '1');
+    if (searchLocation) params.set('location', searchLocation);
+    if (searchDate) params.set('date', searchDate);
     onClose();
     router.push(`/search?${params.toString()}`);
   };
@@ -37,7 +75,7 @@ export function SearchResults({ results, loading, error, hasSearched, onClose, s
       {/* Header */}
       <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 z-10">
         <h3 className="text-lg font-semibold dark:text-white">
-          {loading ? 'Searching...' : `${results.length} Results Found`}
+          {headerTitle}
         </h3>
         <button
           onClick={onClose}
@@ -61,19 +99,59 @@ export function SearchResults({ results, loading, error, hasSearched, onClose, s
           </div>
         )}
 
-        {!loading && !error && results.length === 0 && (
+        {!loading && !error && showCategories && categories.length > 0 && (
+          <div className="p-4">
+            <div className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-3 px-2">
+              {mode === 'mixed' ? 'Matching categories' : 'Top categories'}
+            </div>
+
+            <div className="space-y-1">
+              <button
+                type="button"
+                className="w-full flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-800 text-left transition-colors"
+                onClick={handleViewAllTreatments}
+              >
+                <span className="h-10 w-10 rounded-lg border border-gray-200 dark:border-slate-700 flex items-center justify-center bg-white dark:bg-slate-900">
+                  <Grid2x2 className="h-4 w-4 text-primary" />
+                </span>
+                <span className="font-medium text-gray-900 dark:text-white">All treatments</span>
+              </button>
+
+              {categories.map((category) => (
+                <button
+                  type="button"
+                  key={category.id}
+                  className="w-full flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-800 text-left transition-colors"
+                  onClick={() => onCategorySelect(category)}
+                >
+                  <span className="h-10 w-10 rounded-lg border border-gray-200 dark:border-slate-700 flex items-center justify-center bg-white dark:bg-slate-900 text-primary">
+                    {category.icon ? (
+                      <span className="text-base leading-none">{category.icon}</span>
+                    ) : (
+                      <SearchIcon className="h-4 w-4" />
+                    )}
+                  </span>
+                  <span className="font-medium text-gray-900 dark:text-white">{category.name}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {!loading && !error && showBusinesses && results.length === 0 && categories.length === 0 && (
           <div className="p-8 text-center">
             <p className="text-gray-500 dark:text-gray-400 mb-2">No services found matching your search.</p>
             <p className="text-sm text-gray-400 dark:text-gray-500">Try different keywords or location.</p>
           </div>
         )}
 
-        {!loading && !error && results.length > 0 && (
+        {!loading && !error && showBusinesses && results.length > 0 && (
           <div className="divide-y divide-gray-100 dark:divide-slate-800">
             {results.map((business) => (
-              <div
+              <button
+                type="button"
                 key={business.id}
-                className="p-4 hover:bg-gray-50 dark:hover:bg-slate-800/50 cursor-pointer transition-colors"
+                className="w-full p-4 hover:bg-gray-50 dark:hover:bg-slate-800/50 cursor-pointer transition-colors text-left"
                 onClick={() => {
                   onClose();
                   router.push(`/business/${createBusinessSlug(business.name, business.id)}`);
@@ -133,14 +211,14 @@ export function SearchResults({ results, loading, error, hasSearched, onClose, s
                     )}
                   </div>
                 </div>
-              </div>
+              </button>
             ))}
           </div>
         )}
       </div>
 
       {/* Footer */}
-      {!loading && results.length > 0 && (
+      {!loading && showBusinesses && results.length > 0 && (
         <div className="flex-shrink-0 px-6 py-4 border-t border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/50 relative z-10">
           <Button
             className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-lg shadow-primary/20 transition-all hover:-translate-y-0.5"

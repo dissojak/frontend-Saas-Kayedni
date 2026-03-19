@@ -56,6 +56,29 @@ export default function Index() {
   const { isAuthenticated } = useAuth();
   const { trackEvent } = useTracking();
   const searchContainerRef = useRef<HTMLDivElement>(null);
+  const dateMenuRef = useRef<HTMLDivElement>(null);
+  const [isSearchDropdownOpen, setIsSearchDropdownOpen] = useState(false);
+  const [isDateMenuOpen, setIsDateMenuOpen] = useState(false);
+
+  const toIsoDate = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
+  const formatDateLabel = (isoDate: string) => {
+    if (!isoDate) return "Any time";
+    const today = new Date();
+    const tomorrow = new Date();
+    tomorrow.setDate(today.getDate() + 1);
+    if (isoDate === toIsoDate(today)) return "Today";
+    if (isoDate === toIsoDate(tomorrow)) return "Tomorrow";
+    const parsed = new Date(`${isoDate}T00:00:00`);
+    return Number.isNaN(parsed.getTime())
+      ? "Any time"
+      : parsed.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  };
 
   // Service categories (default fallback)
   const defaultCategories = [
@@ -172,21 +195,43 @@ export default function Index() {
   // Search functionality with real-time typeahead
   const {
     query: searchQuery,
-    setQuery: setSearchQuery,
     location: searchLocation,
-    setLocation: setSearchLocation,
+    selectedDate: searchDate,
+    setSelectedDate: setSearchDate,
     results: searchResults,
+    categoryResults,
+    mode: searchMode,
     loading: searchLoading,
     error: searchError,
     hasSearched,
-    search: performSearch,
-    searchWithParams,
     clearResults,
     // Real-time search handlers
+    handleQueryFocus,
     handleQueryChange,
     handleLocationChange,
-    isTyping,
   } = useSearch();
+
+  useEffect(() => {
+    const handleOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+      const clickedInsideSearch = searchContainerRef.current?.contains(target) ?? false;
+      const clickedInsideDate = dateMenuRef.current?.contains(target) ?? false;
+
+      if (!clickedInsideSearch) {
+        setIsSearchDropdownOpen(false);
+        clearResults();
+      }
+
+      if (!clickedInsideDate) {
+        setIsDateMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleOutside);
+    };
+  }, [clearResults]);
 
   useEffect(() => {
     let mounted = true;
@@ -367,9 +412,17 @@ export default function Index() {
                       <Input
                         type="text"
                         className="pl-12 h-14 bg-background/50 border-input/60 text-foreground focus-visible:ring-primary text-base shadow-sm hover:bg-background transition-colors"
-                        placeholder="What service are you looking for?"
+                        placeholder="All treatments and venues"
                         value={searchQuery}
-                        onChange={(e) => handleQueryChange(e.target.value)}
+                        onFocus={() => {
+                          setIsDateMenuOpen(false);
+                          setIsSearchDropdownOpen(true);
+                          handleQueryFocus();
+                        }}
+                        onChange={(e) => {
+                          setIsSearchDropdownOpen(true);
+                          handleQueryChange(e.target.value);
+                        }}
                       />
                     </div>
                     <div className="relative flex-1">
@@ -382,6 +435,91 @@ export default function Index() {
                         onChange={(e) => handleLocationChange(e.target.value)}
                       />
                     </div>
+                    <div className="relative flex-1" ref={dateMenuRef}>
+                      <button
+                        type="button"
+                        className="w-full h-14 pl-12 pr-4 rounded-md border border-input/60 bg-background/50 text-left text-base text-foreground hover:bg-background transition-colors"
+                        onClick={() => {
+                          setIsSearchDropdownOpen(false);
+                          clearResults();
+                          setIsDateMenuOpen((v) => !v);
+                        }}
+                      >
+                        <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500" />
+                        {formatDateLabel(searchDate)}
+                      </button>
+
+                      {isDateMenuOpen && (
+                        <div className="absolute top-full left-0 mt-2 w-full lg:left-auto lg:right-0 lg:w-72 rounded-2xl border border-border bg-card shadow-2xl z-[60] p-3 space-y-2">
+                          <button
+                            type="button"
+                            className="w-full text-left px-3 py-2 rounded-lg hover:bg-muted transition-colors"
+                            onClick={() => {
+                              setSearchDate("");
+                              trackEvent("filter_used", {
+                                filterType: "date",
+                                value: "any_time",
+                                source: "home_search",
+                              });
+                              setIsDateMenuOpen(false);
+                            }}
+                          >
+                            Any time
+                          </button>
+                          <button
+                            type="button"
+                            className="w-full text-left px-3 py-2 rounded-lg hover:bg-muted transition-colors"
+                            onClick={() => {
+                              const value = toIsoDate(new Date());
+                              setSearchDate(value);
+                              trackEvent("filter_used", {
+                                filterType: "date",
+                                value,
+                                source: "home_search",
+                              });
+                              setIsDateMenuOpen(false);
+                            }}
+                          >
+                            Today
+                          </button>
+                          <button
+                            type="button"
+                            className="w-full text-left px-3 py-2 rounded-lg hover:bg-muted transition-colors"
+                            onClick={() => {
+                              const tomorrow = new Date();
+                              tomorrow.setDate(tomorrow.getDate() + 1);
+                              const value = toIsoDate(tomorrow);
+                              setSearchDate(value);
+                              trackEvent("filter_used", {
+                                filterType: "date",
+                                value,
+                                source: "home_search",
+                              });
+                              setIsDateMenuOpen(false);
+                            }}
+                          >
+                            Tomorrow
+                          </button>
+                          <div className="pt-2 border-t border-border">
+                            <label htmlFor="home-search-date" className="text-xs text-muted-foreground px-1">Pick a date</label>
+                            <input
+                              id="home-search-date"
+                              type="date"
+                              className="mt-1 w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+                              value={searchDate}
+                              onChange={(e) => {
+                                setSearchDate(e.target.value);
+                                trackEvent("filter_used", {
+                                  filterType: "date",
+                                  value: e.target.value,
+                                  source: "home_search",
+                                });
+                              }}
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
                     <Button
                       size="lg"
                       className="h-14 px-8 bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-lg shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all hover:-translate-y-0.5 whitespace-nowrap"
@@ -390,11 +528,17 @@ export default function Index() {
                         trackEvent("search_query", {
                           query: searchQuery,
                           location: searchLocation,
+                          date: searchDate || undefined,
                           source: "home_search_form",
                         });
                         const params = new URLSearchParams();
                         if (searchQuery) params.set("q", searchQuery);
                         if (searchLocation) params.set("location", searchLocation);
+                        if (searchDate) params.set("date", searchDate);
+                        if (!searchQuery.trim() && !searchLocation.trim() && !searchDate) {
+                          params.set("all", "1");
+                          params.set("page", "1");
+                        }
                         router.push(`/search?${params.toString()}`);
                       }}
                     >
@@ -403,45 +547,47 @@ export default function Index() {
                   </div>
 
                   {/* Live search hint */}
-                  {searchQuery.length > 0 && searchQuery.length < 2 && (
+                  {searchQuery.length === 1 && (
                     <p className="mt-2 text-sm text-muted-foreground animate-in fade-in slide-in-from-top-1 text-left px-2">
-                      Type at least 2 characters to search...
+                      Searching categories. Type one more letter to search businesses.
                     </p>
                   )}
 
-                  {/* Quick Tags */}
-                  <div className="mt-4 flex flex-wrap gap-2 items-center justify-center md:justify-start px-1">
-                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mr-1">
-                      Popular:
-                    </span>
-                    {["Barber", "Yoga", "Massage", "Dentist"].map((tag) => (
-                      <button
-                        key={tag}
-                        type="button"
-                        onClick={() => {
-                          trackEvent("search_query", { query: tag, source: "home_quick_search" });
-                          handleQueryChange(tag);
-                          // We don't auto-navigate, just fill the search
-                        }}
-                        className="text-xs px-3 py-1.5 rounded-full bg-secondary/50 hover:bg-primary/10 hover:text-primary border border-transparent hover:border-primary/20 transition-all text-secondary-foreground font-medium"
-                      >
-                        {tag}
-                      </button>
-                    ))}
-                  </div>
-
                   {/* Search Results Dropdown */}
-                  <div className="absolute top-full left-0 right-0 z-50 mt-2">
-                    <SearchResults
-                      results={searchResults}
-                      loading={searchLoading}
-                      error={searchError ?? null}
-                      hasSearched={hasSearched}
-                      onClose={clearResults}
-                      searchQuery={searchQuery}
-                      searchLocation={searchLocation}
-                    />
-                  </div>
+                  {isSearchDropdownOpen && !isDateMenuOpen && (
+                    <div className="absolute top-full left-0 right-0 z-50 mt-2">
+                      <SearchResults
+                        results={searchResults}
+                        categories={categoryResults}
+                        mode={searchMode}
+                        loading={searchLoading}
+                        error={searchError ?? null}
+                        hasSearched={hasSearched}
+                        onClose={() => {
+                          setIsSearchDropdownOpen(false);
+                          clearResults();
+                        }}
+                        onCategorySelect={(category) => {
+                          trackEvent("category_browsed", {
+                            categoryId: category.id,
+                            categoryName: category.name,
+                            source: "home_search_dropdown",
+                          });
+
+                          const params = new URLSearchParams();
+                          params.set("category", String(category.id));
+                          if (searchLocation) params.set("location", searchLocation);
+                          if (searchDate) params.set("date", searchDate);
+                          setIsSearchDropdownOpen(false);
+                          clearResults();
+                          router.push(`/search?${params.toString()}`);
+                        }}
+                        searchQuery={searchQuery}
+                        searchLocation={searchLocation}
+                        searchDate={searchDate}
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -457,7 +603,7 @@ export default function Index() {
                   router.push("/business-solutions");
                 }}
               >
-                Bookify for Business
+                Kayedni for Business
                 <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
               </Button>
             </div>
