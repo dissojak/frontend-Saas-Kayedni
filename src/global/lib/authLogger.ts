@@ -12,11 +12,7 @@
  *  - sessionId links these logs to analytics events for cross-collection queries.
  */
 
-const AUTH_LOG_URL = `${
-  process.env.NEXT_PUBLIC_TRACKING_SERVICE_URL || "http://localhost:4000"
-}/api/auth-logs`;
-
-const API_KEY = process.env.NEXT_PUBLIC_TRACKING_API_KEY || "";
+const AUTH_LOG_URL = "/api/track/auth-logs";
 const SESSION_STORAGE_KEY = "kayedni_session_id";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -96,7 +92,6 @@ export function logAuthEvent(payload: AuthLogPayload): void {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-api-key": API_KEY,
         },
         body: JSON.stringify(body),
       });

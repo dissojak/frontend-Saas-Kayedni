@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Layout from '@components/layout/Layout';
 import { useAuth } from '@/(pages)/(auth)/context/AuthContext';
@@ -33,8 +33,13 @@ const BookingsPage = () => {
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
   const [selectedBookingForReview, setSelectedBookingForReview] = useState<ReviewBookingInfo | null>(null);
 
+  useEffect(() => {
+    if (!user) {
+      router.push('/login');
+    }
+  }, [user, router]);
+
   if (!user) {
-    router.push('/login');
     return null;
   }
 

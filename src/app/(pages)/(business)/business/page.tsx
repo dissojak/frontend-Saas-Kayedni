@@ -237,7 +237,20 @@ export default function BusinessManagementPage() {
         });
       }
     } catch (error: any) {
-      toast({ variant: "error", title: "Failed to re-evaluate", description: error.message });
+      // Handle rate limit errors with a more user-friendly message
+      if (error.code === 'RATE_LIMIT_EXCEEDED') {
+        toast({ 
+          variant: "destructive", 
+          title: "Daily limit reached", 
+          description: error.message || "You've reached your daily AI re-evaluation limit. Please try again tomorrow." 
+        });
+      } else {
+        toast({ 
+          variant: "destructive", 
+          title: "Failed to re-evaluate", 
+          description: error.message || "An error occurred while re-evaluating your business. Please try again."
+        });
+      }
     } finally {
       setReEvaluating(false);
     }

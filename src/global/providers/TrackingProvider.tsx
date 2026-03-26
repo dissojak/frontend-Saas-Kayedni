@@ -136,7 +136,7 @@ interface TrackingProviderProps {
 const BATCH_SIZE = 10;
 const FLUSH_INTERVAL = 5000; // 5 seconds
 const HEARTBEAT_INTERVAL = 45_000; // 45 seconds
-const TRACKING_SERVICE_URL = process.env.NEXT_PUBLIC_TRACKING_SERVICE_URL || "http://localhost:4000";
+const TRACKING_PROXY_URL = "";
 const SESSION_STORAGE_KEY = "kayedni_session_id";
 
 // Module-level flag — survives HMR (prevents double banner on hot reload)
@@ -158,7 +158,7 @@ function generateUUID(): string {
 
 // ─── Heartbeat ────────────────────────────────────────────────────────────────
 // Keeps the session alive on the server (prevents premature expiry on long
-// browsing sessions). Calls PATCH /api/session/:sessionId/activity every 45s.
+// browsing sessions). Calls PATCH /api/track/session/:sessionId/activity every 45s.
 
 let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
 
@@ -166,9 +166,8 @@ function startHeartbeat(sessionId: string, trackingServiceUrl: string) {
   stopHeartbeat();
   heartbeatTimer = setInterval(async () => {
     try {
-      await fetch(`${trackingServiceUrl}/api/session/${sessionId}/activity`, {
+      await fetch(`${trackingServiceUrl}/api/track/session/${sessionId}/activity`, {
         method: "PATCH",
-        headers: { "x-api-key": process.env.NEXT_PUBLIC_TRACKING_API_KEY || "" },
       });
     } catch {
       // non-fatal — session will still be usable
@@ -187,7 +186,7 @@ export const TrackingProvider: React.FC<TrackingProviderProps> = ({
   children,
   batchSize = BATCH_SIZE,
   flushInterval = FLUSH_INTERVAL,
-  trackingServiceUrl = TRACKING_SERVICE_URL,
+  trackingServiceUrl = TRACKING_PROXY_URL,
 }) => {
   const { user } = useAuth();
   const pathname = usePathname();
@@ -240,17 +239,13 @@ export const TrackingProvider: React.FC<TrackingProviderProps> = ({
     // 1. No session exists yet (first visit / sessionStorage cleared)
     // 2. User just logged in (transition from anonymous → authenticated)
     if (!sId || userJustLoggedIn) {
-      // End old session on login transition (fire-and-forget via sendBeacon)
+      // End old session on login transition (fire-and-forget)
       if (sId && userJustLoggedIn) {
         stopHeartbeat();
-        try {
-          navigator.sendBeacon(
-            `${trackingServiceUrl}/api/session/${sId}/end`,
-            new Blob([JSON.stringify({ apiKey: process.env.NEXT_PUBLIC_TRACKING_API_KEY || "" })], { type: "text/plain" })
-          );
-        } catch {
-          // Silently fail — never crash the app
-        }
+        fetch(`${trackingServiceUrl}/api/track/session/${sId}/end`, {
+          method: "POST",
+          keepalive: true,
+        }).catch(() => {});
       }
 
       const newSessionId = generateUUID();
@@ -276,25 +271,22 @@ export const TrackingProvider: React.FC<TrackingProviderProps> = ({
         clearInterval(flushTimerRef.current);
         flushTimerRef.current = null;
       }
-      // Flush remaining events via sendBeacon (reliable during unmount, unlike fetch)
+      // Flush remaining events with keepalive so request can outlive page teardown
       if (eventQueueRef.current.length > 0) {
-        try {
-          navigator.sendBeacon(
-            `${trackingServiceUrl}/api/track/batch`,
-            new Blob(
-              [JSON.stringify({ events: eventQueueRef.current, apiKey: process.env.NEXT_PUBLIC_TRACKING_API_KEY || "" })],
-              { type: "text/plain" }
-            )
-          );
-          eventQueueRef.current = [];
-        } catch {
-          // Silently fail — never crash the app
-        }
+        fetch(`${trackingServiceUrl}/api/track/batch`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ events: eventQueueRef.current }),
+          keepalive: true,
+        }).catch(() => {});
+        eventQueueRef.current = [];
       }
     };
   }, [sessionId, trackingServiceUrl]);
 
-  // End session reliably via visibilitychange + sendBeacon
+  // End session reliably via visibilitychange + keepalive fetch
   // visibilitychange fires more reliably than beforeunload on mobile browsers
   useEffect(() => {
     if (typeof window === "undefined" || !sessionId) return;
@@ -302,25 +294,25 @@ export const TrackingProvider: React.FC<TrackingProviderProps> = ({
     const handleVisibilityChange = () => {
       if (document.visibilityState === "hidden") {
         stopHeartbeat();
-        const beaconApiKey = process.env.NEXT_PUBLIC_TRACKING_API_KEY || "";
 
-        // Flush events using sendBeacon (text/plain avoids CORS preflight)
+        // Flush queued events before tab/page is backgrounded
         if (eventQueueRef.current.length > 0) {
-          navigator.sendBeacon(
-            `${trackingServiceUrl}/api/track/batch`,
-            new Blob(
-              [JSON.stringify({ events: eventQueueRef.current, apiKey: beaconApiKey })],
-              { type: "text/plain" }
-            )
-          );
+          fetch(`${trackingServiceUrl}/api/track/batch`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ events: eventQueueRef.current }),
+            keepalive: true,
+          }).catch(() => {});
           eventQueueRef.current = [];
         }
 
-        // End session using sendBeacon
-        navigator.sendBeacon(
-          `${trackingServiceUrl}/api/session/${sessionId}/end`,
-          new Blob([JSON.stringify({ apiKey: beaconApiKey })], { type: "text/plain" })
-        );
+        // End session
+        fetch(`${trackingServiceUrl}/api/track/session/${sessionId}/end`, {
+          method: "POST",
+          keepalive: true,
+        }).catch(() => {});
       } else if (document.visibilityState === "visible" && sessionId) {
         // Tab came back — restart heartbeat
         startHeartbeat(sessionId, trackingServiceUrl);
@@ -369,7 +361,6 @@ export const TrackingProvider: React.FC<TrackingProviderProps> = ({
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "x-api-key": process.env.NEXT_PUBLIC_TRACKING_API_KEY || "",
           },
           body: JSON.stringify({ events: toSend }),
         }).catch(() => {
@@ -395,11 +386,10 @@ export const TrackingProvider: React.FC<TrackingProviderProps> = ({
           // Server extracts: browser, os, deviceType, ipAddress, referrer, userAgent
         };
 
-        await fetch(`${trackingServiceUrl}/api/session/start`, {
+        await fetch(`${trackingServiceUrl}/api/track/session/start`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "x-api-key": process.env.NEXT_PUBLIC_TRACKING_API_KEY || "",
           },
           body: JSON.stringify(payload),
         });
@@ -423,7 +413,6 @@ export const TrackingProvider: React.FC<TrackingProviderProps> = ({
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-api-key": process.env.NEXT_PUBLIC_TRACKING_API_KEY || "",
         },
         body: JSON.stringify({
           // No top-level userAgent or ipAddress — server handles these
