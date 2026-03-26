@@ -23,6 +23,8 @@ import {
   Sparkles,
   Search,
   Calendar,
+  ChevronLeft,
+  ChevronRight,
   CheckCircle,
   Shield,
   RefreshCw,
@@ -57,6 +59,10 @@ export default function Index() {
   const { trackEvent } = useTracking();
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const dateMenuRef = useRef<HTMLDivElement>(null);
+  const [visibleMonth, setVisibleMonth] = useState(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+  });
   const [isSearchDropdownOpen, setIsSearchDropdownOpen] = useState(false);
   const [isDateMenuOpen, setIsDateMenuOpen] = useState(false);
 
@@ -79,6 +85,35 @@ export default function Index() {
       ? "Any time"
       : parsed.toLocaleDateString(undefined, { month: "short", day: "numeric" });
   };
+
+  const getMonthMatrix = (month: Date) => {
+    const year = month.getFullYear();
+    const monthIndex = month.getMonth();
+    const monthStart = new Date(year, monthIndex, 1);
+    const monthEnd = new Date(year, monthIndex + 1, 0);
+    const leading = monthStart.getDay();
+    const totalDays = monthEnd.getDate();
+    const cells: Array<Date | null> = [];
+
+    for (let i = 0; i < leading; i += 1) {
+      cells.push(null);
+    }
+
+    for (let day = 1; day <= totalDays; day += 1) {
+      cells.push(new Date(year, monthIndex, day));
+    }
+
+    while (cells.length % 7 !== 0) {
+      cells.push(null);
+    }
+
+    return cells;
+  };
+
+  const isSameDay = (a: Date, b: Date) =>
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate();
 
   // Service categories (default fallback)
   const defaultCategories = [
@@ -210,6 +245,11 @@ export default function Index() {
     handleQueryChange,
     handleLocationChange,
   } = useSearch();
+
+  const selectedDateObj = searchDate ? new Date(`${searchDate}T00:00:00`) : null;
+  const todayDate = new Date();
+  const calendarCells = getMonthMatrix(visibleMonth);
+  const weekdays = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 
   useEffect(() => {
     const handleOutside = (event: MouseEvent) => {
@@ -442,6 +482,14 @@ export default function Index() {
                         onClick={() => {
                           setIsSearchDropdownOpen(false);
                           clearResults();
+                          if (!isDateMenuOpen) {
+                            const baseDate = searchDate
+                              ? new Date(`${searchDate}T00:00:00`)
+                              : new Date();
+                            setVisibleMonth(
+                              new Date(baseDate.getFullYear(), baseDate.getMonth(), 1),
+                            );
+                          }
                           setIsDateMenuOpen((v) => !v);
                         }}
                       >
@@ -450,72 +498,139 @@ export default function Index() {
                       </button>
 
                       {isDateMenuOpen && (
-                        <div className="absolute top-full left-0 mt-2 w-full lg:left-auto lg:right-0 lg:w-72 rounded-2xl border border-border bg-card shadow-2xl z-[60] p-3 space-y-2">
-                          <button
-                            type="button"
-                            className="w-full text-left px-3 py-2 rounded-lg hover:bg-muted transition-colors"
-                            onClick={() => {
-                              setSearchDate("");
-                              trackEvent("filter_used", {
-                                filterType: "date",
-                                value: "any_time",
-                                source: "home_search",
-                              });
-                              setIsDateMenuOpen(false);
-                            }}
-                          >
-                            Any time
-                          </button>
-                          <button
-                            type="button"
-                            className="w-full text-left px-3 py-2 rounded-lg hover:bg-muted transition-colors"
-                            onClick={() => {
-                              const value = toIsoDate(new Date());
-                              setSearchDate(value);
-                              trackEvent("filter_used", {
-                                filterType: "date",
-                                value,
-                                source: "home_search",
-                              });
-                              setIsDateMenuOpen(false);
-                            }}
-                          >
-                            Today
-                          </button>
-                          <button
-                            type="button"
-                            className="w-full text-left px-3 py-2 rounded-lg hover:bg-muted transition-colors"
-                            onClick={() => {
-                              const tomorrow = new Date();
-                              tomorrow.setDate(tomorrow.getDate() + 1);
-                              const value = toIsoDate(tomorrow);
-                              setSearchDate(value);
-                              trackEvent("filter_used", {
-                                filterType: "date",
-                                value,
-                                source: "home_search",
-                              });
-                              setIsDateMenuOpen(false);
-                            }}
-                          >
-                            Tomorrow
-                          </button>
-                          <div className="pt-2 border-t border-border">
-                            <label htmlFor="home-search-date" className="text-xs text-muted-foreground px-1">Pick a date</label>
-                            <input
-                              id="home-search-date"
-                              type="date"
-                              className="mt-1 w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
-                              value={searchDate}
-                              onChange={(e) => {
-                                setSearchDate(e.target.value);
+                        <div className="absolute top-full left-0 mt-2 w-full md:left-auto md:right-0 md:w-80 rounded-2xl border border-border bg-card shadow-2xl z-[60] p-4 space-y-4">
+                          <div className="grid grid-cols-3 gap-2">
+                            <button
+                              type="button"
+                              className="px-3 py-2 rounded-lg text-sm font-medium border border-border bg-background/60 hover:bg-muted transition-colors"
+                              onClick={() => {
+                                setSearchDate("");
                                 trackEvent("filter_used", {
                                   filterType: "date",
-                                  value: e.target.value,
+                                  value: "any_time",
                                   source: "home_search",
                                 });
+                                setIsDateMenuOpen(false);
                               }}
-                            />
+                            >
+                              Any time
+                            </button>
+                            <button
+                              type="button"
+                              className="px-3 py-2 rounded-lg text-sm font-medium border border-border bg-background/60 hover:bg-muted transition-colors"
+                              onClick={() => {
+                                const value = toIsoDate(new Date());
+                                setSearchDate(value);
+                                trackEvent("filter_used", {
+                                  filterType: "date",
+                                  value,
+                                  source: "home_search",
+                                });
+                                setIsDateMenuOpen(false);
+                              }}
+                            >
+                              Today
+                            </button>
+                            <button
+                              type="button"
+                              className="px-3 py-2 rounded-lg text-sm font-medium border border-border bg-background/60 hover:bg-muted transition-colors"
+                              onClick={() => {
+                                const tomorrow = new Date();
+                                tomorrow.setDate(tomorrow.getDate() + 1);
+                                const value = toIsoDate(tomorrow);
+                                setSearchDate(value);
+                                trackEvent("filter_used", {
+                                  filterType: "date",
+                                  value,
+                                  source: "home_search",
+                                });
+                                setIsDateMenuOpen(false);
+                              }}
+                            >
+                              Tomorrow
+                            </button>
+                          </div>
+
+                          <div className="rounded-xl border border-border/80 bg-background/50 p-3">
+                            <div className="flex items-center justify-between mb-3">
+                              <button
+                                type="button"
+                                aria-label="Previous month"
+                                className="h-8 w-8 rounded-md border border-border bg-background hover:bg-muted inline-flex items-center justify-center transition-colors"
+                                onClick={() => {
+                                  setVisibleMonth(
+                                    (prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1),
+                                  );
+                                }}
+                              >
+                                <ChevronLeft className="h-4 w-4" />
+                              </button>
+                              <p className="text-sm font-semibold text-foreground">
+                                {visibleMonth.toLocaleDateString(undefined, {
+                                  month: "long",
+                                  year: "numeric",
+                                })}
+                              </p>
+                              <button
+                                type="button"
+                                aria-label="Next month"
+                                className="h-8 w-8 rounded-md border border-border bg-background hover:bg-muted inline-flex items-center justify-center transition-colors"
+                                onClick={() => {
+                                  setVisibleMonth(
+                                    (prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1),
+                                  );
+                                }}
+                              >
+                                <ChevronRight className="h-4 w-4" />
+                              </button>
+                            </div>
+
+                            <div className="grid grid-cols-7 gap-1 mb-1">
+                              {weekdays.map((day) => (
+                                <span
+                                  key={day}
+                                  className="h-8 text-[11px] font-medium text-muted-foreground flex items-center justify-center"
+                                >
+                                  {day}
+                                </span>
+                              ))}
+                            </div>
+
+                            <div className="grid grid-cols-7 gap-1">
+                              {calendarCells.map((dateCell, idx) => {
+                                if (!dateCell) {
+                                  return <span key={`empty-${idx}`} className="h-9" />;
+                                }
+
+                                const isoValue = toIsoDate(dateCell);
+                                const isSelected =
+                                  selectedDateObj != null && isSameDay(dateCell, selectedDateObj);
+                                const isToday = isSameDay(dateCell, todayDate);
+
+                                return (
+                                  <button
+                                    key={isoValue}
+                                    type="button"
+                                    className={`h-9 rounded-md text-sm transition-colors ${
+                                      isSelected
+                                        ? "bg-primary text-primary-foreground font-semibold shadow-sm"
+                                        : "hover:bg-muted text-foreground"
+                                    } ${isToday && !isSelected ? "border-2 border-brand-orange text-brand-orange bg-brand-orange/10" : ""} ${isToday && isSelected ? "ring-2 ring-brand-orange/70 ring-offset-1 ring-offset-card" : ""}`}
+                                    onClick={() => {
+                                      setSearchDate(isoValue);
+                                      trackEvent("filter_used", {
+                                        filterType: "date",
+                                        value: isoValue,
+                                        source: "home_search",
+                                      });
+                                      setIsDateMenuOpen(false);
+                                    }}
+                                  >
+                                    {dateCell.getDate()}
+                                  </button>
+                                );
+                              })}
+                            </div>
                           </div>
                         </div>
                       )}
