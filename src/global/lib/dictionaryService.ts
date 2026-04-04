@@ -22,7 +22,7 @@ const SLICE_DICTIONARY: Record<string, Partial<Record<DictionaryKey, string>>> =
     nav_services: 'Treatments',
     nav_bookings: 'Appointments',
   },
-  'health': {
+  'health&care': {
     nav_services: 'Treatments',
     nav_bookings: 'Consultations',
   },
