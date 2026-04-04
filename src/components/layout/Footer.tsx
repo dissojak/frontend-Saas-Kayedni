@@ -21,7 +21,7 @@ const Footer = () => {
 					<div className="md:col-span-1 space-y-6">
 						<Link href="/" className="inline-block">
                              <Image 
-                                src="/assets/KayedniFullLogo-zain.png"
+                                src="/assets/KayedniFullLogo-Zain.png"
                                 alt="kayedni"
                                 width={160}
                                 height={45}

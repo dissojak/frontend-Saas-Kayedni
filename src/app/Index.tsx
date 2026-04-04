@@ -2,13 +2,12 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import Layout from "@components/layout/Layout";
 import { Button } from "@components/ui/button";
-import CategoryCard from "../components/home/CategoryCard";
+
 import SearchResults from "../components/home/SearchResults";
-import { useAuth } from "@/(pages)/(auth)/context/AuthContext";
 import { fetchBusinesses, fetchCategories } from "./(pages)/(business)/actions/backend";
 import type { Business } from "./(pages)/(business)/businesses/types/business";
 import { useSearch } from "@global/hooks/useSearch";
@@ -17,22 +16,11 @@ import TimeOnPageTracker from "@components/tracking/TimeOnPageTracker";
 import ScrollDepthTracker from "@components/tracking/ScrollDepthTracker";
 import {
   ArrowRight,
-  Clock,
-  Users,
-  TrendingUp,
   Sparkles,
   Search,
   Calendar,
   ChevronLeft,
   ChevronRight,
-  CheckCircle,
-  Shield,
-  RefreshCw,
-  Smartphone,
-  Bell,
-  CreditCard,
-  BarChart,
-  Globe,
   MapPin,
   Loader2,
   Star,
@@ -41,6 +29,7 @@ import { Input } from "@components/ui/input";
 import { createBusinessSlug } from "@global/lib/businessSlug";
 import { apiGet } from "./(pages)/(auth)/api/client";
 import BookingDemoSection from "@components/home/BookingDemoSection";
+import { resolveBusinessLandingPathFromCategorySlug } from "@global/lib/slices";
 
 interface Testimonial {
   clientName: string;
@@ -55,7 +44,7 @@ interface Testimonial {
 
 export default function Index() {
   const router = useRouter();
-  const { isAuthenticated } = useAuth();
+  const searchParams = useSearchParams();
   const { trackEvent } = useTracking();
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const dateMenuRef = useRef<HTMLDivElement>(null);
@@ -65,6 +54,8 @@ export default function Index() {
   });
   const [isSearchDropdownOpen, setIsSearchDropdownOpen] = useState(false);
   const [isDateMenuOpen, setIsDateMenuOpen] = useState(false);
+  const routeCategorySlug = searchParams.get("category");
+  const businessLandingPath = resolveBusinessLandingPathFromCategorySlug(routeCategorySlug);
 
   const toIsoDate = (date: Date) => {
     const year = date.getFullYear();
@@ -160,8 +151,6 @@ export default function Index() {
       color: "bg-brand-orange/5 text-brand-orange",
     },
   ];
-
-  const [categories, setCategories] = useState(defaultCategories);
 
   // Featured businesses (default fallback)
   const [featuredBusinesses, setFeaturedBusinesses] = useState(() => [
@@ -712,10 +701,10 @@ export default function Index() {
               <Button
                 size="lg"
                 variant="default"
-                className="bg-brand-purple-600 hover:bg-brand-purple-700 text-white shadow-lg shadow-brand-purple-600/20 transition-all hover:-translate-y-1 h-12 px-8 rounded-full font-semibold group"
+                className="bg-[var(--brand-primary)] hover:bg-[var(--brand-primary-dark)] text-[var(--brand-primary-foreground)] shadow-[0_14px_36px_-16px_var(--brand-primary)] transition-all hover:-translate-y-1 h-12 px-8 rounded-full font-semibold group"
                 onClick={() => {
                   trackEvent("click", { element: "hero_for_business", section: "hero" });
-                  router.push("/business-solutions");
+                  router.push(businessLandingPath ?? "/business-solutions");
                 }}
               >
                 Kayedni for Business

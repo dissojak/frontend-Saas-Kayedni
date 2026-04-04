@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@components/ui/button";
 import {
@@ -13,6 +13,14 @@ import {
 } from "@components/ui/dropdown-menu";
 import { useAuth, UserRole } from "@/(pages)/(auth)/context/AuthContext";
 import { useTracking } from "@global/hooks/useTracking";
+import { t } from "@global/lib/dictionaryService";
+import {
+  buildBusinessesCategoryUrl,
+  categoryNameForSlice,
+  getRouteCategoryContext,
+  resolveSliceFromCategoryName,
+  withCategoryQuery,
+} from "@global/lib/slices";
 import { Menu, Sun, Moon, Briefcase, Users, MessageCircle } from "lucide-react";
 import Image from "next/image";
 
@@ -55,14 +63,139 @@ const defaultLinks = [
   { path: "/businesses", label: "Find Services" },
 ];
 
+const GENERIC_LOGO_SRC = "/assets/KayedniFullLogo-Zain.png";
+
+const normalizeToken = (value: string) => value.replaceAll(/[^a-z0-9]/gi, "").toLowerCase();
+
+const firstWordToken = (value?: string | null) => {
+  const raw = value?.trim();
+  if (!raw) {
+    return "";
+  }
+  return raw.split(/[^a-zA-Z0-9]+/)[0] ?? "";
+};
+
 const Navbar = () => {
   const { user, isAuthenticated, logout, activeMode, switchMode } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { trackEvent } = useTracking();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isDark, setIsDark] = useState(false);
   const [isSwitchingMode, setIsSwitchingMode] = useState(false);
+  const [availableLogoFiles, setAvailableLogoFiles] = useState<string[] | null>(null);
+
+  const routeCategoryContext = React.useMemo(
+    () => getRouteCategoryContext(pathname, new URLSearchParams(searchParams.toString())),
+    [pathname, searchParams],
+  );
+
+  const activeSlice = React.useMemo(() => {
+    const fromBusinessCategory = resolveSliceFromCategoryName(user?.businessCategoryName);
+    if (fromBusinessCategory !== "generic") {
+      return fromBusinessCategory;
+    }
+
+    return routeCategoryContext.sliceKey;
+  }, [routeCategoryContext.sliceKey, user?.businessCategoryName]);
+
+  const guestCategorySlug = isAuthenticated ? null : routeCategoryContext.categorySlug;
+  const guestCategoryName = isAuthenticated ? null : routeCategoryContext.categoryName;
+  const homeHref = guestCategorySlug ? withCategoryQuery("/", guestCategorySlug) : "/";
+  const loginHref = guestCategorySlug ? withCategoryQuery("/login", guestCategorySlug) : "/login";
+  const registerHref = guestCategorySlug ? withCategoryQuery("/register", guestCategorySlug) : "/register";
+
+  const logoCategoryName = React.useMemo(() => {
+    const mapping = new Map<string, string>();
+    for (const file of availableLogoFiles ?? []) {
+      mapping.set(normalizeToken(file), file);
+    }
+    return mapping;
+  }, [availableLogoFiles]);
+
+  const [activeLogoSrc, setActiveLogoSrc] = useState(GENERIC_LOGO_SRC);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadLogoVariations = async () => {
+      try {
+        const response = await fetch("/api/logo-variations", { cache: "no-store" });
+        if (!response.ok) {
+          if (!cancelled) {
+            setAvailableLogoFiles([]);
+          }
+          return;
+        }
+
+        const payload = (await response.json()) as { files?: string[] };
+        if (!cancelled) {
+          setAvailableLogoFiles(Array.isArray(payload.files) ? payload.files : []);
+        }
+      } catch {
+        if (!cancelled) {
+          setAvailableLogoFiles([]);
+        }
+      }
+    };
+
+    loadLogoVariations();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!availableLogoFiles) {
+      setActiveLogoSrc(GENERIC_LOGO_SRC);
+      return;
+    }
+
+    const candidateTokens = [
+      firstWordToken(user?.businessCategoryName),
+      firstWordToken(categoryNameForSlice(activeSlice)),
+      firstWordToken(activeSlice),
+    ]
+      .map((token) => token.trim())
+      .filter((token) => token.length > 0 && token.toLowerCase() !== "generic");
+
+    for (const token of candidateTokens) {
+      const expectedName = `KayedniFullLogo-${token}.png`;
+      const matchedFile = logoCategoryName.get(normalizeToken(expectedName));
+      if (matchedFile) {
+        setActiveLogoSrc(`/LogoVariations/${matchedFile}`);
+        return;
+      }
+    }
+
+    setActiveLogoSrc(GENERIC_LOGO_SRC);
+  }, [activeSlice, availableLogoFiles, logoCategoryName, user?.businessCategoryName]);
+
+  const translateNavLabel = (label: string) => {
+    if (label === "Services") {
+      return t(activeSlice, "nav_services");
+    }
+    if (label === "Bookings") {
+      return t(activeSlice, "nav_bookings");
+    }
+    return label;
+  };
+
+  const resolveLinkHref = (path: string, label: string) => {
+    if (label === "Find Services") {
+      const categoryName = user?.businessCategoryName ?? guestCategoryName;
+      return buildBusinessesCategoryUrl(categoryName);
+    }
+
+    if (!isAuthenticated && path === "/") {
+      return homeHref;
+    }
+
+    return path;
+  };
 
   useEffect(() => {
     // initialize theme from localStorage or existing html class
@@ -146,9 +279,9 @@ const Navbar = () => {
       <div className="container mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-8">
-            <Link href="/" className="flex items-center gap-2 group" onClick={() => trackEvent('click', { element: 'logo', section: 'navbar' })}>
+            <Link href={homeHref} className="flex items-center gap-2 group" onClick={() => trackEvent('click', { element: 'logo', section: 'navbar' })}>
                <Image 
-                src="/assets/KayedniFullLogo-zain.png" 
+                src={activeLogoSrc}
                 alt="kayedni Logo" 
                 width={140}
                 height={40}
@@ -160,11 +293,11 @@ const Navbar = () => {
             <div className="hidden md:flex items-center gap-1">
               {links.map((link) => (
                 <Link
-                  key={link.path}
-                  href={link.path}
+                  key={`${link.path}-${link.label}`}
+                  href={resolveLinkHref(link.path, link.label)}
                   className="relative px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary group"
                 >
-                  {link.label}
+                  {translateNavLabel(link.label)}
                    <span className="absolute inset-x-0 -bottom-[13px] h-[2px] bg-primary scale-x-0 transition-transform duration-300 group-hover:scale-x-100" />
                 </Link>
               ))}
@@ -301,7 +434,7 @@ const Navbar = () => {
                   className="rounded-full hover:bg-primary/10 hover:text-primary"
                   onClick={() => {
                     trackEvent("click", { element: "nav_login", section: "navbar" });
-                    router.push("/login");
+                    router.push(loginHref);
                   }}
                 >
                   Log in
@@ -311,7 +444,7 @@ const Navbar = () => {
                   className="rounded-full px-6 shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 transition-all hover:-translate-y-0.5"
                   onClick={() => {
                     trackEvent("click", { element: "nav_signup", section: "navbar" });
-                    router.push("/register");
+                    router.push(registerHref);
                   }}
                 >
                   Sign Up
@@ -373,12 +506,12 @@ const Navbar = () => {
             <div className="flex flex-col px-2 space-y-1">
               {links.map((link) => (
                 <Link
-                  key={link.path}
-                  href={link.path}
+                  key={`${link.path}-${link.label}`}
+                  href={resolveLinkHref(link.path, link.label)}
                   className="flex items-center px-4 py-3 rounded-xl text-foreground/80 hover:text-primary hover:bg-primary/5 transition-colors font-medium"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  {link.label}
+                  {translateNavLabel(link.label)}
                 </Link>
               ))}
 
@@ -423,10 +556,10 @@ const Navbar = () => {
                     onClick={() => {
                       trackEvent("click", { element: "nav_login", section: "navbar_mobile" });
                       setMobileMenuOpen(false);
-                      router.push("/login");
+                      router.push(loginHref);
                     }}
                   >
-                    Log In
+                    Log in
                   </Button>
                   <Button
                     variant="skeuo-primary"
@@ -434,7 +567,7 @@ const Navbar = () => {
                     onClick={() => {
                       trackEvent("click", { element: "nav_signup", section: "navbar_mobile" });
                       setMobileMenuOpen(false);
-                      router.push("/register");
+                      router.push(registerHref);
                     }}
                   >
                     Sign Up

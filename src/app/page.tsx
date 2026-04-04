@@ -1,5 +1,12 @@
-import Index from "@/Index"; // Or move Index's code here
+"use client";
+
+import { Suspense } from "react";
+import Index from "@/Index";
 
 export default function HomePage() {
-  return <Index />;
+  return (
+    <Suspense fallback={null}>
+      <Index />
+    </Suspense>
+  );
 }
