@@ -12,7 +12,7 @@ function RegisterContent() {
   return (
     <AuthBackdrop>
       <div className="h-[70vh] flex items-center justify-center min-h-screen">
-        <div className="w-full">
+        <div className="w-full max-w-6xl">
           <RegisterForm defaultRole={userType === 'business' ? 'BUSINESS_OWNER' : 'CLIENT'} />
         </div>
       </div>

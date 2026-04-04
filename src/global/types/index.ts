@@ -102,7 +102,21 @@ export type EventType =
   | "login"
   | "signup"
   | "logout"
-  | "profile_update";
+  | "profile_update"
+  | "testimonial_section_view"
+  | "testimonial_business_click"
+  | "login_attempt"
+  | "login_failed"
+  | "signup_validation_error"
+  | "signup_failed"
+  | "slice_landing_view"
+  | "slice_landing_cta_click"
+  | "industry_feedback_submitted"
+  | "industry_feedback_failed"
+  | "forgot_password_requested"
+  | "forgot_password_failed"
+  | "reset_password_completed"
+  | "reset_password_failed";
 
 export interface TrackingEvent {
   userId?: string | null;

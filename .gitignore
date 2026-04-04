@@ -40,4 +40,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-public/assets/KayedniLogo.psd
+public/assets/KayedniLogo.psd 
+/public/LogoVariations/KayedniLogoSMALL_VARIATION.psd
+/public/LogoVariations/KayedniFullLogo-Variations.psd

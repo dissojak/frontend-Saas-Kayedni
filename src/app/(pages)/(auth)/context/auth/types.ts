@@ -1,4 +1,5 @@
 import type { UserRole } from "../../types";
+import type { SliceKey } from "@global/lib/slices";
 
 export interface User {
   id: string;
@@ -12,6 +13,8 @@ export interface User {
   // Business owner specific fields
   businessId?: string;
   businessName?: string;
+  businessCategoryName?: string;
+  sliceKey?: SliceKey;
   hasBusiness?: boolean;
   // BO acting as staff
   isAlsoStaff?: boolean;

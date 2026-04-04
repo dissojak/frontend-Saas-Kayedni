@@ -35,7 +35,7 @@ export interface BusinessResponse {
   location?: string;
   phone?: string;
   email?: string;
-  status: 'ACTIVE' | 'PENDING' | 'SUSPENDED' | 'DELETED';
+  status: 'DRAFT' | 'PENDING' | 'ACTIVE' | 'SUSPENDED' | 'INACTIVE' | 'DELETED';
   categoryId?: number;
   categoryName?: string;
   ownerId?: number;
@@ -53,6 +53,15 @@ export interface BusinessUpdateRequest {
   description?: string;
   categoryId?: number;
   weekendDay?: string;
+}
+
+export interface BusinessCreateRequest {
+  name: string;
+  location: string;
+  phone?: string;
+  email?: string;
+  description?: string;
+  categoryId: number;
 }
 
 // ========================
@@ -82,6 +91,30 @@ export async function fetchOwnerBusiness(authToken: string): Promise<BusinessRes
     console.error('fetchOwnerBusiness error:', error);
     return null;
   }
+}
+
+/**
+ * Create the first business for the authenticated owner
+ */
+export async function createOwnerBusiness(
+  data: BusinessCreateRequest,
+  authToken: string,
+): Promise<BusinessResponse> {
+  const response = await fetch(`${API_BASE_URL}/owner/businesses`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${authToken}`,
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || 'Failed to create business');
+  }
+
+  return response.json();
 }
 
 /**
@@ -1239,6 +1272,13 @@ export async function fetchBookingsForStaff(
   to?: string,
   authToken?: string
 ): Promise<any[]> {
+  // Backward-compatible guard: if token is passed as the second argument,
+  // reinterpret it as authToken instead of a date filter.
+  if (from && !to && !authToken && from.includes('.') && !/^\d{4}-\d{2}-\d{2}$/.test(from)) {
+    authToken = from;
+    from = undefined;
+  }
+
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
   };

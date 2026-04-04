@@ -1,10 +1,11 @@
 "use client";
 
-import React, { createContext, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { usePathname } from "next/navigation";
+import React, { createContext, useCallback, useEffect, useMemo, useRef, useState, Suspense } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useAuth } from "@/(pages)/(auth)/context/AuthContext";
 import { sendGA4Event } from "@/ga";
 import { getOrCreateAnonymousId } from "@global/utils/anonymousId";
+import { categoryNameForSlice, getRouteCategoryContext, resolveSliceFromCategoryName } from "@global/lib/slices";
 
 // GA4-forwarded event types — only key conversion/engagement events go to GA4
 const GA4_FORWARDED_EVENTS = new Set([
@@ -93,6 +94,10 @@ export type EventType =
   | "login_failed"
   | "signup_validation_error"
   | "signup_failed"
+  | "slice_landing_view"
+  | "slice_landing_cta_click"
+  | "industry_feedback_submitted"
+  | "industry_feedback_failed"
   | "forgot_password_requested"
   | "forgot_password_failed"
   | "reset_password_completed"
@@ -182,7 +187,11 @@ function stopHeartbeat() {
   }
 }
 
-export const TrackingProvider: React.FC<TrackingProviderProps> = ({
+/**
+ * Inner tracking provider component that uses searchParams
+ * This component is wrapped in Suspense to handle the dynamic hook
+ */
+const TrackingProviderInner: React.FC<TrackingProviderProps> = ({
   children,
   batchSize = BATCH_SIZE,
   flushInterval = FLUSH_INTERVAL,
@@ -190,6 +199,7 @@ export const TrackingProvider: React.FC<TrackingProviderProps> = ({
 }) => {
   const { user } = useAuth();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [anonymousId, setAnonymousId] = useState<string | null>(null);
   const eventQueueRef = useRef<TrackingEvent[]>([]);
@@ -197,6 +207,34 @@ export const TrackingProvider: React.FC<TrackingProviderProps> = ({
   const sessionIdRef = useRef<string | null>(null);
   const prevUserIdRef = useRef<string | null | undefined>(undefined); // undefined = not yet initialized
   const lastTrackedPageRef = useRef<string | null>(null); // for auto page_view dedup
+
+  const routeCategoryContext = useMemo(
+    () => getRouteCategoryContext(pathname, new URLSearchParams(searchParams.toString())),
+    [pathname, searchParams],
+  );
+
+  const buildSliceProperties = useCallback(() => {
+    const userCategory = user?.businessCategoryName ?? null;
+    const userSlice = resolveSliceFromCategoryName(userCategory);
+    if (userCategory && userSlice !== "generic") {
+      return {
+        slice: userSlice,
+        category: userCategory,
+      };
+    }
+
+    if (routeCategoryContext.sliceKey !== "generic") {
+      return {
+        slice: routeCategoryContext.sliceKey,
+        category: routeCategoryContext.categoryName ?? categoryNameForSlice(routeCategoryContext.sliceKey),
+      };
+    }
+
+    return {
+      slice: "generic",
+      category: categoryNameForSlice("generic"),
+    };
+  }, [routeCategoryContext.categoryName, routeCategoryContext.sliceKey, user?.businessCategoryName]);
 
   // Keep sessionId ref in sync with state (for reliable use in cleanup/sendBeacon)
   useEffect(() => {
@@ -343,7 +381,7 @@ export const TrackingProvider: React.FC<TrackingProviderProps> = ({
       sessionId,
       eventType: "page_view",
       page: pathname,
-      properties: { pathname, auto: true },
+      properties: { pathname, auto: true, ...buildSliceProperties() },
       timestamp: Date.now(),
     };
 
@@ -368,7 +406,7 @@ export const TrackingProvider: React.FC<TrackingProviderProps> = ({
         });
       }, 1000) as unknown as NodeJS.Timeout; // flush 1s after last route change (debounce)
     }
-  }, [pathname, sessionId, user?.id, anonymousId, trackingServiceUrl]);
+  }, [pathname, sessionId, user?.id, anonymousId, trackingServiceUrl, buildSliceProperties]);
 
   /**
    * Start a new session on the backend.
@@ -451,7 +489,10 @@ export const TrackingProvider: React.FC<TrackingProviderProps> = ({
         sessionId,
         eventType,
         page: typeof window !== "undefined" ? window.location.pathname : "/",
-        properties: properties || {},
+        properties: {
+          ...buildSliceProperties(),
+          ...(properties || {}),
+        },
         // No userAgent or ipAddress — server extracts these from HTTP headers
         timestamp: Date.now(),
       };
@@ -476,7 +517,7 @@ export const TrackingProvider: React.FC<TrackingProviderProps> = ({
         }
       }
     },
-    [sessionId, user?.id, anonymousId, batchSize, flushEvents, scheduleFlushing]
+    [sessionId, user?.id, anonymousId, batchSize, flushEvents, scheduleFlushing, buildSliceProperties]
   );
 
   const trackPageView = useCallback(
@@ -496,6 +537,17 @@ export const TrackingProvider: React.FC<TrackingProviderProps> = ({
 
   return (
     <TrackingContext.Provider value={value}>{children}</TrackingContext.Provider>
+  );
+};
+
+/**
+ * Wrapper component that applies Suspense boundary for useSearchParams
+ */
+export const TrackingProvider: React.FC<TrackingProviderProps> = (props) => {
+  return (
+    <Suspense fallback={props.children}>
+      <TrackingProviderInner {...props} />
+    </Suspense>
   );
 };
 

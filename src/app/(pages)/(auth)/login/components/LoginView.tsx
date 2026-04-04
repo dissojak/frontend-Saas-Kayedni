@@ -7,6 +7,8 @@ import { Label } from "@components/ui/label";
 import type { LoginViewProps } from "../types/index";
 import Link from "next/link";
 import Image from "next/image";
+import { useSearchParams } from "next/navigation";
+import { withCategoryQuery } from "@global/lib/slices";
 
 export default function LoginView({
   email,
@@ -19,6 +21,10 @@ export default function LoginView({
   error,
   onSubmit,
 }: Readonly<LoginViewProps>) {
+  const searchParams = useSearchParams();
+  const categoryParam = searchParams.get("category");
+  const registerHref = categoryParam ? withCategoryQuery("/register", categoryParam) : "/register";
+
   return (
     <div className="text-slate-100 ">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 ">
@@ -76,10 +82,10 @@ export default function LoginView({
                   <h2 className="text-2xl font-semibold">Welcome to kayedni</h2>
                 </div>
                 <Link
-                  href="/register"
+                  href={registerHref}
                   className="hidden sm:inline-flex items-center gap-2 rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:border-slate-300 dark:border-slate-800 dark:text-slate-100 dark:hover:border-slate-700"
                 >
-                  New here?
+                  New here?{" "}
                   <span className="text-[var(--color-primary)]">Create account</span>
                 </Link>
               </div>
@@ -167,12 +173,12 @@ export default function LoginView({
 
               <div className="mt-8 flex flex-col gap-3 text-sm text-slate-500 dark:text-slate-400">
                 <div className="flex items-center gap-2">
-                  <span className="h-1.5 w-8 rounded-full bg-[var(--color-primary)]/70" aria-hidden />
+                  <span className="h-1.5 w-8 rounded-full bg-[var(--color-primary)]/70" aria-hidden />{" "}
                   Quick, responsive, and secure for every role.
                 </div>
                 <div className="text-center">
                   Don't have an account? {" "}
-                  <Link href="/register" className="font-semibold text-[var(--color-primary)] hover:underline">
+                  <Link href={registerHref} className="font-semibold text-[var(--color-primary)] hover:underline">
                     Create account
                   </Link>
                 </div>
