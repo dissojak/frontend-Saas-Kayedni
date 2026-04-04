@@ -1,10 +1,7 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
-import { Toaster } from "@components/ui/toaster";
-import { Toaster as Sonner } from "@components/ui/sonner";
-import { TooltipProvider } from "@components/ui/tooltip";
 import Providers from "@global/providers";
 import GoogleAnalytics from "./ga";
 import React from "react";
@@ -31,7 +28,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" dir="ltr" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${zain.variable} antialiased bg-background text-foreground`}>
         <GoogleAnalytics />
         <Providers>
