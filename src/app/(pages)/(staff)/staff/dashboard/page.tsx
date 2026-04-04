@@ -103,7 +103,7 @@ export default function StaffWorkspacePage() {
           fetchBusinessImages(businessId),
           fetchServicesByBusinessId(businessId, token),
           fetchStaffByBusinessId(businessId, token),
-          fetchBookingsForStaff(user.id, token)
+          fetchBookingsForStaff(user.id, undefined, undefined, token)
         ]);
         
         console.log('Business data received:', businessData);

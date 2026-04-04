@@ -52,6 +52,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
+  createOwnerBusiness,
   fetchOwnerBusiness,
   updateOwnerBusiness,
   fetchOwnerBusinessImages,
@@ -62,9 +63,11 @@ import {
   changeBusinessStatus,
   checkAIHealth,
   reEvaluateBusiness,
+  type BusinessCreateRequest,
   type BusinessResponse,
   type BusinessUpdateRequest,
 } from "../actions/backend";
+import { clearPendingOwnerCategory, getPendingOwnerCategory } from "@global/lib/slices";
 
 interface Category {
   id: number;
@@ -114,9 +117,19 @@ export default function BusinessManagementPage() {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [creatingBusiness, setCreatingBusiness] = useState(false);
+  const [pendingCategoryName, setPendingCategoryName] = useState<string | null>(null);
   
   // Edit form state
   const [editForm, setEditForm] = useState<BusinessUpdateRequest>({});
+  const [createForm, setCreateForm] = useState<BusinessCreateRequest>({
+    name: '',
+    location: '',
+    phone: '',
+    email: '',
+    description: '',
+    categoryId: 0,
+  });
   
   // Get auth token
   const getToken = useCallback(() => {
@@ -170,6 +183,103 @@ export default function BusinessManagementPage() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  useEffect(() => {
+    const pending = getPendingOwnerCategory();
+    if (!pending) {
+      return;
+    }
+
+    setPendingCategoryName(pending.categoryName);
+    setCreateForm((prev) => ({ ...prev, categoryId: pending.categoryId }));
+  }, []);
+
+  useEffect(() => {
+    if (!categories.length) {
+      return;
+    }
+
+    setCreateForm((prev) => {
+      if (prev.categoryId) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        categoryId: categories[0].id,
+      };
+    });
+  }, [categories]);
+
+  const handleCreateBusiness = async () => {
+    const token = getToken();
+    if (!token) {
+      toast({ variant: "error", title: "Please log in to create your business" });
+      return;
+    }
+
+    if (!createForm.name.trim() || !createForm.location.trim() || !createForm.categoryId) {
+      toast({
+        variant: "error",
+        title: "Missing required fields",
+        description: "Business name, location, and category are required.",
+      });
+      return;
+    }
+
+    try {
+      setCreatingBusiness(true);
+      const created = await createOwnerBusiness(
+        {
+          ...createForm,
+          name: createForm.name.trim(),
+          location: createForm.location.trim(),
+          phone: createForm.phone?.trim() || undefined,
+          email: createForm.email?.trim() || undefined,
+          description: createForm.description?.trim() || undefined,
+        },
+        token,
+      );
+
+      setBusiness(created);
+      setEditForm({
+        name: created.name,
+        location: created.location || '',
+        phone: created.phone || '',
+        email: created.email || '',
+        description: created.description || '',
+        categoryId: created.categoryId,
+        weekendDay: created.weekendDay || '',
+      });
+
+      clearPendingOwnerCategory();
+      setPendingCategoryName(null);
+
+      // Keep local session profile aligned so owner routes that rely on local user data work immediately.
+      const rawUser = localStorage.getItem('user');
+      if (rawUser) {
+        try {
+          const parsed = JSON.parse(rawUser);
+          parsed.businessId = String(created.id);
+          parsed.hasBusiness = true;
+          parsed.businessCategoryName = created.categoryName ?? parsed.businessCategoryName;
+          localStorage.setItem('user', JSON.stringify(parsed));
+        } catch {
+          // no-op if local profile payload is malformed
+        }
+      }
+
+      toast({ variant: "success", title: "Business created successfully" });
+    } catch (error: any) {
+      toast({
+        variant: "error",
+        title: "Failed to create business",
+        description: error.message,
+      });
+    } finally {
+      setCreatingBusiness(false);
+    }
+  };
 
   // Save changes
   const handleSave = async () => {
@@ -256,7 +366,7 @@ export default function BusinessManagementPage() {
     }
   };
 
-  // Submit for activation
+  // Submit or re-submit for activation review (PENDING request triggers evaluation)
   const handleSubmitForActivation = async () => {
     if (!business) return;
     
@@ -266,9 +376,10 @@ export default function BusinessManagementPage() {
     try {
       setSaving(true);
       const result = await changeBusinessStatus(business.id, 'PENDING', token);
+      const normalizedStatus = String(result.status || '').toUpperCase();
       
       toast({ 
-        variant: result.status === 'ACTIVE' ? "success" : "default", 
+        variant: normalizedStatus === 'ACTIVE' || normalizedStatus === 'PENDING' ? "success" : "default", 
         title: result.message,
         description: result.advice,
       });
@@ -458,17 +569,104 @@ export default function BusinessManagementPage() {
     return (
       <Layout>
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-background to-slate-100/50 dark:from-slate-950 dark:via-background dark:to-slate-900/50 flex items-center justify-center p-6">
-          <div className="text-center max-w-md">
-            <div className="w-20 h-20 bg-slate-100 dark:bg-slate-800 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <Building2 className="w-10 h-10 text-slate-400" />
+          <div className="w-full max-w-xl rounded-3xl border border-slate-200/70 bg-white/80 p-6 shadow-xl backdrop-blur-sm dark:border-slate-700/70 dark:bg-slate-900/80">
+            <div className="mb-6 text-center">
+              <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100 dark:bg-slate-800">
+                <Building2 className="h-8 w-8 text-slate-400" />
+              </div>
+              <h2 className="text-xl font-bold text-slate-900 dark:text-white">Create Your Business</h2>
+              <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+                Finish onboarding by creating your first business profile.
+              </p>
+              {pendingCategoryName && (
+                <p className="mt-2 text-xs font-medium text-primary">
+                  Category preselected from signup flow: {pendingCategoryName}
+                </p>
+              )}
             </div>
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">No Business Found</h2>
-            <p className="text-slate-600 dark:text-slate-400 mb-6">
-              You don't have a business yet. Create one to get started.
-            </p>
-            <Button onClick={() => router.push('/business/dashboard')}>
-              Go to Dashboard
-            </Button>
+
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="create-business-name">Business name</Label>
+                <Input
+                  id="create-business-name"
+                  value={createForm.name}
+                  onChange={(e) => setCreateForm((prev) => ({ ...prev, name: e.target.value }))}
+                  placeholder="Downtown Barber Studio"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="create-business-location">Location</Label>
+                <Input
+                  id="create-business-location"
+                  value={createForm.location}
+                  onChange={(e) => setCreateForm((prev) => ({ ...prev, location: e.target.value }))}
+                  placeholder="Cairo, Nasr City"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Category</Label>
+                <Select
+                  value={createForm.categoryId ? createForm.categoryId.toString() : ''}
+                  onValueChange={(value) => setCreateForm((prev) => ({ ...prev, categoryId: Number.parseInt(value, 10) }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((category) => (
+                      <SelectItem key={category.id} value={category.id.toString()}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="create-business-phone">Phone (optional)</Label>
+                  <Input
+                    id="create-business-phone"
+                    value={createForm.phone || ''}
+                    onChange={(e) => setCreateForm((prev) => ({ ...prev, phone: e.target.value }))}
+                    placeholder="+20 1X XXX XXXX"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="create-business-email">Business email (optional)</Label>
+                  <Input
+                    id="create-business-email"
+                    type="email"
+                    value={createForm.email || ''}
+                    onChange={(e) => setCreateForm((prev) => ({ ...prev, email: e.target.value }))}
+                    placeholder="business@example.com"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="create-business-description">Description (optional)</Label>
+                <Textarea
+                  id="create-business-description"
+                  value={createForm.description || ''}
+                  onChange={(e) => setCreateForm((prev) => ({ ...prev, description: e.target.value }))}
+                  placeholder="Describe your services"
+                  className="min-h-[100px]"
+                />
+              </div>
+
+              <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:justify-end">
+                <Button variant="outline" onClick={() => router.push('/business/dashboard')}>
+                  Back to Dashboard
+                </Button>
+                <Button onClick={handleCreateBusiness} disabled={creatingBusiness || !categories.length}>
+                  {creatingBusiness ? 'Creating...' : 'Create Business'}
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
       </Layout>
@@ -476,6 +674,8 @@ export default function BusinessManagementPage() {
   }
 
   const evaluation = business.evaluation;
+  const canSubmitForReview = business.status === 'DRAFT' || business.status === 'INACTIVE' || business.status === 'PENDING';
+  const isPendingReview = business.status === 'PENDING';
 
   return (
     <Layout>
@@ -508,6 +708,58 @@ export default function BusinessManagementPage() {
               </Badge>
             </div>
           </div>
+
+            {/* Top Priority Go-Live CTA */}
+            {canSubmitForReview && (
+              <div className="relative overflow-hidden rounded-3xl border-2 border-amber-300/70 dark:border-amber-700/60 bg-gradient-to-r from-amber-50 via-orange-50 to-yellow-50 dark:from-amber-950/30 dark:via-orange-950/20 dark:to-yellow-950/20 p-6 sm:p-7 shadow-xl">
+                <div className="absolute -right-14 -top-14 h-40 w-40 rounded-full bg-amber-300/30 blur-2xl" />
+                <div className="absolute -left-10 -bottom-10 h-32 w-32 rounded-full bg-orange-300/20 blur-2xl" />
+
+                <div className="relative flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+                  <div className="space-y-3">
+                    <div className="inline-flex items-center gap-2 rounded-full bg-amber-500 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-white">
+                      <TrendingUp className="h-3.5 w-3.5" />
+                      Action Required
+                    </div>
+                    <h2 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">
+                      {isPendingReview ? 'Re-submit For Activation' : 'Submit For Review To Go Live'}
+                    </h2>
+                    <p className="max-w-3xl text-sm text-slate-700 dark:text-slate-300">
+                      Your business is currently <span className="font-semibold">{business.status}</span>.
+                      Submitting triggers AI evaluation using your business evaluation rules.
+                    </p>
+                    <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                      If overall score is <span className="font-semibold">above 70</span>, it can become <span className="font-semibold">ACTIVE</span> automatically.
+                      Otherwise it stays <span className="font-semibold">PENDING</span> until you improve details and re-submit.
+                    </p>
+                  </div>
+
+                  <Button
+                    onClick={handleSubmitForActivation}
+                    disabled={saving}
+                    className="h-12 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 px-6 text-white shadow-lg hover:from-amber-600 hover:to-orange-600"
+                  >
+                    {saving ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                        Submitting...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                        {isPendingReview ? 'Re-submit For Activation' : 'Submit For Review'}
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {isPendingReview && (
+              <div className="rounded-2xl border border-sky-200/70 bg-sky-50/70 px-4 py-3 text-sm text-sky-800 dark:border-sky-800/50 dark:bg-sky-950/20 dark:text-sky-300">
+                This business is pending review. Improve your profile details, then use Re-submit For Activation to run evaluation again.
+              </div>
+            )}
 
           {/* AI Health Status */}
           {aiHealthy !== null && (
@@ -1026,42 +1278,6 @@ export default function BusinessManagementPage() {
               )}
             </div>
           </div>
-
-          {/* Submit for Activation */}
-          {business.status !== 'ACTIVE' && (
-            <div className="bg-gradient-to-r from-teal-50 to-cyan-50 dark:from-teal-950/30 dark:to-cyan-950/30 border border-teal-200/50 dark:border-teal-800/50 rounded-2xl p-6">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center shrink-0">
-                    <TrendingUp className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-slate-800 dark:text-white mb-1">Ready to Go Live?</h3>
-                    <p className="text-sm text-slate-600 dark:text-slate-400">
-                      Submit your business for activation. If your overall score is above 70, it will be automatically activated!
-                    </p>
-                  </div>
-                </div>
-                <Button
-                  onClick={handleSubmitForActivation}
-                  disabled={saving}
-                  className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white shadow-lg rounded-xl shrink-0"
-                >
-                  {saving ? (
-                    <>
-                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                      Submitting...
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle className="w-4 h-4 mr-2" />
-                      Submit for Activation
-                    </>
-                  )}
-                </Button>
-              </div>
-            </div>
-          )}
 
         </div>
       </div>
