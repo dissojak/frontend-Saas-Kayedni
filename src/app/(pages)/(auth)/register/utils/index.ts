@@ -24,6 +24,7 @@ export async function callBackendRegister(payload: RegisterPayload): Promise<Aut
       email: payload.email,
       password: payload.password,
       role: backendRole,
+      business: payload.business,
     });
 
     const status = backendResponse.status;

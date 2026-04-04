@@ -4,6 +4,7 @@
  */
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8088/api/v1';
+const EXCLUDED_SIGNUP_CATEGORY_ID = 25;
 
 export interface BusinessSearchResult {
   id: number;
@@ -181,7 +182,14 @@ export async function searchCategories(query?: string, limit = 12): Promise<Cate
     }
 
     const data = await response.json();
-    return Array.isArray(data) ? data : [];
+    if (!Array.isArray(data)) {
+      return [];
+    }
+
+    return data.filter((item) => {
+      const id = Number((item as CategorySearchResult).id);
+      return Number.isFinite(id) && id !== EXCLUDED_SIGNUP_CATEGORY_ID;
+    });
   } catch (error) {
     console.error('Category API Error:', error);
     throw error;

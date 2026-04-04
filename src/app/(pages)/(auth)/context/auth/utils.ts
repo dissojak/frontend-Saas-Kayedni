@@ -1,4 +1,5 @@
 import type { User } from './types';
+import { resolveSliceFromCategoryName } from '@global/lib/slices';
 
 export const STORAGE_KEY = 'user';
 export const TOKEN_KEY = 'accessToken';
@@ -81,6 +82,8 @@ export function buildUserFromDb(dbUser: Partial<User> & { id?: string | number; 
   // Include businessId for business owners
   const businessId = dbUser.businessId ? String(dbUser.businessId) : undefined;
   const businessName = dbUser.businessName ?? undefined;
+  const businessCategoryName = dbUser.businessCategoryName ?? undefined;
+  const sliceKey = resolveSliceFromCategoryName(businessCategoryName);
   const hasBusiness = dbUser.hasBusiness ?? undefined;
 
   // Include staff fields for BO acting as staff
@@ -96,6 +99,8 @@ export function buildUserFromDb(dbUser: Partial<User> & { id?: string | number; 
     avatar,
     businessId,
     businessName,
+    businessCategoryName,
+    sliceKey,
     hasBusiness,
     isAlsoStaff,
     staffId,

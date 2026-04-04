@@ -11,6 +11,7 @@ export interface UserProfile {
   hasBusiness?: boolean;
   businessId?: number | null;
   businessName?: string | null;
+  businessCategoryName?: string | null;
 }
 
 export interface UpdateProfilePayload {

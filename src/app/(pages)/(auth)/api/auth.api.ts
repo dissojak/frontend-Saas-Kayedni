@@ -14,6 +14,22 @@ export interface SignupRequestPayload {
   phoneNumber?: string;
   avatarUrl?: string;
   role: BackendUserRole;
+  business?: {
+    name: string;
+    location: string;
+    phone?: string;
+    email?: string;
+    categoryId: number;
+    description?: string;
+    otherIndustryFeedback?: {
+      industryName: string;
+      description: string;
+      phoneNumber: string;
+      sourceSlug?: string;
+      sourceCategoryName?: string;
+      contactEmail?: string;
+    };
+  };
 }
 
 export interface LoginRequestPayload {
