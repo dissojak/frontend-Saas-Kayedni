@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Layout from '@components/layout/Layout';
 import { Button } from '@components/ui/button';
 import { ArrowRight, CheckCircle, Zap } from 'lucide-react';
