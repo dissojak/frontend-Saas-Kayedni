@@ -3,16 +3,20 @@ import React from "react";
 import BusinessCard from "./BusinessCard";
 import type { Business } from "../types/business";
 import { Button } from "@components/ui/button";
+import { useLocale } from "@global/hooks/useLocale";
+import { businessesT } from "../i18n";
 
 const BusinessList: React.FC<{ businesses: Business[]; onClearFilters?: () => void }>
   = ({ businesses, onClearFilters }) => {
+  const { locale } = useLocale();
+
   if (businesses.length === 0) {
     return (
       <div className="text-center py-12">
-        <h3 className="text-xl font-semibold mb-2">No businesses found</h3>
-        <p className="text-gray-500 mb-6">Try adjusting your search criteria</p>
+        <h3 className="text-xl font-semibold mb-2">{businessesT(locale, "no_businesses_found")}</h3>
+        <p className="text-gray-500 mb-6">{businessesT(locale, "adjust_search_criteria")}</p>
         <Button variant="outline" onClick={onClearFilters}>
-          Clear Filters
+          {businessesT(locale, "clear_filters")}
         </Button>
       </div>
     );

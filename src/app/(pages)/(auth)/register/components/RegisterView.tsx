@@ -18,6 +18,8 @@ import {
 import type { RegisterViewProps } from "../types";
 import { useSearchParams } from "next/navigation";
 import { withCategoryQuery } from "@global/lib/slices";
+import { useLocale } from "@global/hooks/useLocale";
+import { authT } from "@/(pages)/(auth)/i18n";
 
 export default function RegisterView({
   name,
@@ -63,6 +65,8 @@ export default function RegisterView({
   categories,
   intendedIndustryLabel,
 }: Readonly<RegisterViewProps>) {
+  const { locale } = useLocale();
+  const tr = (key: Parameters<typeof authT>[1]) => authT(locale, key);
   const searchParams = useSearchParams();
   const categoryParam = searchParams.get("category");
   const loginHref = categoryParam ? withCategoryQuery("/login", categoryParam) : "/login";
@@ -114,6 +118,29 @@ export default function RegisterView({
     return "bg-white/18 text-white/75";
   };
 
+  const getStepLabel = (stepNumber: number): string => {
+    if (stepNumber === 1) {
+      return tr("register_step_owner");
+    }
+    if (stepNumber === 2) {
+      return tr("register_step_business");
+    }
+    if (stepNumber === 3) {
+      return tr("register_step_optional");
+    }
+    return tr("register_step_request");
+  };
+
+  const getPrimaryActionLabel = (): string => {
+    if (loading) {
+      return tr("register_creating_account");
+    }
+    if (isFinalBusinessStep) {
+      return tr("register_create_owner_business");
+    }
+    return tr("register_create_account");
+  };
+
   return (
     <div className="text-slate-100">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -134,21 +161,21 @@ export default function RegisterView({
                   <Image src="/assets/KayedniLogo.png" alt="kayedni Logo" width={28} height={28} />
                 </div>
                 <div>
-                  <p className="text-xs uppercase tracking-[0.2em] text-white/60">kayedni OS</p>
-                  <h1 className="text-2xl font-semibold">Launch your account in minutes</h1>
+                  <p className="text-xs uppercase tracking-[0.2em] text-white/60">{tr("auth_brand_os")}</p>
+                  <h1 className="text-2xl font-semibold">{tr("register_hero_title")}</h1>
                 </div>
               </div>
 
               <div className="space-y-4 max-w-lg">
-                <p className="text-4xl sm:text-5xl font-bold leading-tight">Start with confidence.</p>
+                <p className="text-4xl sm:text-5xl font-bold leading-tight">{tr("register_start_confidence")}</p>
                 <p className="text-sm text-white/80">
-                  Personal users register in one step. Business owners follow 3 simple steps, with an extra industry request step only when needed.
+                  {tr("register_hero_desc")}
                 </p>
                 {isBusinessOwner && !registered && (
                   <div className="rounded-xl border border-white/20 bg-white/10 p-4 backdrop-blur-sm">
                     <div className={`grid w-full gap-2 text-xs sm:text-sm font-medium text-white/90 ${stepGridClass}`}>
                       {visibleSteps.map((stepNumber) => {
-                        const label = stepNumber === 1 ? "Owner" : stepNumber === 2 ? "Business" : stepNumber === 3 ? "Optional" : "Request";
+                        const label = getStepLabel(stepNumber);
                         const status = resolveStepStatus(stepNumber);
 
                         return (
@@ -167,17 +194,17 @@ export default function RegisterView({
                   </div>
                 )}
                 <div className="flex flex-wrap gap-2 text-xs text-white/80">
-                  <span className="rounded-full bg-white/10 px-3 py-1">Step-based flow</span>
-                  <span className="rounded-full bg-white/10 px-3 py-1">Secure by design</span>
-                  <span className="rounded-full bg-white/10 px-3 py-1">Fast onboarding</span>
+                  <span className="rounded-full bg-white/10 px-3 py-1">{tr("register_step_flow")}</span>
+                  <span className="rounded-full bg-white/10 px-3 py-1">{tr("login_secure_design")}</span>
+                  <span className="rounded-full bg-white/10 px-3 py-1">{tr("register_fast_onboarding")}</span>
                 </div>
               </div>
 
               <div className="flex items-center gap-3 text-xs text-white/75">
                 <div className="h-10 w-10 rounded-full bg-white/10 backdrop-blur flex items-center justify-center">★</div>
                 <div>
-                  <p className="font-semibold">Trusted by busy teams</p>
-                  <p className="text-white/60">Optimized for mobile and desktop, day or night.</p>
+                  <p className="font-semibold">{tr("auth_trusted_title")}</p>
+                  <p className="text-white/60">{tr("auth_trusted_desc")}</p>
                 </div>
               </div>
             </div>
@@ -187,15 +214,15 @@ export default function RegisterView({
             <div className="h-full p-8 sm:p-10 flex flex-col justify-center">
               <div className="mb-8 flex items-center justify-between gap-4">
                 <div>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">Create account</p>
-                  <h2 className="text-2xl font-semibold">Join kayedni</h2>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">{tr("register_create_account")}</p>
+                  <h2 className="text-2xl font-semibold">{tr("register_join_kayedni")}</h2>
                 </div>
                 <Link
                   href={loginHref}
                   className="hidden sm:inline-flex items-center gap-2 rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:border-slate-300 dark:border-slate-800 dark:text-slate-100 dark:hover:border-slate-700"
                 >
-                  Have one?{" "}
-                  <span className="text-[var(--color-primary)]">Sign in</span>
+                  {tr("register_have_one")}{" "}
+                  <span className="text-[var(--color-primary)]">{tr("login_submit")}</span>
                 </Link>
               </div>
 
@@ -208,21 +235,21 @@ export default function RegisterView({
                           ✓
                         </span>
                         <div>
-                          <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-200">Registration steps completed</p>
-                          <p className="text-xs text-emerald-700/90 dark:text-emerald-300/90">Owner account and business details are complete.</p>
+                          <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-200">{tr("register_steps_completed")}</p>
+                          <p className="text-xs text-emerald-700/90 dark:text-emerald-300/90">{tr("register_owner_details_complete")}</p>
                         </div>
                       </div>
                     </div>
                   )}
 
                   <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
-                    <h3 className="text-lg font-semibold">Check your email</h3>
+                    <h3 className="text-lg font-semibold">{tr("register_check_email")}</h3>
                     <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
-                      {registrationMessage ?? "Please verify your email to activate your account."}
+                      {registrationMessage ?? tr("register_verify_email")}
                     </p>
                     {registeredEmail && (
                       <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-                        Sent to <strong>{registeredEmail}</strong>
+                        {tr("register_sent_to")} <strong>{registeredEmail}</strong>
                       </p>
                     )}
                     <div className="mt-6 flex justify-center gap-3">
@@ -230,13 +257,13 @@ export default function RegisterView({
                         href={loginHref}
                         className="inline-flex items-center px-4 py-2 rounded-full bg-[var(--color-primary)] text-white shadow-md"
                       >
-                        Go to Login
+                        {tr("common_go_to_login")}
                       </Link>
                       <Link
                         href="/"
                         className="inline-flex items-center px-4 py-2 rounded-full border border-slate-200 text-slate-700 hover:border-slate-300 dark:border-slate-800 dark:text-slate-200"
                       >
-                        Home
+                        {tr("register_home")}
                       </Link>
                     </div>
                   </div>
@@ -256,32 +283,32 @@ export default function RegisterView({
                     className="space-y-5"
                   >
                     <div className="flex flex-wrap items-center gap-3 text-sm text-slate-600 dark:text-slate-300">
-                      <span className="font-medium text-slate-800 dark:text-white">Account type</span>
+                      <span className="font-medium text-slate-800 dark:text-white">{tr("register_account_type")}</span>
                       <button
                         type="button"
                         onClick={() => setRole("CLIENT")}
                         className={`rounded-full border px-3 py-1 transition ${role === "CLIENT" ? "border-[var(--color-primary)] bg-[var(--color-primary)]/10 text-[var(--color-primary)]" : "border-slate-200 text-slate-600 hover:border-slate-300 dark:border-slate-800 dark:text-slate-300 dark:hover:border-slate-700"}`}
                       >
-                        Personal
+                        {tr("register_personal")}
                       </button>
                       <button
                         type="button"
                         onClick={() => setRole("BUSINESS_OWNER")}
                         className={`rounded-full border px-3 py-1 transition ${role === "BUSINESS_OWNER" ? "border-[var(--color-primary)] bg-[var(--color-primary)]/10 text-[var(--color-primary)]" : "border-slate-200 text-slate-600 hover:border-slate-300 dark:border-slate-800 dark:text-slate-300 dark:hover:border-slate-700"}`}
                       >
-                        Business
+                        {tr("register_business")}
                       </button>
                     </div>
 
                     {isStep1 && (
                       <>
                         <div className="space-y-2">
-                          <Label htmlFor="name" className="text-sm font-medium">Full Name</Label>
+                          <Label htmlFor="name" className="text-sm font-medium">{tr("register_full_name")}</Label>
                           <Input
                             id="name"
                             name="name"
                             type="text"
-                            placeholder="Alex Morgan"
+                            placeholder={tr("register_name_placeholder")}
                             value={name}
                             onChange={(e) => setName(e.target.value)}
                             required
@@ -290,12 +317,12 @@ export default function RegisterView({
                         </div>
 
                         <div className="space-y-2">
-                          <Label htmlFor="email" className="text-sm font-medium">Email</Label>
+                          <Label htmlFor="email" className="text-sm font-medium">{tr("login_email")}</Label>
                           <Input
                             id="email"
                             name="email"
                             type="email"
-                            placeholder="you@kayedni.com"
+                            placeholder={tr("login_email_placeholder")}
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             required
@@ -305,7 +332,7 @@ export default function RegisterView({
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div className="space-y-2">
-                            <Label htmlFor="password" className="text-sm font-medium">Password</Label>
+                            <Label htmlFor="password" className="text-sm font-medium">{tr("login_password")}</Label>
                             <Input
                               id="password"
                               name="password"
@@ -320,7 +347,7 @@ export default function RegisterView({
                           </div>
 
                           <div className="space-y-2">
-                            <Label htmlFor="confirmPassword" className="text-sm font-medium">Confirm</Label>
+                            <Label htmlFor="confirmPassword" className="text-sm font-medium">{tr("register_confirm")}</Label>
                             <Input
                               id="confirmPassword"
                               name="confirmPassword"
@@ -342,13 +369,13 @@ export default function RegisterView({
                             className="mt-1 border-slate-300 data-[state=checked]:bg-[var(--color-primary)] data-[state=checked]:text-white dark:border-slate-700"
                           />
                           <Label htmlFor="terms" className="text-sm leading-relaxed">
-                            I agree to the {" "}
+                            {tr("register_terms_prefix")} {" "}
                             <Link href="/terms" className="text-[var(--color-primary)] hover:underline">
-                              Terms of Service
+                              {tr("register_terms")}
                             </Link>{" "}
-                            and {" "}
+                            {tr("register_and")} {" "}
                             <Link href="/privacy" className="text-[var(--color-primary)] hover:underline">
-                              Privacy Policy
+                              {tr("register_privacy")}
                             </Link>
                           </Label>
                         </div>
@@ -358,37 +385,37 @@ export default function RegisterView({
                     {isStep2 && (
                       <>
                         <div className="space-y-2">
-                          <Label htmlFor="businessName" className="text-sm font-medium">Business name</Label>
+                          <Label htmlFor="businessName" className="text-sm font-medium">{tr("register_business_name")}</Label>
                           <Input
                             id="businessName"
                             value={businessName}
                             onChange={(e) => setBusinessName(e.target.value)}
-                            placeholder="Downtown Barber Studio"
+                            placeholder={tr("register_business_name_placeholder")}
                             className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-slate-900 shadow-sm transition focus:border-[var(--color-primary)] focus-visible:ring-[var(--color-primary)] dark:border-slate-800 dark:bg-slate-900 dark:text-white"
                             required
                           />
                         </div>
 
                         <div className="space-y-2">
-                          <Label htmlFor="businessLocation" className="text-sm font-medium">Business location</Label>
+                          <Label htmlFor="businessLocation" className="text-sm font-medium">{tr("register_business_location")}</Label>
                           <Input
                             id="businessLocation"
                             value={businessLocation}
                             onChange={(e) => setBusinessLocation(e.target.value)}
-                            placeholder="Cairo, Nasr City"
+                            placeholder={tr("register_business_location_placeholder")}
                             className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-slate-900 shadow-sm transition focus:border-[var(--color-primary)] focus-visible:ring-[var(--color-primary)] dark:border-slate-800 dark:bg-slate-900 dark:text-white"
                             required
                           />
                         </div>
 
                         <div className="space-y-2">
-                          <Label htmlFor="businessCategory" className="text-sm font-medium">Business category</Label>
+                          <Label htmlFor="businessCategory" className="text-sm font-medium">{tr("register_business_category")}</Label>
                           <Select value={businessCategoryId} onValueChange={setBusinessCategoryId}>
                             <SelectTrigger
                               id="businessCategory"
                               className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-slate-900 shadow-sm transition focus:border-[var(--color-primary)] dark:border-slate-800 dark:bg-slate-900 dark:text-white"
                             >
-                              <SelectValue placeholder="Select your category" />
+                              <SelectValue placeholder={tr("register_select_category")} />
                             </SelectTrigger>
                             <SelectContent>
                               {categories.map((category) => (
@@ -396,17 +423,17 @@ export default function RegisterView({
                                   {category.name}
                                 </SelectItem>
                               ))}
-                              <SelectItem value="__OTHER__">Other (not listed)</SelectItem>
+                              <SelectItem value="__OTHER__">{tr("register_other_not_listed")}</SelectItem>
                             </SelectContent>
                           </Select>
                           {intendedIndustryLabel && intendedIndustryLabel.toLowerCase() !== "generic" && (
                             <p className="text-xs text-slate-500 dark:text-slate-400">
-                              We preselected <strong>{intendedIndustryLabel}</strong> from your landing page.
+                              {tr("register_preselected_prefix")} <strong>{intendedIndustryLabel}</strong> {tr("register_preselected_suffix")}
                             </p>
                           )}
                           {isOtherCategorySelected && (
                             <p className="text-xs text-amber-600 dark:text-amber-300">
-                              Category not found. You will submit an industry request in step 4.
+                              {tr("register_category_not_found")}
                             </p>
                           )}
                         </div>
@@ -416,35 +443,35 @@ export default function RegisterView({
                     {isStep3 && (
                       <>
                         <div className="space-y-2">
-                          <Label htmlFor="businessPhone" className="text-sm font-medium">Phone (optional)</Label>
+                          <Label htmlFor="businessPhone" className="text-sm font-medium">{tr("register_phone_optional")}</Label>
                           <Input
                             id="businessPhone"
                             value={businessPhone}
                             onChange={(e) => setBusinessPhone(e.target.value)}
-                            placeholder="+20 1X XXX XXXX"
+                            placeholder={tr("register_phone_placeholder")}
                             className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-slate-900 shadow-sm transition focus:border-[var(--color-primary)] focus-visible:ring-[var(--color-primary)] dark:border-slate-800 dark:bg-slate-900 dark:text-white"
                           />
                         </div>
 
                         <div className="space-y-2">
-                          <Label htmlFor="businessEmail" className="text-sm font-medium">Business email (optional)</Label>
+                          <Label htmlFor="businessEmail" className="text-sm font-medium">{tr("register_business_email_optional")}</Label>
                           <Input
                             id="businessEmail"
                             type="email"
                             value={businessEmail}
                             onChange={(e) => setBusinessEmail(e.target.value)}
-                            placeholder="business@example.com"
+                            placeholder={tr("register_business_email_placeholder")}
                             className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-slate-900 shadow-sm transition focus:border-[var(--color-primary)] focus-visible:ring-[var(--color-primary)] dark:border-slate-800 dark:bg-slate-900 dark:text-white"
                           />
                         </div>
 
                         <div className="space-y-2">
-                          <Label htmlFor="businessDescription" className="text-sm font-medium">Description (optional)</Label>
+                          <Label htmlFor="businessDescription" className="text-sm font-medium">{tr("register_description_optional")}</Label>
                           <Textarea
                             id="businessDescription"
                             value={businessDescription}
                             onChange={(e) => setBusinessDescription(e.target.value)}
-                            placeholder="Describe your services"
+                            placeholder={tr("register_description_placeholder")}
                             className="min-h-[100px] rounded-xl border border-slate-200 bg-white px-4 text-slate-900 shadow-sm transition focus:border-[var(--color-primary)] focus-visible:ring-[var(--color-primary)] dark:border-slate-800 dark:bg-slate-900 dark:text-white"
                           />
                         </div>
@@ -454,36 +481,36 @@ export default function RegisterView({
                     {isStep4 && (
                       <>
                         <div className="space-y-2">
-                          <Label htmlFor="otherIndustryName" className="text-sm font-medium">Your actual industry name</Label>
+                          <Label htmlFor="otherIndustryName" className="text-sm font-medium">{tr("register_actual_industry_name")}</Label>
                           <Input
                             id="otherIndustryName"
                             value={otherIndustryName}
                             onChange={(e) => setOtherIndustryName(e.target.value)}
-                            placeholder="e.g. Tattoo Studio"
+                            placeholder={tr("register_actual_industry_placeholder")}
                             className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-slate-900 shadow-sm transition focus:border-[var(--color-primary)] focus-visible:ring-[var(--color-primary)] dark:border-slate-800 dark:bg-slate-900 dark:text-white"
                             required
                           />
                         </div>
 
                         <div className="space-y-2">
-                          <Label htmlFor="otherIndustryDescription" className="text-sm font-medium">Describe your industry</Label>
+                          <Label htmlFor="otherIndustryDescription" className="text-sm font-medium">{tr("register_describe_industry")}</Label>
                           <Textarea
                             id="otherIndustryDescription"
                             value={otherIndustryDescription}
                             onChange={(e) => setOtherIndustryDescription(e.target.value)}
-                            placeholder="Tell us what you do so we can prioritize this niche"
+                            placeholder={tr("register_describe_industry_placeholder")}
                             className="min-h-[100px] rounded-xl border border-slate-200 bg-white px-4 text-slate-900 shadow-sm transition focus:border-[var(--color-primary)] focus-visible:ring-[var(--color-primary)] dark:border-slate-800 dark:bg-slate-900 dark:text-white"
                             required
                           />
                         </div>
 
                         <div className="space-y-2">
-                          <Label htmlFor="businessPhone" className="text-sm font-medium">Phone (required for follow-up)</Label>
+                          <Label htmlFor="businessPhone" className="text-sm font-medium">{tr("register_phone_required_followup")}</Label>
                           <Input
                             id="businessPhone"
                             value={businessPhone}
                             onChange={(e) => setBusinessPhone(e.target.value)}
-                            placeholder="+20 1X XXX XXXX"
+                            placeholder={tr("register_phone_placeholder")}
                             className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-slate-900 shadow-sm transition focus:border-[var(--color-primary)] focus-visible:ring-[var(--color-primary)] dark:border-slate-800 dark:bg-slate-900 dark:text-white"
                             required
                           />
@@ -500,29 +527,33 @@ export default function RegisterView({
                           disabled={loading}
                           className="h-12 rounded-full px-5"
                         >
-                          Back
+                          {tr("register_back")}
                         </Button>
                       )}
 
-                      {isBusinessOwner && currentStep < 3 ? (
+                      {isBusinessOwner && currentStep < 3 && (
                         <Button
                           type="button"
                           onClick={goToNextStep}
                           disabled={loading}
                           className="w-full h-12 rounded-full bg-[var(--color-primary)] text-white font-semibold shadow-lg shadow-[var(--color-primary)]/30 transition hover:-translate-y-0.5 hover:shadow-xl hover:shadow-[var(--color-primary)]/35 disabled:opacity-70"
                         >
-                          {currentStep === 1 ? "Continue to business details" : "Continue to optional details"}
+                          {currentStep === 1 ? tr("register_continue_business_details") : tr("register_continue_optional_details")}
                         </Button>
-                      ) : isBusinessOwner && currentStep === 3 && isOtherCategorySelected ? (
+                      )}
+
+                      {isBusinessOwner && currentStep === 3 && isOtherCategorySelected && (
                         <Button
                           type="button"
                           onClick={goToNextStep}
                           disabled={loading}
                           className="w-full h-12 rounded-full bg-[var(--color-primary)] text-white font-semibold shadow-lg shadow-[var(--color-primary)]/30 transition hover:-translate-y-0.5 hover:shadow-xl hover:shadow-[var(--color-primary)]/35 disabled:opacity-70"
                         >
-                          Continue to industry request
+                          {tr("register_continue_industry_request")}
                         </Button>
-                      ) : (
+                      )}
+
+                      {(!isBusinessOwner || currentStep > 3 || (isBusinessOwner && currentStep === 3 && !isOtherCategorySelected)) && (
                         <Button
                           type="button"
                           onClick={async () => {
@@ -531,7 +562,7 @@ export default function RegisterView({
                           disabled={loading}
                           className="w-full h-12 rounded-full bg-[var(--color-primary)] text-white font-semibold shadow-lg shadow-[var(--color-primary)]/30 transition hover:-translate-y-0.5 hover:shadow-xl hover:shadow-[var(--color-primary)]/35 disabled:opacity-70"
                         >
-                          {loading ? "Creating account..." : isFinalBusinessStep ? "Create owner + business" : "Create account"}
+                          {getPrimaryActionLabel()}
                         </Button>
                       )}
                     </div>
@@ -540,12 +571,12 @@ export default function RegisterView({
                   <div className="mt-8 flex flex-col gap-3 text-sm text-slate-500 dark:text-slate-400">
                     <div className="flex items-center gap-2">
                         <span className="h-1.5 w-8 rounded-full bg-[var(--color-primary)]/70" aria-hidden />{" "}
-                      Smooth onboarding for clients and business owners.
+                      {tr("register_smooth_onboarding")}
                     </div>
                     <div className="text-center">
-                      Already have an account?{" "}
+                      {tr("register_already_have_account")}{" "}
                         <Link href={loginHref} className="font-semibold text-[var(--color-primary)] hover:underline">
-                        Sign in
+                        {tr("login_submit")}
                       </Link>
                     </div>
                   </div>

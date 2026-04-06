@@ -8,6 +8,8 @@ import {
   CategorySearchResult,
   SearchParams,
 } from '@global/lib/api/business.api';
+import { useLocale } from '@global/hooks/useLocale';
+import { searchT } from '@global/lib/i18n/search';
 
 // Debounce delay in milliseconds (300ms is optimal for typeahead)
 const DEBOUNCE_DELAY = 300;
@@ -40,6 +42,7 @@ export interface UseSearchReturn {
 }
 
 export function useSearch(): UseSearchReturn {
+  const { locale } = useLocale();
   const [query, setQuery] = useState('');
   const [location, setLocation] = useState('');
   const [selectedDate, setSelectedDate] = useState('');
@@ -101,12 +104,12 @@ export function useSearch(): UseSearchReturn {
       });
       setResults(searchResults);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Search failed. Please try again.');
+      setError(err instanceof Error ? err.message : searchT(locale, 'error_search_retry'));
       setResults([]);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [locale]);
 
   const performCategorySearch = useCallback(async (
     categoryQuery: string,
@@ -126,7 +129,7 @@ export function useSearch(): UseSearchReturn {
       setCategoryResults(categoryData);
     } catch (err) {
       if (withLoading) {
-        setError(err instanceof Error ? err.message : 'Failed to load categories.');
+        setError(err instanceof Error ? err.message : searchT(locale, 'error_load_categories'));
       }
       setCategoryResults([]);
     } finally {
@@ -134,7 +137,7 @@ export function useSearch(): UseSearchReturn {
         setLoading(false);
       }
     }
-  }, []);
+  }, [locale]);
 
   const triggerDebouncedCategorySearch = useCallback((categoryQuery: string) => {
     if (debounceTimerRef.current) {
@@ -217,17 +220,17 @@ export function useSearch(): UseSearchReturn {
     }
 
     if (query.trim().length > 0 && query.trim().length < MIN_SEARCH_LENGTH && !location.trim()) {
-      setError('Type at least 2 characters to search businesses');
+      setError(searchT(locale, 'error_min_chars'));
       return;
     }
 
     if (!query.trim() && !location.trim()) {
-      setError('Please enter a search term or location');
+      setError(searchT(locale, 'error_enter_term_or_location'));
       return;
     }
 
     await performBusinessSearch(query, location, selectedDate);
-  }, [location, performBusinessSearch, query, selectedDate]);
+  }, [location, locale, performBusinessSearch, query, selectedDate]);
 
   const searchWithParams = useCallback(async (params: SearchParams) => {
     // Clear any pending debounce
@@ -236,7 +239,7 @@ export function useSearch(): UseSearchReturn {
     }
 
     if (!params.query && !params.location && !params.categoryId) {
-      setError('Please enter a search term or location');
+      setError(searchT(locale, 'error_enter_term_or_location'));
       return;
     }
 
@@ -251,7 +254,7 @@ export function useSearch(): UseSearchReturn {
       params.date ?? '',
       params.categoryId,
     );
-  }, [performBusinessSearch]);
+  }, [locale, performBusinessSearch]);
 
   const clearResults = useCallback(() => {
     setResults([]);

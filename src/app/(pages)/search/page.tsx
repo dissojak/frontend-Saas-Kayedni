@@ -9,8 +9,10 @@ import { Input } from '@components/ui/input';
 import SearchResults from '@components/home/SearchResults';
 import { useTracking } from '@global/hooks/useTracking';
 import { useSearch } from '@global/hooks/useSearch';
+import { useLocale } from '@global/hooks/useLocale';
 import TimeOnPageTracker from '@components/tracking/TimeOnPageTracker';
 import ScrollDepthTracker from '@components/tracking/ScrollDepthTracker';
+import { searchT } from '@global/lib/i18n/search';
 import { 
   Search, 
   MapPin, 
@@ -32,11 +34,19 @@ const PAGE_SIZE = 12;
 function SearchPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { locale } = useLocale();
   const { trackEvent, trackPageView } = useTracking();
   const searchContainerRef = React.useRef<HTMLDivElement>(null);
   const dateMenuRef = React.useRef<HTMLDivElement>(null);
 
   const [isDateMenuOpen, setIsDateMenuOpen] = useState(false);
+
+  let localeTag = 'en-US';
+  if (locale === 'fr') {
+    localeTag = 'fr-FR';
+  } else if (locale === 'ar') {
+    localeTag = 'ar';
+  }
 
   const toIsoDate = (value: Date) => {
     const year = value.getFullYear();
@@ -46,18 +56,18 @@ function SearchPageContent() {
   };
 
   const formatDateLabel = (isoDate: string) => {
-    if (!isoDate) return 'Any time';
+    if (!isoDate) return searchT(locale, 'any_time');
     const today = new Date();
     const tomorrow = new Date();
     tomorrow.setDate(today.getDate() + 1);
 
-    if (isoDate === toIsoDate(today)) return 'Today';
-    if (isoDate === toIsoDate(tomorrow)) return 'Tomorrow';
+    if (isoDate === toIsoDate(today)) return searchT(locale, 'today');
+    if (isoDate === toIsoDate(tomorrow)) return searchT(locale, 'tomorrow');
 
     const parsed = new Date(`${isoDate}T00:00:00`);
     return Number.isNaN(parsed.getTime())
-      ? 'Any time'
-      : parsed.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+      ? searchT(locale, 'any_time')
+      : parsed.toLocaleDateString(localeTag, { month: 'short', day: 'numeric' });
   };
   
   // Get initial values from URL
@@ -190,7 +200,7 @@ function SearchPageContent() {
         }
         setResults(sortedResults);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Search failed');
+        setError(err instanceof Error ? err.message : searchT(locale, 'error_search_failed'));
         setResults([]);
         setTotalElements(0);
         setTotalPages(0);
@@ -200,7 +210,7 @@ function SearchPageContent() {
     };
 
     performSearch();
-  }, [initialAll, initialQuery, initialLocation, initialDate, initialCategory, initialPage, sortBy]);
+  }, [initialAll, initialQuery, initialLocation, initialDate, initialCategory, initialPage, locale, sortBy]);
 
   // Handle new search
   const handleSearch = (e: React.FormEvent) => {
@@ -271,7 +281,7 @@ function SearchPageContent() {
             className="flex items-center gap-2 text-white hover:text-white mb-6 transition-colors cursor-pointer"
           >
             <ArrowLeft className="h-4 w-4" />
-            <span>Back</span>
+            <span>{searchT(locale, 'back')}</span>
           </button>
 
           {/* Search Form */}
@@ -292,7 +302,7 @@ function SearchPageContent() {
                       setIsSearchDropdownOpen(true);
                       handleQueryChange(value);
                     }}
-                    placeholder="Search for services..."
+                    placeholder={searchT(locale, 'search_services_placeholder')}
                     className="pl-12 py-6 text-lg bg-white dark:bg-slate-800 border-0 rounded-xl"
                   />
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
@@ -308,7 +318,7 @@ function SearchPageContent() {
                       setIsSearchDropdownOpen(true);
                       handleLocationChange(value);
                     }}
-                    placeholder="Location"
+                    placeholder={searchT(locale, 'location_placeholder')}
                     className="pl-12 py-6 text-lg bg-white dark:bg-slate-800 border-0 rounded-xl"
                   />
                   <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
@@ -343,7 +353,7 @@ function SearchPageContent() {
                           setIsDateMenuOpen(false);
                         }}
                       >
-                        Any time
+                        {searchT(locale, 'any_time')}
                       </button>
                       <button
                         type="button"
@@ -360,7 +370,7 @@ function SearchPageContent() {
                           setIsDateMenuOpen(false);
                         }}
                       >
-                        Today
+                        {searchT(locale, 'today')}
                       </button>
                       <button
                         type="button"
@@ -379,11 +389,13 @@ function SearchPageContent() {
                           setIsDateMenuOpen(false);
                         }}
                       >
-                        Tomorrow
+                        {searchT(locale, 'tomorrow')}
                       </button>
 
                       <div className="pt-2 border-t border-border">
-                        <label htmlFor="search-page-date" className="text-xs text-muted-foreground px-1">Pick a date</label>
+                        <label htmlFor="search-page-date" className="text-xs text-muted-foreground px-1">
+                          {searchT(locale, 'pick_date')}
+                        </label>
                         <input
                           id="search-page-date"
                           type="date"
@@ -410,7 +422,7 @@ function SearchPageContent() {
                   className="px-8 py-6 bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-accent)] hover:shadow-lg rounded-xl"
                 >
                   <Search className="h-5 w-5 mr-2" />
-                  Search
+                  {searchT(locale, 'search')}
                 </Button>
               </div>
             </form>
@@ -455,8 +467,14 @@ function SearchPageContent() {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
             <div>
               <h1 className="text-2xl font-bold dark:text-white">
-                {loading ? 'Searching...' : `Showing ${results.length} of ${totalElements} results`}
-                {initialQuery && <span className="text-gray-500 dark:text-gray-400"> for "{initialQuery}"</span>}
+                {loading
+                  ? searchT(locale, 'searching_short')
+                  : searchT(locale, 'showing_results', { shown: results.length, total: totalElements })}
+                {initialQuery && (
+                  <span className="text-gray-500 dark:text-gray-400">
+                    {searchT(locale, 'for_query', { query: initialQuery })}
+                  </span>
+                )}
               </h1>
               {initialLocation && (
                 <p className="text-gray-500 dark:text-gray-400 flex items-center gap-1 mt-1">
@@ -489,9 +507,9 @@ function SearchPageContent() {
                   }}
                   className="appearance-none bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg px-4 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
                 >
-                  <option value="relevance">Most Relevant</option>
-                  <option value="rating">Highest Rated</option>
-                  <option value="reviews">Most Reviewed</option>
+                  <option value="relevance">{searchT(locale, 'sort_relevance')}</option>
+                  <option value="rating">{searchT(locale, 'sort_rating')}</option>
+                  <option value="reviews">{searchT(locale, 'sort_reviews')}</option>
                 </select>
                 <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
               </div>
@@ -534,7 +552,7 @@ function SearchPageContent() {
           {error && !loading && (
             <div className="text-center py-16">
               <p className="text-red-500 dark:text-red-400 mb-4">{error}</p>
-              <Button onClick={() => router.refresh()}>Try Again</Button>
+              <Button onClick={() => router.refresh()}>{searchT(locale, 'try_again')}</Button>
             </div>
           )}
 
@@ -544,11 +562,11 @@ function SearchPageContent() {
               <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-gray-100 dark:bg-slate-800 flex items-center justify-center">
                 <Search className="h-10 w-10 text-gray-400" />
               </div>
-              <h2 className="text-xl font-semibold mb-2 dark:text-white">No results found</h2>
+              <h2 className="text-xl font-semibold mb-2 dark:text-white">{searchT(locale, 'no_results_found')}</h2>
               <p className="text-gray-500 dark:text-gray-400 mb-6">
-                Try adjusting your search or filters to find what you're looking for.
+                {searchT(locale, 'no_results_description')}
               </p>
-              <Button onClick={() => router.push('/')}>Back to Home</Button>
+              <Button onClick={() => router.push('/')}>{searchT(locale, 'back_to_home')}</Button>
             </div>
           )}
 
@@ -633,7 +651,7 @@ function SearchPageContent() {
 
                     <div className="mt-3 w-full rounded-md bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-accent)] px-3 py-2 text-sm font-medium text-white flex items-center justify-center">
                       <Clock className="h-4 w-4 mr-2" />
-                      Book Now
+                      {searchT(locale, 'book_now')}
                     </div>
                   </div>
                 </button>

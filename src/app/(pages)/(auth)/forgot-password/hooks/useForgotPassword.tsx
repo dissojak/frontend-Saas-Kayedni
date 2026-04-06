@@ -5,10 +5,14 @@ import { useRouter } from 'next/navigation';
 import { forgotPasswordAPI } from '../../api/auth.api';
 import { useTracking } from '@global/hooks/useTracking';
 import { logAuthEvent } from '@global/lib/authLogger';
+import { useLocale } from '@global/hooks/useLocale';
+import { authT } from '@/(pages)/(auth)/i18n';
 
 export function useForgotPassword() {
   const router = useRouter();
   const { trackEvent } = useTracking();
+  const { locale } = useLocale();
+  const tr = (key: Parameters<typeof authT>[1]) => authT(locale, key);
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -29,7 +33,7 @@ export function useForgotPassword() {
 
     try {
       if (!email) {
-        setError('Please enter your email address');
+        setError(tr('error_forgot_email_required'));
         trackEvent('forgot_password_failed', { reason: 'no_email_provided', stage: 'validation' });
         logAuthEvent({ action: 'forgot_password_failed', success: false, failReason: 'no_email_provided', failStage: 'validation' });
         setLoading(false);
@@ -50,12 +54,12 @@ export function useForgotPassword() {
           router.push('/reset-password');
         }, 2000);
       } else {
-        setError('Failed to send reset code. Please try again.');
+        setError(tr('error_forgot_send_failed'));
         trackEvent('forgot_password_failed', { reason: 'api_no_message', stage: 'api' });
         logAuthEvent({ action: 'forgot_password_failed', success: false, failReason: 'api_no_message', failStage: 'api', email });
       }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'An error occurred. Please try again.';
+      const msg = err instanceof Error ? err.message : tr('error_unknown_try_again');
       setError(msg);
       trackEvent('forgot_password_failed', { reason: msg, stage: 'network_error' });
       logAuthEvent({ action: 'forgot_password_failed', success: false, failReason: msg, failStage: 'network_error', email });

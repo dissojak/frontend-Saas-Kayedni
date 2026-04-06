@@ -4,8 +4,13 @@ import React from 'react';
 import Link from 'next/link';
 import Layout from '@components/layout/Layout';
 import { Button } from '@components/ui/button';
+import { useLocale } from '@global/hooks/useLocale';
+import { authT } from '@/(pages)/(auth)/i18n';
 
 export default function ActivationSuccess() {
+	const { locale } = useLocale();
+	const tr = (key: Parameters<typeof authT>[1]) => authT(locale, key);
+
 	return (
 		<Layout>
 			<div className="min-h-[60vh] flex items-center justify-center">
@@ -15,15 +20,15 @@ export default function ActivationSuccess() {
 							<path d="M20 6L9 17l-5-5" />
 						</svg>
 					</div>
-					<h1 className="text-2xl font-semibold mb-2">Account Activated</h1>
-					<p className="text-gray-600 mb-6">Your account has been successfully activated. You can now log in and start booking services.</p>
+					<h1 className="text-2xl font-semibold mb-2">{tr('activation_success_title')}</h1>
+					<p className="text-gray-600 mb-6">{tr('activation_success_desc')}</p>
 
 					<div className="flex flex-col sm:flex-row gap-3 justify-center">
 						<Link href="/login" className="w-full sm:w-auto">
-							<Button className="w-full">Go to Login</Button>
+							<Button className="w-full">{tr('common_go_to_login')}</Button>
 						</Link>
 						<Link href="/" className="w-full sm:w-auto">
-							<Button variant="outline" className="w-full">Return Home</Button>
+							<Button variant="outline" className="w-full">{tr('common_return_home')}</Button>
 						</Link>
 					</div>
 				</div>

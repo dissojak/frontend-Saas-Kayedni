@@ -3,51 +3,16 @@
 import React, { useState } from 'react';
 import Layout from '@components/layout/Layout';
 import { Button } from '@components/ui/button';
-import { ArrowRight, CheckCircle2 } from 'lucide-react';
+import { CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
+import { useLocale } from '@global/hooks/useLocale';
+import { getFaqCopy, getFaqItems, type FaqTab } from './i18n';
 
 export default function FAQPage() {
-  const [activeTab, setActiveTab] = useState<'client' | 'business'>('client');
-
-  const clientFAQs = [
-    {
-      q: 'Is Kayedni really free for clients?',
-      a: 'Yes, absolutely! As a client, you can browse, search, and book appointments with local professionals completely free of charge. There are no hidden fees or subscriptions for booking services.'
-    },
-    {
-      q: 'Do I need to create an account to book?',
-      a: 'You can browse services and start booking without an account, but you’ll need to log in or create an account to complete the checkout, manage your bookings, and leave reviews.'
-    },
-    {
-      q: 'How do I cancel or reschedule an appointment?',
-      a: 'You can easily manage your appointments from your "My Bookings" dashboard. Simply select the appointment you wish to change and follow the prompts.'
-    },
-    {
-      q: 'Can I leave reviews for businesses?',
-      a: 'Yes! We encourage you to share your experience. Verified reviews help other users find the best professionals.'
-    }
-  ];
-
-  const businessFAQs = [
-    {
-      q: 'What are the pricing options for businesses?',
-      a: 'We offer a flexible premium model for businesses. You will have full access to all features, including advanced analytics, automated reminders, and marketing tools.'
-    },
-    {
-      q: 'Do you offer a free trial?',
-      a: 'Yes! We understand you want to try before you commit. New businesses can choose between a 14-day free full-access trial OR get 50% off for the first 3 months. You can select the offer that best suits your needs when you sign up.'
-    },
-    {
-      q: 'Can I switch my plan later?',
-      a: 'Absolutely. You can upgrade or adjust your plan at any time from your business dashboard settings.'
-    },
-    {
-      q: 'How do I get paid?',
-      a: 'Clients pay you directly when the service happens. Kayedni does not handle payments. We simply help manage your bookings and scheduling, so you stay in full control of your revenue. Payment processing through Kayedni may be added in the future.'
-    }
-  ];
-
-  const faqs = activeTab === 'client' ? clientFAQs : businessFAQs;
+  const [activeTab, setActiveTab] = useState<FaqTab>('client');
+  const { locale } = useLocale();
+  const copy = getFaqCopy(locale);
+  const faqs = getFaqItems(locale, activeTab);
 
   return (
     <Layout>
@@ -56,10 +21,10 @@ export default function FAQPage() {
         <section className="relative py-20 bg-muted/30 overflow-hidden">
           <div className="container mx-auto px-4 relative z-10 text-center">
             <h1 className="text-4xl md:text-6xl font-bold mb-6 text-foreground tracking-tight">
-              Frequently Asked Questions
+              {copy.pageTitle}
             </h1>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Everything you need to know about using Kayedni, whether you're booking a service or growing your business.
+              {copy.pageSubtitle}
             </p>
           </div>
           {/* Decorative background elements */}
@@ -82,7 +47,7 @@ export default function FAQPage() {
                       : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
-                  For Clients
+                  {copy.tabClient}
                 </button>
                 <button
                   onClick={() => setActiveTab('business')}
@@ -92,7 +57,7 @@ export default function FAQPage() {
                       : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
-                  For Businesses
+                  {copy.tabBusiness}
                 </button>
               </div>
             </div>
@@ -107,12 +72,12 @@ export default function FAQPage() {
                      <div className="inline-flex items-center justify-center p-3 bg-green-100 dark:bg-green-900/30 text-green-600 rounded-full mb-6">
                         <CheckCircle2 className="h-8 w-8" />
                      </div>
-                     <h2 className="text-3xl font-bold mb-4">100% Free for Clients</h2>
+                     <h2 className="text-3xl font-bold mb-4">{copy.clientCardTitle}</h2>
                      <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
-                       We believe finding the right service shouldn't cost you a dime. Enjoy unlimited access to our platform, compare professionals, and book instantly without any booking fees.
+                       {copy.clientCardDescription}
                      </p>
                      <Button size="lg" className="rounded-full px-8" asChild>
-                       <Link href="/search">Start Booking Now</Link>
+                       <Link href="/search">{copy.clientCardCta}</Link>
                      </Button>
                    </div>
                  ) : (
@@ -120,12 +85,12 @@ export default function FAQPage() {
                      <div className="inline-flex items-center justify-center p-3 bg-brand-purple/10 text-brand-purple rounded-full mb-6">
                         <SparklesIcon className="h-8 w-8" />
                      </div>
-                     <h2 className="text-3xl font-bold mb-4">Powerful Tools to Grow Your Business</h2>
+                     <h2 className="text-3xl font-bold mb-4">{copy.businessCardTitle}</h2>
                      <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-6">
-                       Unlock premium features designed to streamline your operations and boost revenue.
+                       {copy.businessCardDescription}
                      </p>
                      <div className="max-w-2xl mx-auto mb-6 text-sm text-muted-foreground bg-muted/20 p-3 rounded-lg">
-                       <strong className="text-foreground">Payment flow:</strong> Clients are not charged by Kayedni — payments are handled via our integrated payment partners and deposited directly to your business account. Kayedni does not hold client funds, so your revenue remains under your control.
+                       <strong className="text-foreground">{copy.paymentFlowLabel}</strong> {copy.paymentFlowText}
                      </div>
                      
                      {/* Business Offer Highlights */}
@@ -134,9 +99,9 @@ export default function FAQPage() {
                           <div className="flex items-start gap-4">
                             <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold shrink-0 text-sm">1</div>
                             <div>
-                              <h3 className="font-bold text-foreground mb-1 group-hover:text-primary transition-colors">14-Day Free Trial</h3>
-                              <p className="text-sm text-muted-foreground">Test drive all premium features with zero commitment.</p>
-                              <p className="text-xs text-muted-foreground mt-2">Mutually exclusive: choosing this trial excludes the 50% off 3-month offer.</p>
+                              <h3 className="font-bold text-foreground mb-1 group-hover:text-primary transition-colors">{copy.offerOneTitle}</h3>
+                              <p className="text-sm text-muted-foreground">{copy.offerOneDescription}</p>
+                              <p className="text-xs text-muted-foreground mt-2">{copy.offerOneNote}</p>
                             </div>
                           </div>
                         </div>
@@ -144,21 +109,21 @@ export default function FAQPage() {
                           <div className="flex items-start gap-4">
                             <div className="h-8 w-8 rounded-full bg-brand-secondary/10 flex items-center justify-center text-brand-secondary font-bold shrink-0 text-sm">2</div>
                             <div>
-                              <h3 className="font-bold text-foreground mb-1 group-hover:text-brand-secondary transition-colors">50% Off First 3 Months</h3>
-                              <p className="text-sm text-muted-foreground">Save big when you're ready to commit to growth.</p>
-                              <p className="text-xs text-muted-foreground mt-2">Mutually exclusive: selecting this 50% offer means you cannot also take the 14-day free trial.</p>
+                              <h3 className="font-bold text-foreground mb-1 group-hover:text-brand-secondary transition-colors">{copy.offerTwoTitle}</h3>
+                              <p className="text-sm text-muted-foreground">{copy.offerTwoDescription}</p>
+                              <p className="text-xs text-muted-foreground mt-2">{copy.offerTwoNote}</p>
                             </div>
                           </div>
                         </div>
                      </div>
                      
                     <div className="text-sm text-muted-foreground mb-8 bg-muted/50 inline-block px-4 py-2 rounded-lg">
-                      New businesses can choose <strong>one</strong> of these exclusive introductory offers upon signup — they are mutually exclusive. If you select the 14-day free trial, you will not be eligible for the 50% off for the first 3 months, and vice versa.
+                      {copy.offerSummary}
                     </div>
                      
                      <div className="flex justify-center">
                         <Button size="lg" className="rounded-full px-8"  asChild >
-                          <Link href="/business/register">List Your Business</Link>
+                          <Link href="/business/register">{copy.businessCardCta}</Link>
                         </Button>
                      </div>
                    </div>
@@ -184,7 +149,8 @@ export default function FAQPage() {
              {/* Support Contact */}
              <div className="text-center mt-20 mb-12">
                <p className="text-muted-foreground">
-                 Still have questions? <Link href="/contact" className="text-primary font-semibold hover:underline">Contact our support team</Link>
+                 {copy.supportPrefix}{' '}
+                 <Link href="/contact" className="text-primary font-semibold hover:underline">{copy.supportLink}</Link>
                </p>
              </div>
 
@@ -195,7 +161,7 @@ export default function FAQPage() {
   );
 }
 
-function SparklesIcon({ className }: { className?: string }) {
+function SparklesIcon({ className }: Readonly<{ className?: string }>) {
   return (
     <svg 
       xmlns="http://www.w3.org/2000/svg" 

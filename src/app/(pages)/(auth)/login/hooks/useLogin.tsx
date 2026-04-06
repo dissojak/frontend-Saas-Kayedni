@@ -8,12 +8,16 @@ import { UserRole } from '../../types';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTracking } from '@global/hooks/useTracking';
 import { logAuthEvent } from '@global/lib/authLogger';
+import { useLocale } from '@global/hooks/useLocale';
+import { authT } from '@/(pages)/(auth)/i18n';
 
 export function useLogin() {
   const auth = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const { trackEvent } = useTracking();
+  const { locale } = useLocale();
+  const tr = (key: Parameters<typeof authT>[1]) => authT(locale, key);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<UserRole>('CLIENT');
@@ -46,7 +50,7 @@ export function useLogin() {
       }
 
       // Login failed - show error message
-      setError(result.message || 'Login failed');
+      setError(result.message || tr('error_login_failed'));
       trackEvent('login_failed', {
         reason: result.message || 'invalid_credentials',
         role,
@@ -64,7 +68,7 @@ export function useLogin() {
           // Useful to detect credential stuffing (long/complex) vs dumb brute-force (short/simple)
           passwordLength: password.length,
           passwordHasUpper: /[A-Z]/.test(password),
-          passwordHasDigit: /[0-9]/.test(password),
+          passwordHasDigit: /\d/.test(password),
           passwordHasSpecial: /[^a-zA-Z0-9]/.test(password),
           serverMessage: result.message || null,
         },
@@ -87,7 +91,7 @@ export function useLogin() {
         metadata: {
           passwordLength: password.length,
           passwordHasUpper: /[A-Z]/.test(password),
-          passwordHasDigit: /[0-9]/.test(password),
+          passwordHasDigit: /\d/.test(password),
           passwordHasSpecial: /[^a-zA-Z0-9]/.test(password),
           errorMessage: msg,
         },
