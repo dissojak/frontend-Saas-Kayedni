@@ -17,7 +17,7 @@ interface BusinessCategoryOption {
 }
 
 const OTHER_CATEGORY_VALUE = "__OTHER__";
-const OTHER_CATEGORY_ID = 25;
+const OTHER_CATEGORY_ID = 10;
 
 export function useRegister(defaultRole: UserRole = "CLIENT") {
   const { trackEvent } = useTracking();
@@ -94,6 +94,9 @@ export function useRegister(defaultRole: UserRole = "CLIENT") {
 
         const uniqueById = new Map<number, BusinessCategoryOption>();
         for (const item of found) {
+          if (item.id === OTHER_CATEGORY_ID) {
+            continue;
+          }
           uniqueById.set(item.id, { id: item.id, name: item.name });
         }
         setCategories(Array.from(uniqueById.values()));
