@@ -47,7 +47,7 @@ const FAQ_COPY: Record<LocaleCode, FaqCopy> = {
             'Unlock premium features designed to streamline your operations and boost revenue.',
         paymentFlowLabel: 'Payment flow:',
         paymentFlowText:
-            'Currently, clients pay directly or hand-to-hand outside Kayedni-Kayedni. Payment method for business subscriptions will be added later. Kayedni does not handle or hold client funds.',
+            'Clients currently pay businesses directly outside Kayedni. Subscription payment support for businesses will be added later. Kayedni does not hold client funds.',
         offerOneTitle: '14-Day Free Trial',
         offerOneDescription: 'Test drive all premium features with zero commitment.',
         offerOneNote: 'Mutually exclusive: choosing this trial excludes the 50% off 3-month offer.',
@@ -63,7 +63,7 @@ const FAQ_COPY: Record<LocaleCode, FaqCopy> = {
     fr: {
         pageTitle: 'Questions frequentes',
         pageSubtitle:
-            'Tout ce qu\'il faut savoir pour bien demarrer sur Kayedni, que vous reserviez un service ou que vous developpiez votre societe.',
+            'Tout ce qu\'il faut savoir pour bien demarrer sur Kayedni, que vous reserviez un service ou que vous developpiez votre business.',
         tabClient: 'Pour les clients',
         tabBusiness: 'Pour les businesses',
         clientCardTitle: '100% gratuit pour les clients',
@@ -75,7 +75,7 @@ const FAQ_COPY: Record<LocaleCode, FaqCopy> = {
             'Accedez a des fonctionnalites premium pour simplifier vos operations, ameliorer l\'experience client et augmenter vos revenus.',
         paymentFlowLabel: 'Flux de paiement :',
         paymentFlowText:
-            'Actuellement, les clients payent directement ou en main propre en dehors de Kayedni. Le mode de paiement pour les abonnements professionnels sera ajouté ultérieurement. Kayedni ne gère ni ne conserve les fonds des clients.',
+            'Les clients paient actuellement les businesses directement, en dehors de Kayedni. Le paiement des abonnements business sera ajoute plus tard. Kayedni ne conserve pas les fonds clients.',
         offerOneTitle: 'Essai gratuit de 14 jours',
         offerOneDescription: 'Testez toutes les fonctionnalites premium sans engagement.',
         offerOneNote: 'Offres exclusives : choisir cet essai exclut l\'offre -50% sur 3 mois.',
@@ -83,7 +83,7 @@ const FAQ_COPY: Record<LocaleCode, FaqCopy> = {
         offerTwoDescription: 'Economisez davantage quand vous etes pret a accelerer votre croissance.',
         offerTwoNote: 'Offres exclusives : choisir cette reduction de 50% exclut l\'essai gratuit de 14 jours.',
         offerSummary:
-            'Les nouveaux businesses peuvent choisir une seule offre de bienvenue lors de l\'inscription. Les deux offres ne sont pas cumulables.',
+            'Les nouveaux businesses choisissent une seule offre de bienvenue a l\'inscription. Les offres ne sont pas cumulables.',
         businessCardCta: 'Ajouter votre business',
         supportPrefix: 'Vous avez encore des questions ?',
         supportLink: 'Contacter notre equipe support',
@@ -102,7 +102,7 @@ const FAQ_COPY: Record<LocaleCode, FaqCopy> = {
         businessCardDescription:
             'فعّل مزايا احترافية تساعدك على تنظيم المواعيد، رفع كفاءة فريقك، وزيادة الايرادات.',
         paymentFlowLabel: 'طريقة الدفع:',
-        paymentFlowText: 'العملاء يدفعون للشركة مباشرة (نقدا او عبر وسيلة الدفع الخاصة بالشركة). سيتم اطلاق دفع اشتراكات الشركات لاحقا. قيدني لا يحتفظ باموال العملاء.',
+        paymentFlowText: 'العميل يدفع للشركة مباشرة خارج قيدني. سيتم اطلاق دفع اشتراكات الشركات لاحقا. قيدني لا يحتفظ باموال العملاء.',
         offerOneTitle: 'تجربة مجانية لمدة 14 يوما',
         offerOneDescription: 'جرّب جميع الميزات الاحترافية بدون التزام.',
         offerOneNote: 'عرض حصري: اختيار هذه التجربة يلغي عرض خصم 50% لمدة 3 اشهر.',

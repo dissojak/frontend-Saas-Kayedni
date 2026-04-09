@@ -192,8 +192,8 @@ const COPY: Record<LocaleCode, BusinessSolutionsCopy> = {
     heroTitle: 'Developpez votre societe avec une reservation plus intelligente',
     heroDescription:
       'Reduisez les taches manuelles, remplissez plus de creneaux et offrez une meilleure experience client.',
-    startTrial: 'Demarrer l\'essai gratuit',
-    viewPricing: 'Voir les tarifs',
+    startTrial: 'Essai gratuit',
+    viewPricing: 'Tarifs',
     stats: {
       revenue: 'Croissance moyenne du revenu',
       businesses: 'Businesses actifs',
@@ -217,7 +217,7 @@ const COPY: Record<LocaleCode, BusinessSolutionsCopy> = {
       { icon: '📊', title: 'Analyses actionnables', desc: 'Suivez revenu, occupation, absences et services les plus performants.' },
       { icon: '📱', title: 'Presence multi-canale', desc: 'Recevez les reservations depuis web, mobile et liens partages.' },
       { icon: '🔔', title: 'Notifications intelligentes', desc: 'Confirmations et rappels automatiques pour clients et equipe.' },
-      { icon: '🔗', title: 'Integrations', desc: 'Connectez les outils que votre societe utilise deja.' },
+      { icon: '🔗', title: 'Integrations', desc: 'Connectez les outils que votre business utilise deja.' },
     ],
     sectionRoiTitle: 'Un ROI mesurable',
     sectionRoiSubtitle: 'La plupart des businesses observent des resultats des le premier mois.',
@@ -228,7 +228,7 @@ const COPY: Record<LocaleCode, BusinessSolutionsCopy> = {
       { metric: '4.9★', benefit: 'Satisfaction client', desc: 'Un parcours de reservation fluide inspire confiance.' },
     ],
     sectionPricingTitle: 'Tarifs simples, valeur claire',
-    sectionPricingSubtitle: 'Choisissez la formule adaptee a l\'etape de votre societe.',
+    sectionPricingSubtitle: 'Choisissez la formule adaptee a votre business.',
     plans: [
       {
         name: 'Starter',
@@ -255,7 +255,7 @@ const COPY: Record<LocaleCode, BusinessSolutionsCopy> = {
         features: ['Operations illimitees', 'Equipe illimitee', 'Experience en marque blanche', 'Success manager dedie', 'Integrations sur mesure', 'Support SLA', 'Reporting avance'],
       },
     ],
-    mostPopular: 'Le plus choisi',
+    mostPopular: 'Populaire',
     getStarted: 'Commencer',
     allPlansInclude: 'Toutes les formules incluent :',
     includedItems: ['Acces a l\'equipe support', 'Infrastructure securisee', 'Sauvegardes automatiques', 'Acces mobile', 'Analyses essentielles', 'Notifications de rappel'],
@@ -287,22 +287,22 @@ const COPY: Record<LocaleCode, BusinessSolutionsCopy> = {
       { q: 'Combien de temps prend la mise en place ?', a: 'La plupart des businesses demarrent en moins de 15 minutes, avec accompagnement.' },
       { q: 'Puis-je l\'integrer a mon site web ?', a: 'Oui. Vous pouvez integrer la reservation sur votre site ou partager des liens de reservation marques.' },
       { q: 'Puis-je demander de nouvelles fonctionnalites ?', a: 'Oui. Notre feuille de route evolue fortement grace aux retours clients.' },
-      { q: 'Y a-t-il un engagement long terme ?', a: 'Non. Les formules restent flexibles et evoluent avec votre societe.' },
+      { q: 'Y a-t-il un engagement long terme ?', a: 'Non. Les formules restent flexibles et evoluent avec votre business.' },
       { q: 'Pouvez-vous migrer nos reservations existantes ?', a: 'Oui. Nous accompagnons la migration pour eviter toute interruption.' },
       { q: 'La plateforme est-elle securisee ?', a: 'Kayedni applique des standards modernes de securite pour proteger les donnees.' },
     ],
-    finalTitle: 'Pret a faire grandir votre societe ?',
+    finalTitle: 'Pret a faire grandir votre business ?',
     finalDescription: 'Rejoignez les businesses qui utilisent Kayedni pour optimiser les operations et augmenter les revenus.',
     talkToSales: 'Parler a l\'equipe commerciale',
-    noCardNote: 'Aucune carte requise. La mise en place prend quelques minutes.',
+    noCardNote: 'Sans carte bancaire. La mise en place prend quelques minutes.',
   },
   ar: {
-    badge: 'منصة حجوزات للشركات',
+    badge: 'منصة حجز للشركات',
     heroTitle: 'طوّر شركتك بحجوزات أذكى',
     heroDescription:
       'قلل الجهد اليدوي، املأ مواعيد اكثر، وقدم تجربة عميل احترافية من اول يوم.',
     startTrial: 'ابدأ التجربة المجانية',
-    viewPricing: 'عرض الاسعار',
+    viewPricing: 'الاسعار',
     stats: {
       revenue: 'متوسط نمو الايرادات',
       businesses: 'شركة نشطة',
@@ -403,7 +403,7 @@ const COPY: Record<LocaleCode, BusinessSolutionsCopy> = {
     finalTitle: 'جاهز لتوسيع شركتك؟',
     finalDescription: 'انضم الى الشركات التي تستخدم قيدني لتحسين التشغيل ورفع الايرادات.',
     talkToSales: 'تواصل مع المبيعات',
-    noCardNote: 'لا حاجة لبطاقة بنكية. الاعداد لا يستغرق سوى دقائق.',
+    noCardNote: 'بدون بطاقة بنكية. اعداد المنصة يتم خلال دقائق.',
   },
 };
 

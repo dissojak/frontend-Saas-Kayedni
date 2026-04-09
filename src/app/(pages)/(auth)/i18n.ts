@@ -334,7 +334,7 @@ const MESSAGES: Record<LocaleCode, Record<AuthKey, string>> = {
         login_forgot: "Oublie ?",
         login_sign_in_as: "Se connecter en tant que",
         login_role_client: "Client",
-        login_role_business: "Entreprise",
+        login_role_business: "Business",
         login_submitting: "Connexion...",
         login_submit: "Se connecter",
         login_quick_secure: "Rapide, reactive et securisee pour chaque role.",
