@@ -63,19 +63,19 @@ const FAQ_COPY: Record<LocaleCode, FaqCopy> = {
     fr: {
         pageTitle: 'Questions frequentes',
         pageSubtitle:
-            "Tout ce que vous devez savoir pour utiliser Kayedni, que vous reserviez un service ou que vous developpiez votre entreprise.",
+            'Tout ce qu\'il faut savoir pour bien demarrer sur Kayedni, que vous reserviez un service ou que vous developpiez votre societe.',
         tabClient: 'Pour les clients',
-        tabBusiness: 'Pour les entreprises',
+        tabBusiness: 'Pour les businesses',
         clientCardTitle: '100% gratuit pour les clients',
         clientCardDescription:
             'Trouver le bon service ne doit rien vous couter. Profitez d\'un acces illimite, comparez les professionnels et reservez instantanement sans frais de reservation.',
         clientCardCta: 'Commencer a reserver',
-        businessCardTitle: 'Des outils puissants pour developper votre entreprise',
+        businessCardTitle: 'Des outils puissants pour developper votre business',
         businessCardDescription:
-            'Debloquez des fonctionnalites premium pour optimiser vos operations et augmenter vos revenus.',
+            'Accedez a des fonctionnalites premium pour simplifier vos operations, ameliorer l\'experience client et augmenter vos revenus.',
         paymentFlowLabel: 'Flux de paiement :',
         paymentFlowText:
-            'Actuellement, les clients payent directement ou en main propre en dehors de Kayedni-Kayedni. Le mode de paiement pour les abonnements professionnels sera ajouté ultérieurement. Kayedni ne gère ni ne conserve les fonds des clients.',
+            'Actuellement, les clients payent directement ou en main propre en dehors de Kayedni. Le mode de paiement pour les abonnements professionnels sera ajouté ultérieurement. Kayedni ne gère ni ne conserve les fonds des clients.',
         offerOneTitle: 'Essai gratuit de 14 jours',
         offerOneDescription: 'Testez toutes les fonctionnalites premium sans engagement.',
         offerOneNote: 'Offres exclusives : choisir cet essai exclut l\'offre -50% sur 3 mois.',
@@ -83,33 +83,33 @@ const FAQ_COPY: Record<LocaleCode, FaqCopy> = {
         offerTwoDescription: 'Economisez davantage quand vous etes pret a accelerer votre croissance.',
         offerTwoNote: 'Offres exclusives : choisir cette reduction de 50% exclut l\'essai gratuit de 14 jours.',
         offerSummary:
-            'Les nouvelles entreprises peuvent choisir une seule de ces offres de bienvenue lors de l\'inscription.',
-        businessCardCta: 'Ajouter votre entreprise',
+            'Les nouveaux businesses peuvent choisir une seule offre de bienvenue lors de l\'inscription. Les deux offres ne sont pas cumulables.',
+        businessCardCta: 'Ajouter votre business',
         supportPrefix: 'Vous avez encore des questions ?',
         supportLink: 'Contacter notre equipe support',
     },
     ar: {
         pageTitle: 'الاسئلة الشائعة',
         pageSubtitle:
-            'كل ما تحتاج معرفته لاستخدام قيدني-Kayedni،سواء كنت تحجز خدمة او تطور عملك و شركتك الخاصة.',
+            'كل ما تحتاج معرفته للانطلاق مع قيدني، سواء كنت تحجز خدمة او تدير شركتك.',
         tabClient: 'للعملاء',
         tabBusiness: 'للشركات',
         clientCardTitle: 'مجاني 100% للعملاء',
         clientCardDescription:
-            'نؤمن ان العثور على الخدمة المناسبة يجب الا يكلفك شيئا. استمتع بوصول غير محدود للمنصة، وقارن بين المهنيين واحجز فورا بدون رسوم حجز.',
+            'نؤمن ان الوصول الى الخدمة المناسبة يجب ان يكون سهلا ومجانيا. قارن بين مقدمي الخدمة واحجز خلال ثوانٍ بدون رسوم حجز.',
         clientCardCta: 'ابدأ الحجز الان',
-        businessCardTitle: 'ادوات قوية لتطوير عملك',
+        businessCardTitle: 'ادوات قوية لنمو شركتك',
         businessCardDescription:
-            'افتح ميزات احترافية مصممة لتبسيط المعاملات، تنظيم المواعيد وزيادة الايرادات.',
+            'فعّل مزايا احترافية تساعدك على تنظيم المواعيد، رفع كفاءة فريقك، وزيادة الايرادات.',
         paymentFlowLabel: 'طريقة الدفع:',
-        paymentFlowText: "طريقة الدفع للاشتراكات ستضاف لاحقاً. العملاء حالياً يدفعون نقداً أو مباشرة خارج قيدني-Kayedni. قيدني لا يتعامل مع المدفوعات ولا يحتفظ بأموال العملاء.",
+        paymentFlowText: 'العملاء يدفعون للشركة مباشرة (نقدا او عبر وسيلة الدفع الخاصة بالشركة). سيتم اطلاق دفع اشتراكات الشركات لاحقا. قيدني لا يحتفظ باموال العملاء.',
         offerOneTitle: 'تجربة مجانية لمدة 14 يوما',
         offerOneDescription: 'جرّب جميع الميزات الاحترافية بدون التزام.',
         offerOneNote: 'عرض حصري: اختيار هذه التجربة يلغي عرض خصم 50% لمدة 3 اشهر.',
         offerTwoTitle: 'خصم 50% لاول 3 اشهر',
         offerTwoDescription: 'وفر كثيرا عندما تكون مستعدا للنمو.',
         offerTwoNote: 'عرض حصري: اختيار خصم 50% يعني عدم امكانية الحصول على تجربة 14 يوما.',
-        offerSummary: 'يمكن للشركات الجديدة اختيار عرض ترحيبي واحد فقط عند التسجيل.',
+        offerSummary: 'يمكن للشركات الجديدة اختيار عرض ترحيبي واحد فقط عند التسجيل، ولا يمكن الجمع بين العرضين.',
         businessCardCta: 'اضف نشاطك التجاري',
         supportPrefix: 'ما زالت لديك اسئلة؟',
         supportLink: 'تواصل مع فريق الدعم',
@@ -170,18 +170,18 @@ const FAQ_ITEMS: Record<LocaleCode, Record<FaqTab, FaqItem[]>> = {
                 a: 'Ouvrez votre tableau de bord Mes reservations, selectionnez le rendez-vous et suivez les etapes.',
             },
             {
-                q: 'Puis-je laisser des avis sur les entreprises ?',
+                q: 'Puis-je laisser des avis sur les businesses ?',
                 a: 'Oui. Les avis verifies aident les autres utilisateurs a choisir les meilleurs professionnels.',
             },
         ],
         business: [
             {
-                q: 'Quelles sont les options tarifaires pour les entreprises ?',
+                q: 'Quelles sont les options tarifaires pour les businesses ?',
                 a: 'Nous proposons un modele premium avec analyses avancees, rappels automatises et outils de croissance.',
             },
             {
                 q: 'Proposez-vous un essai gratuit ?',
-                a: 'Oui. Les nouvelles entreprises peuvent choisir entre 14 jours d\'essai complet ou 50% de reduction pendant 3 mois.',
+                a: 'Oui. Les nouveaux businesses peuvent choisir entre 14 jours d\'essai complet ou 50% de reduction pendant 3 mois.',
             },
             {
                 q: 'Puis-je changer de formule plus tard ?',
@@ -189,7 +189,7 @@ const FAQ_ITEMS: Record<LocaleCode, Record<FaqTab, FaqItem[]>> = {
             },
             {
                 q: 'Comment suis-je payé ?',
-                a: 'Le mode de paiement pour les abonnements professionnels sera ajouté ultérieurement. Actuellement, les clients payent directement ou en main propre en dehors de Kayedni. Kayedni ne gère ni ne conserve les fonds des clients, tout en gérant uniquement les réservations.'
+                a: 'Les clients paient votre business directement. Kayedni se concentre actuellement sur la gestion des rendez-vous et ne conserve pas les fonds clients.'
             },
         ],
     },
@@ -215,7 +215,7 @@ const FAQ_ITEMS: Record<LocaleCode, Record<FaqTab, FaqItem[]>> = {
         business: [
             {
                 q: 'ما خيارات التسعير للشركات؟',
-                a: 'نوفر نموذج اشتراك احترافي يتضمن تحليلات متقدمة ومنبهات ذكية وادوات أخرى للنمو.',
+                a: 'نوفر باقات مرنة للشركات تشمل تحليلات متقدمة، تنبيهات ذكية، وادوات عملية لدعم النمو.',
             },
             {
                 q: 'هل توفرون فترة تجريبية مجانية؟',
@@ -223,11 +223,11 @@ const FAQ_ITEMS: Record<LocaleCode, Record<FaqTab, FaqItem[]>> = {
             },
             {
                 q: 'هل يمكنني تغيير الخطة لاحقا؟',
-                a: 'بالتأكيد. يمكنك ترقية خطتك او تعديلها في اي وقت من اعدادات النشاط.',
+                a: 'نعم بالتأكيد. يمكنك ترقية الخطة او تعديلها في اي وقت من لوحة تحكم الشركة.',
             },
             {
                 q: 'كيف تتم المدفوعات؟',
-                a: 'طريقة الدفع للاشتراكات التجارية ستضاف لاحقاً. حالياً، العملاء يدفعون نقداً أو مباشرة خارج قيدني-Kayedni. قيدني لا يتعامل مع المدفوعات ولا يحتفظ بأموال العملاء، بينما يدير فقط عمليات الحجز.'
+                a: 'العميل يدفع للشركة مباشرة. قيدني يدير الحجوزات والمواعيد حاليا، ولا يحتفظ باي مبالغ تخص العملاء.'
             },
         ],
     },

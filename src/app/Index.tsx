@@ -12,6 +12,7 @@ import { fetchBusinesses, fetchCategories } from "./(pages)/(business)/actions/b
 import type { Business } from "./(pages)/(business)/businesses/types/business";
 import { useSearch } from "@global/hooks/useSearch";
 import { useTracking } from "@global/hooks/useTracking";
+import { useLocale } from "@global/hooks/useLocale";
 import TimeOnPageTracker from "@components/tracking/TimeOnPageTracker";
 import ScrollDepthTracker from "@components/tracking/ScrollDepthTracker";
 import {
@@ -30,6 +31,8 @@ import { createBusinessSlug } from "@global/lib/businessSlug";
 import { apiGet } from "./(pages)/(auth)/api/client";
 import BookingDemoSection from "@components/home/BookingDemoSection";
 import { resolveBusinessLandingPathFromCategorySlug } from "@global/lib/slices";
+import { searchT } from "@global/lib/i18n/search";
+import { homeT } from "@global/lib/i18n/home";
 
 interface Testimonial {
   clientName: string;
@@ -46,6 +49,7 @@ export default function Index() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { trackEvent } = useTracking();
+  const { locale } = useLocale();
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const dateMenuRef = useRef<HTMLDivElement>(null);
   const [visibleMonth, setVisibleMonth] = useState(() => {
@@ -56,6 +60,12 @@ export default function Index() {
   const [isDateMenuOpen, setIsDateMenuOpen] = useState(false);
   const routeCategorySlug = searchParams.get("category");
   const businessLandingPath = resolveBusinessLandingPathFromCategorySlug(routeCategorySlug);
+  let localeTag = "en-US";
+  if (locale === "fr") {
+    localeTag = "fr-FR";
+  } else if (locale === "ar") {
+    localeTag = "ar";
+  }
 
   const toIsoDate = (date: Date) => {
     const year = date.getFullYear();
@@ -65,16 +75,16 @@ export default function Index() {
   };
 
   const formatDateLabel = (isoDate: string) => {
-    if (!isoDate) return "Any time";
+    if (!isoDate) return searchT(locale, "any_time");
     const today = new Date();
     const tomorrow = new Date();
     tomorrow.setDate(today.getDate() + 1);
-    if (isoDate === toIsoDate(today)) return "Today";
-    if (isoDate === toIsoDate(tomorrow)) return "Tomorrow";
+    if (isoDate === toIsoDate(today)) return searchT(locale, "today");
+    if (isoDate === toIsoDate(tomorrow)) return searchT(locale, "tomorrow");
     const parsed = new Date(`${isoDate}T00:00:00`);
     return Number.isNaN(parsed.getTime())
-      ? "Any time"
-      : parsed.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+      ? searchT(locale, "any_time")
+      : parsed.toLocaleDateString(localeTag, { month: "short", day: "numeric" });
   };
 
   const getMonthMatrix = (month: Date) => {
@@ -238,7 +248,9 @@ export default function Index() {
   const selectedDateObj = searchDate ? new Date(`${searchDate}T00:00:00`) : null;
   const todayDate = new Date();
   const calendarCells = getMonthMatrix(visibleMonth);
-  const weekdays = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+  const weekdays = Array.from({ length: 7 }, (_, idx) =>
+    new Intl.DateTimeFormat(localeTag, { weekday: "short" }).format(new Date(2024, 0, 7 + idx)),
+  );
 
   useEffect(() => {
     const handleOutside = (event: MouseEvent) => {
@@ -285,10 +297,10 @@ export default function Index() {
           const mapped = businesses.slice(0, 3).map((b: Business) => ({
             id: b.id,
             name: b.name,
-            category: b.category ?? "Unknown",
+            category: b.category ?? homeT(locale, "featured_unknown_category"),
             rating: typeof b.rating === "string" ? Number(b.rating) || 0 : b.rating ?? 0,
             reviewCount: b.reviewCount ?? 0,
-            location: b.location ?? "City Center",
+            location: b.location ?? homeT(locale, "featured_nearby"),
             image: b.logo ?? "/assets/placeholder.svg",
           }));
           setFeaturedBusinesses(mapped);
@@ -299,7 +311,7 @@ export default function Index() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [locale]);
 
   // Auto-scroll logic for desktop when typing search
   useEffect(() => {
@@ -308,19 +320,19 @@ export default function Index() {
     if (
       searchQuery.length > 1 &&
       (searchResults.length > 0 || searchLoading) &&
-      window.scrollY < 200
+      globalThis.scrollY < 200
     ) {
-      const isDesktop = window.innerWidth >= 768; // Simple check for mobile/tablet
+      const isDesktop = globalThis.innerWidth >= 768; // Simple check for mobile/tablet
       const container = searchContainerRef.current;
 
       if (isDesktop && container) {
         const rect = container.getBoundingClientRect();
         // Ideally want the search bar around 15% from top to give room for results
-        const desiredTop = window.innerHeight * 0.15;
+        const desiredTop = globalThis.innerHeight * 0.15;
 
         if (rect.top > desiredTop) {
-          window.scrollTo({
-            top: window.scrollY + (rect.top - desiredTop),
+          globalThis.scrollTo({
+            top: globalThis.scrollY + (rect.top - desiredTop),
             behavior: "smooth",
           });
         }
@@ -403,14 +415,14 @@ export default function Index() {
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-primary/20 bg-background/50 backdrop-blur-md shadow-sm mb-8 animate-in slide-in-from-bottom-5 fade-in duration-700">
               <Sparkles className="h-4 w-4 text-primary" />
               <span className="text-sm font-medium text-muted-foreground">
-                <span className="text-primary font-bold">New:</span> The future of booking is here
+                <span className="text-primary font-bold">{homeT(locale, "hero_badge_prefix")}</span> {homeT(locale, "hero_badge_text")}
               </span>
             </div>
 
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold mb-8 leading-tight tracking-tight animate-in slide-in-from-bottom-8 fade-in duration-700 delay-100">
-              Book Services with{" "}
+              {homeT(locale, "hero_title_prefix")}{" "}
               <span className="text-primary relative whitespace-nowrap">
-                Confidence
+                {homeT(locale, "hero_title_highlight")}
                 <svg
                   className="absolute w-full h-3 -bottom-1 left-0 text-brand-orange/40 -z-10"
                   viewBox="0 0 100 10"
@@ -422,8 +434,7 @@ export default function Index() {
             </h1>
 
             <p className="text-xl md:text-2xl mb-12 text-muted-foreground max-w-2xl mx-auto animate-in slide-in-from-bottom-10 fade-in duration-700 delay-200 leading-relaxed">
-              Find and book appointments with local professionals instantly. From barbers to tutors,
-              all in one seamless platform.
+              {homeT(locale, "hero_description")}
             </p>
 
             {/* Search Form */}
@@ -441,7 +452,7 @@ export default function Index() {
                       <Input
                         type="text"
                         className="pl-12 h-14 bg-background/50 border-input/60 text-foreground focus-visible:ring-primary text-base shadow-sm hover:bg-background transition-colors"
-                        placeholder="All treatments and venues"
+                        placeholder={searchT(locale, "all_treatments_and_venues")}
                         value={searchQuery}
                         onFocus={() => {
                           setIsDateMenuOpen(false);
@@ -459,7 +470,7 @@ export default function Index() {
                       <Input
                         type="text"
                         className="pl-12 h-14 bg-background/50 border-input/60 text-foreground focus-visible:ring-primary text-base shadow-sm hover:bg-background transition-colors"
-                        placeholder="Location"
+                        placeholder={searchT(locale, "location_placeholder")}
                         value={searchLocation}
                         onChange={(e) => handleLocationChange(e.target.value)}
                       />
@@ -502,7 +513,7 @@ export default function Index() {
                                 setIsDateMenuOpen(false);
                               }}
                             >
-                              Any time
+                              {searchT(locale, "any_time")}
                             </button>
                             <button
                               type="button"
@@ -518,7 +529,7 @@ export default function Index() {
                                 setIsDateMenuOpen(false);
                               }}
                             >
-                              Today
+                              {searchT(locale, "today")}
                             </button>
                             <button
                               type="button"
@@ -536,7 +547,7 @@ export default function Index() {
                                 setIsDateMenuOpen(false);
                               }}
                             >
-                              Tomorrow
+                              {searchT(locale, "tomorrow")}
                             </button>
                           </div>
 
@@ -544,7 +555,7 @@ export default function Index() {
                             <div className="flex items-center justify-between mb-3">
                               <button
                                 type="button"
-                                aria-label="Previous month"
+                                aria-label={homeT(locale, "calendar_prev_month")}
                                 className="h-8 w-8 rounded-md border border-border bg-background hover:bg-muted inline-flex items-center justify-center transition-colors"
                                 onClick={() => {
                                   setVisibleMonth(
@@ -555,14 +566,14 @@ export default function Index() {
                                 <ChevronLeft className="h-4 w-4" />
                               </button>
                               <p className="text-sm font-semibold text-foreground">
-                                {visibleMonth.toLocaleDateString(undefined, {
+                                {visibleMonth.toLocaleDateString(localeTag, {
                                   month: "long",
                                   year: "numeric",
                                 })}
                               </p>
                               <button
                                 type="button"
-                                aria-label="Next month"
+                                aria-label={homeT(locale, "calendar_next_month")}
                                 className="h-8 w-8 rounded-md border border-border bg-background hover:bg-muted inline-flex items-center justify-center transition-colors"
                                 onClick={() => {
                                   setVisibleMonth(
@@ -646,14 +657,14 @@ export default function Index() {
                         router.push(`/search?${params.toString()}`);
                       }}
                     >
-                      {searchLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Search"}
+                      {searchLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : searchT(locale, "search")}
                     </Button>
                   </div>
 
                   {/* Live search hint */}
                   {searchQuery.length === 1 && (
                     <p className="mt-2 text-sm text-muted-foreground animate-in fade-in slide-in-from-top-1 text-left px-2">
-                      Searching categories. Type one more letter to search businesses.
+                      {homeT(locale, "search_hint")}
                     </p>
                   )}
 
@@ -697,7 +708,7 @@ export default function Index() {
             </div>
 
             <div className="flex flex-col sm:flex-row justify-center items-center gap-6 mb-20 animate-in slide-in-from-bottom-14 fade-in duration-700 delay-500">
-              <span className="text-muted-foreground font-medium">Own a business?</span>
+              <span className="text-muted-foreground font-medium">{homeT(locale, "for_business_prompt")}</span>
               <Button
                 size="lg"
                 variant="default"
@@ -707,7 +718,7 @@ export default function Index() {
                   router.push(businessLandingPath ?? "/business-solutions");
                 }}
               >
-                Kayedni for Business
+                {homeT(locale, "for_business_cta")}
                 <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
               </Button>
             </div>
@@ -763,10 +774,10 @@ export default function Index() {
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold mb-4 text-foreground">
-              Top Professionals Ready to Help
+              {homeT(locale, "featured_title")}
             </h2>
             <p className="text-xl text-muted-foreground">
-              Browse verified, highly-rated service providers.
+              {homeT(locale, "featured_subtitle")}
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -809,7 +820,9 @@ export default function Index() {
                     <div className="absolute top-4 left-4 flex gap-2">
                       <div className="bg-white/50 dark:bg-slate-900/90 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold shadow-lg border border-white/20 text-slate-900 dark:text-white flex items-center gap-1">
                         <MapPin className="h-3 w-3 text-primary" />
-                        <span className="truncate max-w-[120px]">{(business as Business).location || "Near by"}</span>
+                        <span className="truncate max-w-[120px]">
+                          {(business as Business).location || homeT(locale, "featured_nearby")}
+                        </span>
                       </div>
                     </div>
                     <div className="absolute top-4 right-4 flex gap-2">
@@ -826,7 +839,7 @@ export default function Index() {
                         </span>
                         {(business as any).reviewCount > 0 && (
                           <span className="text-white/90 text-xs font-medium drop-shadow-md">
-                            • {(business as any).reviewCount} reviews
+                            • {(business as any).reviewCount} {homeT(locale, "featured_reviews")}
                           </span>
                         )}
                       </div>
@@ -847,7 +860,7 @@ export default function Index() {
                 router.push("/businesses");
               }}
             >
-              Browse All Professionals <ArrowRight className="ml-2 h-5 w-5" />
+              {homeT(locale, "featured_browse_all")} <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
           </div>
         </div>
@@ -866,9 +879,9 @@ export default function Index() {
 
         <div className="container mx-auto px-4 relative z-10">
           <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold mb-6">Loved by Thousands</h2>
+            <h2 className="text-4xl md:text-5xl font-bold mb-6">{homeT(locale, "testimonials_title")}</h2>
             <p className="text-xl text-primary-foreground/80 max-w-2xl mx-auto">
-              Real stories from our happy customers and businesses who use platform daily.
+              {homeT(locale, "testimonials_subtitle")}
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -900,7 +913,9 @@ export default function Index() {
                   const bizId = testimonial.businessId;
                   const bizSlug =
                     bizName && bizId ? createBusinessSlug(bizName, String(bizId)) : null;
-                  const role = bizName ? `Customer · ${bizName}` : "Customer";
+                  const role = bizName
+                    ? homeT(locale, "testimonials_role_customer_with_business", { business: bizName })
+                    : homeT(locale, "testimonials_role_customer");
                   const cardContent = (
                     <>
                       <div className="flex gap-1 mb-4 flex-shrink-0">
@@ -1132,17 +1147,16 @@ export default function Index() {
           <div className="grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-16 items-center">
             <div className="max-w-xl pl-10">
               <div className="inline-block px-4 py-1.5 rounded-full bg-slate-200 dark:bg-white/10 text-sm font-semibold mb-8 border border-slate-300 dark:border-white/10 text-slate-900 dark:text-white backdrop-blur-sm shadow-xl">
-                📱 Mobile App
+                {homeT(locale, "mobile_badge")}
               </div>
               <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 text-slate-900 dark:text-white leading-tight">
-                Manage Bookings <br />
+                {homeT(locale, "mobile_title_line1")} <br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-teal to-brand-blue">
-                  On-the-Go
+                  {homeT(locale, "mobile_title_line2")}
                 </span>
               </h2>
               <p className="text-xl text-slate-700 dark:text-slate-300 mb-10 leading-relaxed">
-                Experience the full power of kayedni in your pocket. Get push notifications, instant
-                booking management, and real-time analytics wherever you are.
+                {homeT(locale, "mobile_description")}
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 mb-12">
@@ -1152,8 +1166,8 @@ export default function Index() {
                      
                     </div>
                     <div>
-                      <div className="text-xs font-medium opacity-60">Download on the</div>
-                      <div className="text-sm font-bold">App Store</div>
+                      <div className="text-xs font-medium opacity-60">{homeT(locale, "mobile_app_store_top")}</div>
+                      <div className="text-sm font-bold">{homeT(locale, "mobile_app_store_bottom")}</div>
                     </div>
                   </div>
                 </Button>
@@ -1163,8 +1177,8 @@ export default function Index() {
                       <path d="M3.6 21.8c-.3 0-.5-.1-.7-.2-.3-.2-.5-.5-.5-.9V3.3c0-.4.2-.7.5-.9.2-.1.4-.2.7-.2.2 0 .5.1.7.2l15.6 8.8c.4.2.6.6.6 1.1s-.2.9-.6 1.1L4.3 22c-.2.1-.4.2-.7.2z" />
                     </svg>
                     <div>
-                      <div className="text-xs font-medium opacity-60">GET IT ON</div>
-                      <div className="text-sm font-bold">Google Play</div>
+                      <div className="text-xs font-medium opacity-60">{homeT(locale, "mobile_google_play_top")}</div>
+                      <div className="text-sm font-bold">{homeT(locale, "mobile_google_play_bottom")}</div>
                     </div>
                   </div>
                 </Button>
@@ -1176,12 +1190,16 @@ export default function Index() {
                     <span className="text-3xl font-bold text-slate-900 dark:text-white">4.9</span>
                     <Star className="h-6 w-6 text-brand-orange fill-brand-orange" />
                   </div>
-                  <p className="text-slate-700 dark:text-slate-400 text-sm font-medium">App Store Rating</p>
+                  <p className="text-slate-700 dark:text-slate-400 text-sm font-medium">
+                    {homeT(locale, "mobile_rating_label")}
+                  </p>
                 </div>
                 <div className="h-10 w-px bg-slate-300 dark:bg-white/10" />
                 <div>
                   <div className="text-3xl font-bold text-slate-900 dark:text-white mb-1">2M+</div>
-                  <p className="text-slate-700 dark:text-slate-400 text-sm font-medium">Downloads</p>
+                  <p className="text-slate-700 dark:text-slate-400 text-sm font-medium">
+                    {homeT(locale, "mobile_downloads_label")}
+                  </p>
                 </div>
               </div>
             </div>
@@ -1268,10 +1286,10 @@ export default function Index() {
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-5xl md:text-6xl font-bold mb-8 text-foreground tracking-tight">
-              Join Thousands Booking Smarter
+              {homeT(locale, "final_title")}
             </h2>
             <p className="text-xl md:text-2xl text-muted-foreground mb-12 max-w-2xl mx-auto leading-relaxed">
-              Get started free today. No credit card required. Scale your business with kayedni.
+              {homeT(locale, "final_description")}
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-6">
               <Button
@@ -1283,7 +1301,7 @@ export default function Index() {
                   router.push("/register");
                 }}
               >
-                Start Booking Free
+                {homeT(locale, "final_start_booking")}
                 <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
               </Button>
               <Button
@@ -1292,7 +1310,7 @@ export default function Index() {
                 className="rounded-full px-8 bg-brand-purple hover:bg-brand-purple/90"
                 onClick={() => router.push("/register?type=business")}
               >
-                Register Your Business
+                {homeT(locale, "final_register_business")}
               </Button>
             </div>
           </div>

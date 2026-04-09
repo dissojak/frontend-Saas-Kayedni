@@ -5,6 +5,8 @@ import { Button } from '../ui/button';
 import { ChevronRight, CheckCircle2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { useLocale } from '@global/hooks/useLocale';
+import { homeT } from '@global/lib/i18n/home';
 
 const handleIntersection = (entries: IntersectionObserverEntry[], video: HTMLVideoElement) => {
   entries.forEach((entry) => {
@@ -20,6 +22,7 @@ export default function BookingDemoSection() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  const { locale } = useLocale();
 
   useEffect(() => {
     const video = videoRef.current;
@@ -41,9 +44,9 @@ export default function BookingDemoSection() {
   }, []);
 
   const features = [
-    "Telegram reminders",
-    "Browse real reviews",
-    "Book 24/7"
+    homeT(locale, 'booking_demo_feature_telegram'),
+    homeT(locale, 'booking_demo_feature_reviews'),
+    homeT(locale, 'booking_demo_feature_247'),
   ];
 
   return (
@@ -56,20 +59,20 @@ export default function BookingDemoSection() {
           <div className="max-w-xl">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 dark:bg-primary/20 text-primary font-semibold text-sm mb-8 tracking-wide shadow-sm shadow-primary/5">
               <span className="w-2.5 h-2.5 rounded-full bg-primary animate-pulse shrink-0" />
-              <span>Smarter Scheduling</span>
+              <span>{homeT(locale, 'booking_demo_badge')}</span>
             </div>
             
             <h2 className="text-[2.5rem] md:text-5xl lg:text-[3.5rem] font-extrabold text-gray-900 dark:text-white tracking-tight leading-[1.15] mb-6">
-              Book Your Perfect Appointment in Minutes.
+              {homeT(locale, 'booking_demo_title')}
             </h2>
             
             <p className="text-lg md:text-xl text-gray-600 dark:text-gray-400 mb-10 leading-relaxed font-light">
-              Find the right professionals, compare availability, and book instantly. Get Telegram confirmations and smart reminders 30 minutes before your appointment starts. No phone calls, no surprises — just the service you need, when you need it.
+              {homeT(locale, 'booking_demo_description')}
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 mb-10">
               <Button size="xl" className="rounded-full shadow-xl shadow-primary/25 transition-all hover:-translate-y-1 font-semibold" onClick={() => router.push('/search')}>
-                Find Your Professional
+                {homeT(locale, 'booking_demo_cta')}
                 <ChevronRight className="w-5 h-5 ml-2" />
               </Button>
             </div>
