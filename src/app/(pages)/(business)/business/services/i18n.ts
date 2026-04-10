@@ -151,7 +151,7 @@ const BUSINESS_SERVICES_DICTIONARY: Record<LocaleCode, Record<BusinessServicesKe
     confirm_delete: 'هل تريد حذف هذه الخدمة بالتأكيد؟',
     error_save_service: 'تعذر حفظ الخدمة',
     error_delete_service: 'تعذر حذف الخدمة',
-    about_title: 'حول الخدمات',
+    about_title: 'وصف الخدمات',
     about_1: 'انشئ وادِر الخدمات التي تقدمها منشأتك',
     about_2: 'حدّد مدة كل خدمة وسعرها',
     about_3: 'عيّن الموظفين القادرين على تقديم كل خدمة',

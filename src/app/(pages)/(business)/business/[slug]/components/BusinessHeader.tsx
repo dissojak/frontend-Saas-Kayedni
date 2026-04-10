@@ -3,13 +3,23 @@ import React from "react";
 import { Button } from "@components/ui/button";
 import type { Business } from "@/(pages)/(business)/businesses/types/business";
 import { MapPin, Star, Tag } from "lucide-react";
+import { useLocale } from "@global/hooks/useLocale";
+import {
+  businessDetailReviewCountLabel,
+  businessDetailT,
+} from "../i18n";
 
 const BusinessHeader: React.FC<{ business: Business; onBook?: () => void }> = ({ business, onBook }) => {
+  const { locale } = useLocale();
+
+  const t = (key: Parameters<typeof businessDetailT>[1], params?: Record<string, string | number>) =>
+    businessDetailT(locale, key, params);
+
   // Format rating to 1 decimal place
   const formatRating = (rating: number | string | undefined | null): string => {
-    if (rating === null || rating === undefined) return "No reviews";
+    if (rating === null || rating === undefined) return t("rating_no_reviews");
     const numRating = typeof rating === 'string' ? Number.parseFloat(rating) : rating;
-    if (Number.isNaN(numRating)) return "No reviews";
+    if (Number.isNaN(numRating)) return t("rating_no_reviews");
     return numRating.toFixed(1);
   };
 
@@ -31,7 +41,9 @@ const BusinessHeader: React.FC<{ business: Business; onBook?: () => void }> = ({
               <Star className="w-4 h-4 fill-brand-orange" />
               <span className="font-bold">{formatRating(business.rating)}</span>
               {hasRating && business.reviewCount !== undefined && business.reviewCount > 0 && (
-                <span className="opacity-80 ml-1">({business.reviewCount} {business.reviewCount === 1 ? 'review' : 'reviews'})</span>
+                <span className="opacity-80 ml-1">
+                  ({business.reviewCount} {businessDetailReviewCountLabel(locale, business.reviewCount)})
+                </span>
               )}
             </div>
             {business.location && (
@@ -48,7 +60,7 @@ const BusinessHeader: React.FC<{ business: Business; onBook?: () => void }> = ({
           variant="skeuo-primary"
           className="w-full md:w-auto shadow-premium hover:shadow-premium-hover"
         >
-          Book Appointment
+          {t("book_appointment")}
         </Button>
       </div>
     </div>

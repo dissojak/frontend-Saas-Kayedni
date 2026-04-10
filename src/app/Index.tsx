@@ -66,6 +66,7 @@ export default function Index() {
   } else if (locale === "ar") {
     localeTag = "ar";
   }
+  const isArabic = locale === "ar";
 
   const toIsoDate = (date: Date) => {
     const year = date.getFullYear();
@@ -298,7 +299,7 @@ export default function Index() {
             id: b.id,
             name: b.name,
             category: b.category ?? homeT(locale, "featured_unknown_category"),
-            rating: typeof b.rating === "string" ? Number(b.rating) || 0 : b.rating ?? 0,
+            rating: typeof b.rating === "string" ? Number(b.rating) || 0 : (b.rating ?? 0),
             reviewCount: b.reviewCount ?? 0,
             location: b.location ?? homeT(locale, "featured_nearby"),
             image: b.logo ?? "/assets/placeholder.svg",
@@ -415,7 +416,8 @@ export default function Index() {
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-primary/20 bg-background/50 backdrop-blur-md shadow-sm mb-8 animate-in slide-in-from-bottom-5 fade-in duration-700">
               <Sparkles className="h-4 w-4 text-primary" />
               <span className="text-sm font-medium text-muted-foreground">
-                <span className="text-primary font-bold">{homeT(locale, "hero_badge_prefix")}</span> {homeT(locale, "hero_badge_text")}
+                <span className="text-primary font-bold">{homeT(locale, "hero_badge_prefix")}</span>{" "}
+                {homeT(locale, "hero_badge_text")}
               </span>
             </div>
 
@@ -657,7 +659,11 @@ export default function Index() {
                         router.push(`/search?${params.toString()}`);
                       }}
                     >
-                      {searchLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : searchT(locale, "search")}
+                      {searchLoading ? (
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                      ) : (
+                        searchT(locale, "search")
+                      )}
                     </Button>
                   </div>
 
@@ -708,7 +714,9 @@ export default function Index() {
             </div>
 
             <div className="flex flex-col sm:flex-row justify-center items-center gap-6 mb-20 animate-in slide-in-from-bottom-14 fade-in duration-700 delay-500">
-              <span className="text-muted-foreground font-medium">{homeT(locale, "for_business_prompt")}</span>
+              <span className="text-muted-foreground font-medium">
+                {homeT(locale, "for_business_prompt")}
+              </span>
               <Button
                 size="lg"
                 variant="default"
@@ -718,8 +726,17 @@ export default function Index() {
                   router.push(businessLandingPath ?? "/business-solutions");
                 }}
               >
-                {homeT(locale, "for_business_cta")}
-                <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                {isArabic ? (
+                  <>
+                    {homeT(locale, "for_business_cta")}
+                    <ArrowRight className="mr-2 h-4 w-4 group-hover:-translate-x-1 transition-transform -scale-x-100" />
+                  </>
+                ) : (
+                  <>
+                    {homeT(locale, "for_business_cta")}
+                    <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                  </>
+                )}
               </Button>
             </div>
           </div>
@@ -776,9 +793,7 @@ export default function Index() {
             <h2 className="text-4xl md:text-5xl font-bold mb-4 text-foreground">
               {homeT(locale, "featured_title")}
             </h2>
-            <p className="text-xl text-muted-foreground">
-              {homeT(locale, "featured_subtitle")}
-            </p>
+            <p className="text-xl text-muted-foreground">{homeT(locale, "featured_subtitle")}</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {featuredBusinesses.map((business) => {
@@ -788,9 +803,7 @@ export default function Index() {
                   businessName: business.name,
                   source: "home_featured",
                 });
-                router.push(
-                  `/business/${createBusinessSlug(business.name, String(business.id))}`,
-                );
+                router.push(`/business/${createBusinessSlug(business.name, String(business.id))}`);
               };
 
               return (
@@ -847,7 +860,8 @@ export default function Index() {
                         {business.name}
                       </h3>
                     </div>
-                  </div>                </button>
+                  </div>{" "}
+                </button>
               );
             })}
           </div>
@@ -860,7 +874,11 @@ export default function Index() {
                 router.push("/businesses");
               }}
             >
-              {homeT(locale, "featured_browse_all")} <ArrowRight className="ml-2 h-5 w-5" />
+              {isArabic ? <>
+               {homeT(locale, "featured_browse_all")} <ArrowRight className="mr-2 h-5 w-5 -scale-x-100" />
+              </> : <>
+                {homeT(locale, "featured_browse_all")} <ArrowRight className="ml-2 h-5 w-5" />
+              </>}
             </Button>
           </div>
         </div>
@@ -879,7 +897,9 @@ export default function Index() {
 
         <div className="container mx-auto px-4 relative z-10">
           <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold mb-6">{homeT(locale, "testimonials_title")}</h2>
+            <h2 className="text-4xl md:text-5xl font-bold mb-6">
+              {homeT(locale, "testimonials_title")}
+            </h2>
             <p className="text-xl text-primary-foreground/80 max-w-2xl mx-auto">
               {homeT(locale, "testimonials_subtitle")}
             </p>
@@ -914,7 +934,9 @@ export default function Index() {
                   const bizSlug =
                     bizName && bizId ? createBusinessSlug(bizName, String(bizId)) : null;
                   const role = bizName
-                    ? homeT(locale, "testimonials_role_customer_with_business", { business: bizName })
+                    ? homeT(locale, "testimonials_role_customer_with_business", {
+                        business: bizName,
+                      })
                     : homeT(locale, "testimonials_role_customer");
                   const cardContent = (
                     <>
@@ -1162,12 +1184,14 @@ export default function Index() {
               <div className="flex flex-col sm:flex-row gap-4 mb-12">
                 <Button className="h-16 px-8 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-950 hover:bg-slate-800 dark:hover:bg-slate-100 font-bold text-lg shadow-xl transition-all hover:-translate-y-1">
                   <div className="flex items-center text-left">
-                    <div className="mr-3">
-                     
-                    </div>
+                    <div className="mr-3"></div>
                     <div>
-                      <div className="text-xs font-medium opacity-60">{homeT(locale, "mobile_app_store_top")}</div>
-                      <div className="text-sm font-bold">{homeT(locale, "mobile_app_store_bottom")}</div>
+                      <div className="text-xs font-medium opacity-60">
+                        {homeT(locale, "mobile_app_store_top")}
+                      </div>
+                      <div className="text-sm font-bold">
+                        {homeT(locale, "mobile_app_store_bottom")}
+                      </div>
                     </div>
                   </div>
                 </Button>
@@ -1177,8 +1201,12 @@ export default function Index() {
                       <path d="M3.6 21.8c-.3 0-.5-.1-.7-.2-.3-.2-.5-.5-.5-.9V3.3c0-.4.2-.7.5-.9.2-.1.4-.2.7-.2.2 0 .5.1.7.2l15.6 8.8c.4.2.6.6.6 1.1s-.2.9-.6 1.1L4.3 22c-.2.1-.4.2-.7.2z" />
                     </svg>
                     <div>
-                      <div className="text-xs font-medium opacity-60">{homeT(locale, "mobile_google_play_top")}</div>
-                      <div className="text-sm font-bold">{homeT(locale, "mobile_google_play_bottom")}</div>
+                      <div className="text-xs font-medium opacity-60">
+                        {homeT(locale, "mobile_google_play_top")}
+                      </div>
+                      <div className="text-sm font-bold">
+                        {homeT(locale, "mobile_google_play_bottom")}
+                      </div>
                     </div>
                   </div>
                 </Button>
@@ -1301,8 +1329,17 @@ export default function Index() {
                   router.push("/register");
                 }}
               >
-                {homeT(locale, "final_start_booking")}
-                <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                {isArabic ? (
+                  <>
+                    {homeT(locale, "final_start_booking")}
+                    <ArrowRight className="mr-2 h-4 w-4 group-hover:-translate-x-1 transition-transform -scale-x-100" />
+                  </>
+                ) : (
+                  <>
+                    {homeT(locale, "final_start_booking")}
+                    <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                  </>
+                )}
               </Button>
               <Button
                 variant="skeuo"
@@ -1316,7 +1353,6 @@ export default function Index() {
           </div>
         </div>
       </section>
-
     </Layout>
   );
 }

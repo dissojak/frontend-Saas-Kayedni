@@ -68,6 +68,8 @@ import {
   type BusinessUpdateRequest,
 } from "../actions/backend";
 import { clearPendingOwnerCategory, getPendingOwnerCategory } from "@global/lib/slices";
+import { useLocale } from "@global/hooks/useLocale";
+import { businessManageStatusT, businessManageT, businessManageWeekdayT, type BusinessManageKey } from "./i18n";
 
 interface Category {
   id: number;
@@ -99,6 +101,11 @@ async function fetchCategoriesWithIds(): Promise<Category[]> {
 export default function BusinessManagementPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const { locale } = useLocale();
+  const t = useCallback(
+    (key: BusinessManageKey, params?: Record<string, string | number>) => businessManageT(locale, key, params),
+    [locale],
+  );
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // State
@@ -140,7 +147,7 @@ export default function BusinessManagementPage() {
   const loadData = useCallback(async () => {
     const token = getToken();
     if (!token) {
-      toast({ variant: "error", title: "Please log in to view your business" });
+      toast({ variant: "error", title: t('toast_login_required_view') });
       setLoading(false);
       return;
     }
@@ -174,11 +181,11 @@ export default function BusinessManagementPage() {
       setAiHealthy(aiHealth.ok);
     } catch (error) {
       console.error('Error loading business data:', error);
-      toast({ variant: "error", title: "Failed to load business data" });
+      toast({ variant: "error", title: t('toast_load_failed') });
     } finally {
       setLoading(false);
     }
-  }, [getToken, toast]);
+  }, [getToken, t, toast]);
 
   useEffect(() => {
     loadData();
@@ -214,15 +221,15 @@ export default function BusinessManagementPage() {
   const handleCreateBusiness = async () => {
     const token = getToken();
     if (!token) {
-      toast({ variant: "error", title: "Please log in to create your business" });
+      toast({ variant: "error", title: t('toast_login_required_create') });
       return;
     }
 
     if (!createForm.name.trim() || !createForm.location.trim() || !createForm.categoryId) {
       toast({
         variant: "error",
-        title: "Missing required fields",
-        description: "Business name, location, and category are required.",
+        title: t('toast_missing_fields_title'),
+        description: t('toast_missing_fields_desc'),
       });
       return;
     }
@@ -269,11 +276,11 @@ export default function BusinessManagementPage() {
         }
       }
 
-      toast({ variant: "success", title: "Business created successfully" });
+      toast({ variant: "success", title: t('toast_create_success') });
     } catch (error: any) {
       toast({
         variant: "error",
-        title: "Failed to create business",
+        title: t('toast_create_failed'),
         description: error.message,
       });
     } finally {
@@ -294,13 +301,13 @@ export default function BusinessManagementPage() {
       if (updated) {
         setBusiness(updated);
         setIsEditing(false);
-        toast({ variant: "success", title: "Business updated successfully!" });
+        toast({ variant: "success", title: t('toast_update_success') });
         
         // Reload to get fresh evaluation
         await loadData();
       }
     } catch (error: any) {
-      toast({ variant: "error", title: "Failed to update business", description: error.message });
+      toast({ variant: "error", title: t('toast_update_failed'), description: error.message });
     } finally {
       setSaving(false);
     }
@@ -314,12 +321,12 @@ export default function BusinessManagementPage() {
       setAiHealthy(health.ok);
       toast({ 
         variant: health.ok ? "success" : "destructive", 
-        title: health.ok ? "AI is Available" : "AI Unavailable", 
+        title: health.ok ? t('toast_ai_available_title') : t('toast_ai_unavailable_title'), 
         description: health.message,
       });
     } catch (error: any) {
       setAiHealthy(false);
-      toast({ variant: "destructive", title: "Failed to check AI", description: error.message });
+      toast({ variant: "destructive", title: t('toast_check_ai_failed'), description: error.message });
     } finally {
       setCheckingAI(false);
     }
@@ -342,8 +349,8 @@ export default function BusinessManagementPage() {
         setBusiness(updated);
         toast({ 
           variant: "success", 
-          title: "Re-evaluation complete!", 
-          description: `Your business has been re-evaluated. New score: ${updated.evaluation?.overallScore ?? 'N/A'}` 
+          title: t('toast_reevaluate_success_title'), 
+          description: t('toast_reevaluate_success_desc', { score: updated.evaluation?.overallScore ?? 'N/A' }),
         });
       }
     } catch (error: any) {
@@ -351,14 +358,14 @@ export default function BusinessManagementPage() {
       if (error.code === 'RATE_LIMIT_EXCEEDED') {
         toast({ 
           variant: "destructive", 
-          title: "Daily limit reached", 
-          description: error.message || "You've reached your daily AI re-evaluation limit. Please try again tomorrow." 
+          title: t('toast_daily_limit_title'), 
+          description: error.message || t('toast_daily_limit_desc'),
         });
       } else {
         toast({ 
           variant: "destructive", 
-          title: "Failed to re-evaluate", 
-          description: error.message || "An error occurred while re-evaluating your business. Please try again."
+          title: t('toast_reevaluate_failed_title'), 
+          description: error.message || t('toast_reevaluate_failed_desc'),
         });
       }
     } finally {
@@ -387,7 +394,7 @@ export default function BusinessManagementPage() {
       // Reload to get updated status
       await loadData();
     } catch (error: any) {
-      toast({ variant: "error", title: "Failed to submit", description: error.message });
+      toast({ variant: "error", title: t('toast_submit_failed'), description: error.message });
     } finally {
       setSaving(false);
     }
@@ -405,9 +412,9 @@ export default function BusinessManagementPage() {
       const newImage = await uploadBusinessImage(business.id, newImageUrl.trim(), token);
       setImages(prev => [...prev, newImage]);
       setNewImageUrl('');
-      toast({ variant: "success", title: "Image added successfully!" });
+      toast({ variant: "success", title: t('toast_image_add_success') });
     } catch (error: any) {
-      toast({ variant: "error", title: "Failed to add image", description: error.message });
+      toast({ variant: "error", title: t('toast_image_add_failed'), description: error.message });
     } finally {
       setAddingImage(false);
     }
@@ -423,19 +430,19 @@ export default function BusinessManagementPage() {
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
-      toast({ variant: "error", title: "Invalid file type", description: "Please upload an image file" });
+      toast({ variant: "error", title: t('toast_invalid_file_type_title'), description: t('toast_invalid_file_type_desc') });
       return;
     }
 
     // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      toast({ variant: "error", title: "File too large", description: "Maximum file size is 5MB" });
+      toast({ variant: "error", title: t('toast_file_too_large_title'), description: t('toast_file_too_large_desc') });
       return;
     }
 
     // Check image limit
     if (images.length >= 6) {
-      toast({ variant: "error", title: "Maximum images reached", description: "You can only have up to 6 images" });
+      toast({ variant: "error", title: t('toast_max_images_title'), description: t('toast_max_images_desc') });
       return;
     }
 
@@ -443,9 +450,9 @@ export default function BusinessManagementPage() {
       setUploadingImage(true);
       const newImage = await uploadBusinessImageFile(business.id, file, token);
       setImages(prev => [...prev, newImage]);
-      toast({ variant: "success", title: "Image uploaded successfully!" });
+      toast({ variant: "success", title: t('toast_image_upload_success') });
     } catch (error: any) {
-      toast({ variant: "error", title: "Failed to upload image", description: error.message });
+      toast({ variant: "error", title: t('toast_image_upload_failed'), description: error.message });
     } finally {
       setUploadingImage(false);
       // Reset file input
@@ -493,12 +500,12 @@ export default function BusinessManagementPage() {
     try {
       const imageIds = newImages.map(img => img.id);
       await reorderBusinessImages(business.id, imageIds, token);
-      toast({ variant: "success", title: "Images reordered!", description: "First image is now the primary photo" });
+      toast({ variant: "success", title: t('toast_images_reordered_title'), description: t('toast_images_reordered_desc') });
     } catch (error: any) {
       // Revert on error
       const imagesData = await fetchOwnerBusinessImages(business.id, token);
       setImages(imagesData);
-      toast({ variant: "error", title: "Failed to reorder", description: error.message });
+      toast({ variant: "error", title: t('toast_images_reorder_failed'), description: error.message });
     }
   };
 
@@ -517,9 +524,9 @@ export default function BusinessManagementPage() {
     try {
       await deleteBusinessImage(business.id, deleteImageId, token);
       setImages(prev => prev.filter(img => img.id !== deleteImageId));
-      toast({ variant: "success", title: "Image deleted successfully!" });
+      toast({ variant: "success", title: t('toast_image_delete_success') });
     } catch (error: any) {
-      toast({ variant: "error", title: "Failed to delete image", description: error.message });
+      toast({ variant: "error", title: t('toast_image_delete_failed'), description: error.message });
     } finally {
       setDeleteImageId(null);
     }
@@ -542,13 +549,13 @@ export default function BusinessManagementPage() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'ACTIVE':
-        return <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/30">Active</Badge>;
+        return <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/30">{t('status_active')}</Badge>;
       case 'PENDING':
-        return <Badge className="bg-amber-500/10 text-amber-500 border-amber-500/30">Pending Review</Badge>;
+        return <Badge className="bg-amber-500/10 text-amber-500 border-amber-500/30">{t('status_pending_review')}</Badge>;
       case 'SUSPENDED':
-        return <Badge className="bg-rose-500/10 text-rose-500 border-rose-500/30">Suspended</Badge>;
+        return <Badge className="bg-rose-500/10 text-rose-500 border-rose-500/30">{t('status_suspended')}</Badge>;
       default:
-        return <Badge variant="outline">{status}</Badge>;
+        return <Badge variant="outline">{businessManageStatusT(locale, status)}</Badge>;
     }
   };
 
@@ -558,7 +565,7 @@ export default function BusinessManagementPage() {
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-background to-slate-100/50 dark:from-slate-950 dark:via-background dark:to-slate-900/50 flex items-center justify-center">
           <div className="text-center">
             <div className="w-14 h-14 border-4 border-violet-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-slate-500 dark:text-slate-400">Loading your business...</p>
+            <p className="text-slate-500 dark:text-slate-400">{t('loading_business')}</p>
           </div>
         </div>
       </Layout>
@@ -574,46 +581,46 @@ export default function BusinessManagementPage() {
               <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100 dark:bg-slate-800">
                 <Building2 className="h-8 w-8 text-slate-400" />
               </div>
-              <h2 className="text-xl font-bold text-slate-900 dark:text-white">Create Your Business</h2>
+              <h2 className="text-xl font-bold text-slate-900 dark:text-white">{t('create_title')}</h2>
               <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-                Finish onboarding by creating your first business profile.
+                {t('create_subtitle')}
               </p>
               {pendingCategoryName && (
                 <p className="mt-2 text-xs font-medium text-primary">
-                  Category preselected from signup flow: {pendingCategoryName}
+                  {t('create_category_preselected', { name: pendingCategoryName })}
                 </p>
               )}
             </div>
 
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="create-business-name">Business name</Label>
+                <Label htmlFor="create-business-name">{t('create_business_name')}</Label>
                 <Input
                   id="create-business-name"
                   value={createForm.name}
                   onChange={(e) => setCreateForm((prev) => ({ ...prev, name: e.target.value }))}
-                  placeholder="Downtown Barber Studio"
+                  placeholder={t('placeholder_business_name')}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="create-business-location">Location</Label>
+                <Label htmlFor="create-business-location">{t('create_location')}</Label>
                 <Input
                   id="create-business-location"
                   value={createForm.location}
                   onChange={(e) => setCreateForm((prev) => ({ ...prev, location: e.target.value }))}
-                  placeholder="Cairo, Nasr City"
+                  placeholder={t('placeholder_location')}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label>Category</Label>
+                <Label>{t('create_category')}</Label>
                 <Select
                   value={createForm.categoryId ? createForm.categoryId.toString() : ''}
                   onValueChange={(value) => setCreateForm((prev) => ({ ...prev, categoryId: Number.parseInt(value, 10) }))}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select a category" />
+                    <SelectValue placeholder={t('create_select_category')} />
                   </SelectTrigger>
                   <SelectContent>
                     {categories.map((category) => (
@@ -627,43 +634,43 @@ export default function BusinessManagementPage() {
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="create-business-phone">Phone (optional)</Label>
+                  <Label htmlFor="create-business-phone">{t('create_phone_optional')}</Label>
                   <Input
                     id="create-business-phone"
                     value={createForm.phone || ''}
                     onChange={(e) => setCreateForm((prev) => ({ ...prev, phone: e.target.value }))}
-                    placeholder="+20 1X XXX XXXX"
+                    placeholder={t('placeholder_phone')}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="create-business-email">Business email (optional)</Label>
+                  <Label htmlFor="create-business-email">{t('create_email_optional')}</Label>
                   <Input
                     id="create-business-email"
                     type="email"
                     value={createForm.email || ''}
                     onChange={(e) => setCreateForm((prev) => ({ ...prev, email: e.target.value }))}
-                    placeholder="business@example.com"
+                    placeholder={t('placeholder_email')}
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="create-business-description">Description (optional)</Label>
+                <Label htmlFor="create-business-description">{t('create_description_optional')}</Label>
                 <Textarea
                   id="create-business-description"
                   value={createForm.description || ''}
                   onChange={(e) => setCreateForm((prev) => ({ ...prev, description: e.target.value }))}
-                  placeholder="Describe your services"
+                  placeholder={t('placeholder_description')}
                   className="min-h-[100px]"
                 />
               </div>
 
               <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:justify-end">
                 <Button variant="outline" onClick={() => router.push('/business/dashboard')}>
-                  Back to Dashboard
+                  {t('create_back_dashboard')}
                 </Button>
                 <Button onClick={handleCreateBusiness} disabled={creatingBusiness || !categories.length}>
-                  {creatingBusiness ? 'Creating...' : 'Create Business'}
+                  {creatingBusiness ? t('create_creating') : t('create_cta')}
                 </Button>
               </div>
             </div>
@@ -676,6 +683,17 @@ export default function BusinessManagementPage() {
   const evaluation = business.evaluation;
   const canSubmitForReview = business.status === 'DRAFT' || business.status === 'INACTIVE' || business.status === 'PENDING';
   const isPendingReview = business.status === 'PENDING';
+  const defaultBrandingDetails = t('images_default_details');
+
+  let imagesSummaryText = t('images_summary_empty');
+  if (images.length > 0) {
+    const params = {
+      count: images.length,
+      score: evaluation?.overallScore ?? 'N/A',
+      details: evaluation?.brandingDetails || defaultBrandingDetails,
+    };
+    imagesSummaryText = images.length >= 3 ? t('images_summary_many', params) : t('images_summary_few', params);
+  }
 
   return (
     <Layout>
@@ -695,16 +713,16 @@ export default function BusinessManagementPage() {
               </Button>
               <div>
                 <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-slate-900 via-slate-700 to-slate-800 dark:from-white dark:via-slate-200 dark:to-slate-300 bg-clip-text text-transparent">
-                  My Business
+                  {t('header_my_business')}
                 </h1>
-                <p className="text-slate-500 dark:text-slate-400 mt-1">Manage your business profile and settings</p>
+                <p className="text-slate-500 dark:text-slate-400 mt-1">{t('header_manage_profile')}</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
               {getStatusBadge(business.status)}
               <Badge className="bg-gradient-to-r from-violet-500/10 to-purple-500/10 text-violet-500 dark:text-violet-400 border border-violet-200/50 dark:border-violet-800/50 px-4 py-1.5">
                 <Sparkles className="w-3.5 h-3.5 mr-1.5" />
-                Business Owner
+                {t('badge_business_owner')}
               </Badge>
             </div>
           </div>
@@ -719,18 +737,17 @@ export default function BusinessManagementPage() {
                   <div className="space-y-3">
                     <div className="inline-flex items-center gap-2 rounded-full bg-amber-500 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-white">
                       <TrendingUp className="h-3.5 w-3.5" />
-                      Action Required
+                      {t('cta_action_required')}
                     </div>
                     <h2 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">
-                      {isPendingReview ? 'Re-submit For Activation' : 'Submit For Review To Go Live'}
+                      {isPendingReview ? t('cta_resubmit_title') : t('cta_submit_title')}
                     </h2>
                     <p className="max-w-3xl text-sm text-slate-700 dark:text-slate-300">
-                      Your business is currently <span className="font-semibold">{business.status}</span>.
-                      Submitting triggers AI evaluation using your business evaluation rules.
+                      {t('cta_current_status', { status: businessManageStatusT(locale, business.status) })}{' '}
+                      {t('cta_submit_desc_line1')}
                     </p>
                     <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                      If overall score is <span className="font-semibold">above 70</span>, it can become <span className="font-semibold">ACTIVE</span> automatically.
-                      Otherwise it stays <span className="font-semibold">PENDING</span> until you improve details and re-submit.
+                      {t('cta_submit_desc_line2')}
                     </p>
                   </div>
 
@@ -742,12 +759,12 @@ export default function BusinessManagementPage() {
                     {saving ? (
                       <>
                         <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                        Submitting...
+                        {t('cta_submitting')}
                       </>
                     ) : (
                       <>
                         <CheckCircle className="w-4 h-4 mr-2" />
-                        {isPendingReview ? 'Re-submit For Activation' : 'Submit For Review'}
+                        {isPendingReview ? t('cta_resubmit_btn') : t('cta_submit_btn')}
                       </>
                     )}
                   </Button>
@@ -757,7 +774,7 @@ export default function BusinessManagementPage() {
 
             {isPendingReview && (
               <div className="rounded-2xl border border-sky-200/70 bg-sky-50/70 px-4 py-3 text-sm text-sky-800 dark:border-sky-800/50 dark:bg-sky-950/20 dark:text-sky-300">
-                This business is pending review. Improve your profile details, then use Re-submit For Activation to run evaluation again.
+                {t('pending_review_info')}
               </div>
             )}
 
@@ -766,7 +783,7 @@ export default function BusinessManagementPage() {
             <div className={`flex items-center gap-3 px-4 py-3 rounded-xl border ${aiHealthy ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800/50' : 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800/50'}`}>
               <Brain className={`w-5 h-5 ${aiHealthy ? 'text-emerald-500' : 'text-amber-500'}`} />
               <span className={`text-sm ${aiHealthy ? 'text-emerald-700 dark:text-emerald-300' : 'text-amber-700 dark:text-amber-300'}`}>
-                AI Evaluation: {aiHealthy ? 'Available' : 'Limited (using heuristic fallback)'}
+                {t('ai_evaluation_label')}: {aiHealthy ? t('ai_available') : t('ai_limited')}
               </span>
             </div>
           )}
@@ -789,11 +806,14 @@ export default function BusinessManagementPage() {
                     <div>
                       <div className="flex items-center gap-2 mb-2">
                         <Award className="w-5 h-5 text-violet-400" />
-                        <span className="text-sm text-violet-400 font-medium uppercase tracking-wider">Overall Score</span>
+                        <span className="text-sm text-violet-400 font-medium uppercase tracking-wider">{t('score_overall_label')}</span>
                       </div>
-                      <h2 className="text-2xl font-bold text-white mb-1">Business Evaluation</h2>
+                      <h2 className="text-2xl font-bold text-white mb-1">{t('score_business_evaluation')}</h2>
                       <p className="text-slate-400 text-sm">
-                        Evaluated by {evaluation.source === 'AI' ? 'AI' : 'Heuristic System'} • {new Date(evaluation.createdAt).toLocaleDateString()}
+                        {t('score_evaluated_by', {
+                          source: evaluation.source === 'AI' ? t('score_source_ai') : t('score_source_heuristic'),
+                          date: new Date(evaluation.createdAt).toLocaleDateString(),
+                        })}
                       </p>
                     </div>
                   </div>
@@ -808,12 +828,12 @@ export default function BusinessManagementPage() {
                       {checkingAI ? (
                         <>
                           <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                          Checking...
+                          {t('btn_checking_ai')}
                         </>
                       ) : (
                         <>
                           <Brain className="w-4 h-4 mr-2" />
-                          Check AI
+                          {t('btn_check_ai')}
                         </>
                       )}
                     </Button>
@@ -825,12 +845,12 @@ export default function BusinessManagementPage() {
                       {reEvaluating ? (
                         <>
                           <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                          Re-evaluating...
+                          {t('btn_reevaluating')}
                         </>
                       ) : (
                         <>
                           <Sparkles className="w-4 h-4 mr-2" />
-                          Re-evaluate
+                          {t('btn_reevaluate')}
                         </>
                       )}
                     </Button>
@@ -850,8 +870,8 @@ export default function BusinessManagementPage() {
                   <Building2 className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-slate-800 dark:text-white text-lg">Business Information</h3>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">Manage your business details</p>
+                  <h3 className="font-bold text-slate-800 dark:text-white text-lg">{t('info_title')}</h3>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">{t('info_subtitle')}</p>
                 </div>
               </div>
               
@@ -874,7 +894,7 @@ export default function BusinessManagementPage() {
                     className="rounded-xl"
                   >
                     <X className="w-4 h-4 mr-2" />
-                    Cancel
+                    {t('btn_cancel')}
                   </Button>
                   <Button
                     onClick={handleSave}
@@ -884,12 +904,12 @@ export default function BusinessManagementPage() {
                     {saving ? (
                       <>
                         <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                        Saving...
+                        {t('btn_saving')}
                       </>
                     ) : (
                       <>
                         <Save className="w-4 h-4 mr-2" />
-                        Save Changes
+                        {t('btn_save_changes')}
                       </>
                     )}
                   </Button>
@@ -901,7 +921,7 @@ export default function BusinessManagementPage() {
                   className="rounded-xl"
                 >
                   <Edit3 className="w-4 h-4 mr-2" />
-                  Edit
+                  {t('btn_edit')}
                 </Button>
               )}
             </div>
@@ -910,7 +930,7 @@ export default function BusinessManagementPage() {
               {/* Business Name */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="name">Business Name</Label>
+                  <Label htmlFor="name">{t('field_business_name')}</Label>
                   {evaluation && <InlineScore score={evaluation.nameProfessionalismScore} />}
                 </div>
                 {isEditing ? (
@@ -919,7 +939,7 @@ export default function BusinessManagementPage() {
                     value={editForm.name || ''}
                     onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
                     className="rounded-xl"
-                    placeholder="Enter business name"
+                    placeholder={t('field_business_name')}
                   />
                 ) : (
                   <p className="text-slate-800 dark:text-white font-medium">{business.name}</p>
@@ -935,7 +955,7 @@ export default function BusinessManagementPage() {
               {/* Description */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="description">Description</Label>
+                  <Label htmlFor="description">{t('field_description')}</Label>
                   {evaluation && <InlineScore score={evaluation.descriptionProfessionalismScore} />}
                 </div>
                 {isEditing ? (
@@ -944,10 +964,10 @@ export default function BusinessManagementPage() {
                     value={editForm.description || ''}
                     onChange={(e) => setEditForm(prev => ({ ...prev, description: e.target.value }))}
                     className="rounded-xl min-h-[120px]"
-                    placeholder="Describe your business..."
+                    placeholder={t('placeholder_description')}
                   />
                 ) : (
-                  <p className="text-slate-600 dark:text-slate-400">{business.description || 'No description'}</p>
+                  <p className="text-slate-600 dark:text-slate-400">{business.description || t('field_no_description')}</p>
                 )}
                 {evaluation && (
                   <InlineEvaluation
@@ -961,7 +981,7 @@ export default function BusinessManagementPage() {
                 {/* Email */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="email">Email</Label>
+                    <Label htmlFor="email">{t('field_email')}</Label>
                     {evaluation && <InlineScore score={evaluation.emailProfessionalismScore} />}
                   </div>
                   {isEditing ? (
@@ -971,12 +991,12 @@ export default function BusinessManagementPage() {
                       value={editForm.email || ''}
                       onChange={(e) => setEditForm(prev => ({ ...prev, email: e.target.value }))}
                       className="rounded-xl"
-                      placeholder="business@example.com"
+                      placeholder={t('placeholder_email')}
                     />
                   ) : (
                     <div className="flex items-center gap-2">
                       <Mail className="w-4 h-4 text-slate-400" />
-                      <p className="text-slate-600 dark:text-slate-400">{business.email || 'Not set'}</p>
+                      <p className="text-slate-600 dark:text-slate-400">{business.email || t('field_not_set')}</p>
                     </div>
                   )}
                   {evaluation && (
@@ -989,19 +1009,19 @@ export default function BusinessManagementPage() {
 
                 {/* Phone */}
                 <div className="space-y-2">
-                  <Label htmlFor="phone">Phone</Label>
+                  <Label htmlFor="phone">{t('field_phone')}</Label>
                   {isEditing ? (
                     <Input
                       id="phone"
                       value={editForm.phone || ''}
                       onChange={(e) => setEditForm(prev => ({ ...prev, phone: e.target.value }))}
                       className="rounded-xl"
-                      placeholder="+1 234 567 8900"
+                      placeholder={t('placeholder_phone')}
                     />
                   ) : (
                     <div className="flex items-center gap-2">
                       <Phone className="w-4 h-4 text-slate-400" />
-                      <p className="text-slate-600 dark:text-slate-400">{business.phone || 'Not set'}</p>
+                      <p className="text-slate-600 dark:text-slate-400">{business.phone || t('field_not_set')}</p>
                     </div>
                   )}
                 </div>
@@ -1009,7 +1029,7 @@ export default function BusinessManagementPage() {
                 {/* Location */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="location">Location</Label>
+                    <Label htmlFor="location">{t('field_location')}</Label>
                     {evaluation && <InlineScore score={evaluation.locationScore} />}
                   </div>
                   {isEditing ? (
@@ -1018,12 +1038,12 @@ export default function BusinessManagementPage() {
                       value={editForm.location || ''}
                       onChange={(e) => setEditForm(prev => ({ ...prev, location: e.target.value }))}
                       className="rounded-xl"
-                      placeholder="City, Country"
+                      placeholder={t('placeholder_location')}
                     />
                   ) : (
                     <div className="flex items-center gap-2">
                       <MapPin className="w-4 h-4 text-slate-400" />
-                      <p className="text-slate-600 dark:text-slate-400">{business.location || 'Not set'}</p>
+                      <p className="text-slate-600 dark:text-slate-400">{business.location || t('field_not_set')}</p>
                     </div>
                   )}
                   {evaluation && (
@@ -1037,7 +1057,7 @@ export default function BusinessManagementPage() {
                 {/* Category */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="category">Category</Label>
+                    <Label htmlFor="category">{t('field_category')}</Label>
                     {evaluation && <InlineScore score={evaluation.categoryScore} />}
                   </div>
                   {isEditing ? (
@@ -1046,7 +1066,7 @@ export default function BusinessManagementPage() {
                       onValueChange={(value) => setEditForm(prev => ({ ...prev, categoryId: Number.parseInt(value, 10) }))}
                     >
                       <SelectTrigger className="rounded-xl">
-                        <SelectValue placeholder="Select category" />
+                        <SelectValue placeholder={t('field_select_category')} />
                       </SelectTrigger>
                       <SelectContent>
                         {categories.map((cat) => (
@@ -1059,7 +1079,7 @@ export default function BusinessManagementPage() {
                   ) : (
                     <div className="flex items-center gap-2">
                       <Building2 className="w-4 h-4 text-slate-400" />
-                      <p className="text-slate-600 dark:text-slate-400">{business.categoryName || 'Not set'}</p>
+                      <p className="text-slate-600 dark:text-slate-400">{business.categoryName || t('field_not_set')}</p>
                     </div>
                   )}
                   {evaluation && (
@@ -1072,31 +1092,31 @@ export default function BusinessManagementPage() {
 
                 {/* Weekend Day */}
                 <div className="space-y-2">
-                  <Label htmlFor="weekendDay">Weekend Day (Closed)</Label>
+                  <Label htmlFor="weekendDay">{t('field_weekend_day_closed')}</Label>
                   {isEditing ? (
                     <Select
                       value={editForm.weekendDay || 'NONE'}
                       onValueChange={(value) => setEditForm(prev => ({ ...prev, weekendDay: value === 'NONE' ? '' : value }))}
                     >
                       <SelectTrigger className="rounded-xl">
-                        <SelectValue placeholder="Select weekend day" />
+                        <SelectValue placeholder={t('field_select_weekend_day')} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="NONE">None</SelectItem>
-                        <SelectItem value="MONDAY">Monday</SelectItem>
-                        <SelectItem value="TUESDAY">Tuesday</SelectItem>
-                        <SelectItem value="WEDNESDAY">Wednesday</SelectItem>
-                        <SelectItem value="THURSDAY">Thursday</SelectItem>
-                        <SelectItem value="FRIDAY">Friday</SelectItem>
-                        <SelectItem value="SATURDAY">Saturday</SelectItem>
-                        <SelectItem value="SUNDAY">Sunday</SelectItem>
+                        <SelectItem value="NONE">{t('weekday_none')}</SelectItem>
+                        <SelectItem value="MONDAY">{t('weekday_monday')}</SelectItem>
+                        <SelectItem value="TUESDAY">{t('weekday_tuesday')}</SelectItem>
+                        <SelectItem value="WEDNESDAY">{t('weekday_wednesday')}</SelectItem>
+                        <SelectItem value="THURSDAY">{t('weekday_thursday')}</SelectItem>
+                        <SelectItem value="FRIDAY">{t('weekday_friday')}</SelectItem>
+                        <SelectItem value="SATURDAY">{t('weekday_saturday')}</SelectItem>
+                        <SelectItem value="SUNDAY">{t('weekday_sunday')}</SelectItem>
                       </SelectContent>
                     </Select>
                   ) : (
                     <div className="flex items-center gap-2">
                       <Calendar className="w-4 h-4 text-slate-400" />
                       <p className="text-slate-600 dark:text-slate-400">
-                        {business.weekendDay ? business.weekendDay.charAt(0) + business.weekendDay.slice(1).toLowerCase() : 'Not set'}
+                        {businessManageWeekdayT(locale, business.weekendDay)}
                       </p>
                     </div>
                   )}
@@ -1114,23 +1134,21 @@ export default function BusinessManagementPage() {
                     <ImageIcon className="w-5 h-5 text-white" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-slate-800 dark:text-white text-lg">Business Images & Branding</h3>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">Manage your business photos</p>
+                    <h3 className="font-bold text-slate-800 dark:text-white text-lg">{t('images_title')}</h3>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">{t('images_subtitle')}</p>
                   </div>
                 </div>
-                {evaluation && <InlineScore score={evaluation.brandingScore} label="Branding" />}
+                {evaluation && <InlineScore score={evaluation.brandingScore} label={t('images_branding_label')} />}
               </div>
               {/* Image count info */}
               <div className="mt-3 flex items-center gap-2 text-sm">
                 <Info className="w-4 h-4 text-violet-500" />
                 <span className="text-slate-600 dark:text-slate-400">
-                  {images.length > 0 
-                    ? `${images.length >= 3 ? '3+ images' : `${images.length} image${images.length > 1 ? 's' : ''}`} (${images.length} images). AI Overall: ${evaluation?.overallScore ?? 'N/A'}/100 — ${evaluation?.brandingDetails || 'Excellent profile with strong scores across all categories, particularly in branding and location.'}`
-                    : 'Add images to improve your branding score. 3+ images recommended (max 6).'}
+                  {imagesSummaryText}
                 </span>
               </div>
               {/* Branding Evaluation */}
-              {evaluation && evaluation.brandingSuggestions && (
+              {evaluation?.brandingSuggestions && (
                 <div className="mt-4">
                   <InlineEvaluation
                     details={null}
@@ -1159,19 +1177,19 @@ export default function BusinessManagementPage() {
                   {uploadingImage ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Uploading...
+                      {t('images_uploading')}
                     </>
                   ) : (
                     <>
                       <Upload className="w-4 h-4 mr-2" />
-                      Upload Image
+                      {t('images_upload')}
                     </>
                   )}
                 </Button>
 
                 {/* OR separator */}
                 <div className="flex items-center gap-2 text-sm text-slate-400">
-                  <span>or</span>
+                  <span>{t('images_or')}</span>
                 </div>
 
                 {/* URL Input */}
@@ -1179,7 +1197,7 @@ export default function BusinessManagementPage() {
                   <Input
                     value={newImageUrl}
                     onChange={(e) => setNewImageUrl(e.target.value)}
-                    placeholder="Enter image URL..."
+                    placeholder={t('images_url_placeholder')}
                     className="flex-1 rounded-xl"
                   />
                   <Button
@@ -1193,7 +1211,7 @@ export default function BusinessManagementPage() {
                     ) : (
                       <>
                         <Plus className="w-4 h-4 mr-2" />
-                        Add
+                        {t('images_add')}
                       </>
                     )}
                   </Button>
@@ -1204,7 +1222,7 @@ export default function BusinessManagementPage() {
               {images.length > 1 && (
                 <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
                   <GripVertical className="w-3.5 h-3.5" />
-                  Drag and drop to reorder. First image will be your primary photo.
+                  {t('images_drag_hint')}
                 </p>
               )}
 
@@ -1255,7 +1273,7 @@ export default function BusinessManagementPage() {
                       </div>
                       {/* Primary badge */}
                       {index === 0 && (
-                        <Badge className="absolute top-2 left-2 bg-violet-500 text-white shadow-lg">Primary</Badge>
+                        <Badge className="absolute top-2 left-2 bg-violet-500 text-white shadow-lg">{t('images_primary')}</Badge>
                       )}
                       {/* Order number */}
                       {index > 0 && (
@@ -1267,14 +1285,15 @@ export default function BusinessManagementPage() {
                   ))}
                 </div>
               ) : (
-                <div 
+                <button
+                  type="button"
                   className="text-center py-12 bg-slate-50 dark:bg-slate-800/50 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 cursor-pointer hover:border-violet-400 hover:bg-violet-50/50 dark:hover:bg-violet-900/20 transition-colors"
                   onClick={() => fileInputRef.current?.click()}
                 >
                   <Upload className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
-                  <p className="text-slate-600 dark:text-slate-400 font-medium">Click to upload your first image</p>
-                  <p className="text-sm text-slate-400 dark:text-slate-500 mt-1">PNG, JPG up to 5MB</p>
-                </div>
+                  <p className="text-slate-600 dark:text-slate-400 font-medium">{t('images_click_upload')}</p>
+                  <p className="text-sm text-slate-400 dark:text-slate-500 mt-1">{t('images_format_hint')}</p>
+                </button>
               )}
             </div>
           </div>
@@ -1286,15 +1305,15 @@ export default function BusinessManagementPage() {
       <AlertDialog open={deleteImageId !== null} onOpenChange={() => setDeleteImageId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Image?</AlertDialogTitle>
+            <AlertDialogTitle>{t('dialog_delete_image_title')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this image? This action cannot be undone.
+              {t('dialog_delete_image_desc')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('btn_cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteImage} className="bg-red-500 hover:bg-red-600">
-              Delete
+              {t('dialog_delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -1307,10 +1326,10 @@ export default function BusinessManagementPage() {
 function InlineScore({ 
   score, 
   label 
-}: { 
+}: Readonly<{ 
   score: number; 
   label?: string;
-}) {
+}>) {
   const getScoreColor = (s: number) => {
     if (s >= 80) return 'text-emerald-600 dark:text-emerald-400';
     if (s >= 60) return 'text-amber-600 dark:text-amber-400';
@@ -1336,10 +1355,10 @@ function InlineScore({
 function InlineEvaluation({ 
   details, 
   suggestions 
-}: { 
+}: Readonly<{ 
   details?: string | null; 
   suggestions?: string | null;
-}) {
+}>) {
   if (!details && !suggestions) return null;
 
   return (
