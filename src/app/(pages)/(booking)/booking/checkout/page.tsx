@@ -5,12 +5,15 @@ import { useRouter } from 'next/navigation';
 import Layout from '@components/layout/Layout';
 import BookingSummary from './components/BookingSummary';
 import ContactForm from './components/ContactForm';
+import type { User as ContactUser } from './components/ContactForm';
 import PaymentSummary from './components/PaymentSummary';
 import { apiGet } from '@/(pages)/(auth)/api/client';
 import useCheckout from './hooks/useCheckout';
 import { useAuth } from '@/(pages)/(auth)/context/AuthContext';
 import { useTracking } from '@global/hooks/useTracking';
 import TimeOnPageTracker from '@components/tracking/TimeOnPageTracker';
+import { useLocale } from '@global/hooks/useLocale';
+import { bookingT } from '@/(pages)/(booking)/i18n';
 
 type BookingData = {
   business: any;
@@ -28,8 +31,9 @@ const BookingCheckoutPage = () => {
   const [bookingData, setBookingData] = useState<BookingData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [displayUser, setDisplayUser] = useState<any | null>(null);
+  const [displayUser, setDisplayUser] = useState<ContactUser | null>(null);
   const [bookingCompleted, setBookingCompleted] = useState(false);
+  const { locale } = useLocale();
 
   // Check if user is authenticated, if not redirect to login
   useEffect(() => {
@@ -101,11 +105,11 @@ const BookingCheckoutPage = () => {
       // Validate all required fields exist
       if (!data.business || !data.service || !data.staff || !data.date || !data.timeSlot) {
         console.log('[Checkout] VALIDATION FAILED - Missing fields:', {
-          business: !data.business ? 'MISSING' : 'ok',
-          service: !data.service ? 'MISSING' : 'ok',
-          staff: !data.staff ? 'MISSING' : 'ok',
-          date: !data.date ? 'MISSING' : 'ok',
-          timeSlot: !data.timeSlot ? 'MISSING' : 'ok',
+          business: data.business ? 'ok' : 'MISSING',
+          service: data.service ? 'ok' : 'MISSING',
+          staff: data.staff ? 'ok' : 'MISSING',
+          date: data.date ? 'ok' : 'MISSING',
+          timeSlot: data.timeSlot ? 'ok' : 'MISSING',
         });
         setIsLoading(false);
         return;
@@ -163,7 +167,7 @@ const BookingCheckoutPage = () => {
         <div className="container mx-auto px-4 py-8 flex items-center justify-center min-h-screen">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-gray-500">Loading your booking details...</p>
+            <p className="text-gray-500">{bookingT(locale, 'checkout_loading_details')}</p>
           </div>
         </div>
       </Layout>
@@ -174,13 +178,19 @@ const BookingCheckoutPage = () => {
     return null;
   }
 
+  const contactUser: ContactUser = {
+    name: (displayUser?.name as string) ?? (user?.name as string) ?? '',
+    email: (displayUser?.email as string) ?? (user?.email as string) ?? '',
+    phone: (displayUser?.phone as string) ?? (user?.phone as string) ?? '',
+  };
+
   return (
     <Layout>
       {/* Tracking */}
       <TimeOnPageTracker pageName="checkout" />
 
       <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-8">Complete Your Booking</h1>
+        <h1 className="text-3xl font-bold mb-8">{bookingT(locale, 'checkout_title')}</h1>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
@@ -192,12 +202,15 @@ const BookingCheckoutPage = () => {
               timeSlot={bookingData.timeSlot}
             />
 
-            <ContactForm user={displayUser ?? user} />
+            <ContactForm user={contactUser} />
 
             <div>
               <div className="p-4 bg-white border rounded">
-                <label className="block text-sm font-medium text-gray-700">Special Requests (Optional)</label>
-                <textarea className="w-full border rounded-md p-2 min-h-[100px] resize-none mt-2" placeholder="Any specific requirements or notes for your appointment" />
+                <label className="block text-sm font-medium text-gray-700">{bookingT(locale, 'checkout_special_requests_label')}</label>
+                <textarea
+                  className="w-full border rounded-md p-2 min-h-[100px] resize-none mt-2"
+                  placeholder={bookingT(locale, 'checkout_special_requests_placeholder')}
+                />
               </div>
             </div>
           </div>

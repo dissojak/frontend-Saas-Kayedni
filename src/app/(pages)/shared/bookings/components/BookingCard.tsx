@@ -1,6 +1,7 @@
 import React from 'react';
 import { Badge } from '@components/ui/badge';
 import { Button } from '@components/ui/button';
+import { useLocale } from '@global/hooks/useLocale';
 import { 
   Clock, 
   Bell,
@@ -9,13 +10,15 @@ import {
   Ban, 
   XCircle, 
   Phone, 
-  Mail,
-  AlertCircle,
-  DollarSign 
+  AlertCircle
 } from 'lucide-react';
-import type { Booking } from '../types/Booking';
 import type { BookingCardProps } from '../types/BookingCardProps';
 import { isToday, isCurrentlyActive, isUpNext, formatTime, getStatusColor } from '../utils';
+import {
+  businessBookingsDateLocale,
+  businessBookingsT,
+  businessBookingStatusT,
+} from '@/(pages)/(business)/business/bookings/i18n';
 
 const getStatusIcon = (status: string) => {
   switch (status.toLowerCase()) {
@@ -28,6 +31,68 @@ const getStatusIcon = (status: string) => {
   }
 };
 
+function getAvatarClass(
+  variant: BookingCardProps['variant'],
+  isActive: boolean,
+  isNext: boolean,
+  bookingIsToday: boolean,
+): string {
+  if (variant === 'cancelled') {
+    return 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400';
+  }
+
+  if (variant === 'past') {
+    return 'bg-muted text-muted-foreground';
+  }
+
+  if (isActive) {
+    return 'bg-emerald-500 text-white';
+  }
+
+  if (isNext) {
+    return 'bg-amber-500/20 text-amber-600 dark:text-amber-400';
+  }
+
+  if (bookingIsToday) {
+    return 'bg-primary/10 dark:bg-primary/20 text-primary';
+  }
+
+  return 'bg-muted text-muted-foreground';
+}
+
+function getDateClass(variant: BookingCardProps['variant'], bookingIsToday: boolean): string {
+  if (bookingIsToday && variant === 'default') {
+    return 'text-primary';
+  }
+
+  if (variant === 'past' || variant === 'cancelled') {
+    return 'text-muted-foreground';
+  }
+
+  return 'text-foreground';
+}
+
+function getTimeClass(
+  variant: BookingCardProps['variant'],
+  bookingIsToday: boolean,
+  isActive: boolean,
+): string {
+  if (isActive) {
+    return 'text-emerald-600 dark:text-emerald-400';
+  }
+
+  if (bookingIsToday && variant === 'default') {
+    return 'text-primary';
+  }
+
+  if (variant === 'past' || variant === 'cancelled') {
+    return 'text-muted-foreground';
+  }
+
+  return 'text-foreground';
+}
+
+// eslint-disable-next-line sonarjs/cognitive-complexity
 export const BookingCard: React.FC<BookingCardProps> = ({
   booking,
   variant = 'default',
@@ -37,6 +102,7 @@ export const BookingCard: React.FC<BookingCardProps> = ({
   onMarkNoShow,
   onSendReminderNow
 }) => {
+  const { locale } = useLocale();
   const bookingIsToday = isToday(booking.date, currentTime);
   const isActive = isCurrentlyActive(booking, currentTime);
   const isNext = isUpNext(booking, currentTime);
@@ -69,13 +135,13 @@ export const BookingCard: React.FC<BookingCardProps> = ({
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
             </span>
-            <span className="font-bold text-sm uppercase tracking-wider">In Session Now</span>
+            <span className="font-bold text-sm uppercase tracking-wider">{businessBookingsT(locale, 'banner_in_session_now')}</span>
           </div>
         )}
         {isNext && variant === 'default' && (
           <div className="flex items-center gap-2 mb-4 bg-amber-500/20 text-amber-700 dark:text-amber-300 px-4 py-2 rounded-xl w-fit">
             <Clock className="w-4 h-4" />
-            <span className="font-bold text-sm uppercase tracking-wider">Up Next</span>
+            <span className="font-bold text-sm uppercase tracking-wider">{businessBookingsT(locale, 'banner_up_next')}</span>
           </div>
         )}
 
@@ -83,17 +149,7 @@ export const BookingCard: React.FC<BookingCardProps> = ({
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-5">
           <div className="flex items-center gap-4">
             <div className={`w-14 h-14 rounded-2xl flex items-center justify-center font-bold text-lg shrink-0 ${
-              variant === 'cancelled' 
-                ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
-                : variant === 'past'
-                ? 'bg-muted text-muted-foreground'
-                : isActive
-                ? 'bg-emerald-500 text-white'
-                : isNext
-                ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400'
-                : bookingIsToday 
-                ? 'bg-primary/10 dark:bg-primary/20 text-primary' 
-                : 'bg-muted text-muted-foreground'
+              getAvatarClass(variant, isActive, isNext, bookingIsToday)
             }`}>
               {booking.clientName.charAt(0)}
             </div>
@@ -108,20 +164,20 @@ export const BookingCard: React.FC<BookingCardProps> = ({
           </div>
           <Badge className={`${getStatusColor(booking.status)} text-sm font-semibold px-3 py-1.5 flex items-center gap-1.5 w-fit`}>
             {getStatusIcon(booking.status)}
-            {booking.status}
+            {businessBookingStatusT(locale, booking.status)}
           </Badge>
         </div>
         
         {/* Info Grid */}
         <div className="grid grid-cols-4 gap-4 sm:gap-6 mb-6 p-4 bg-muted/30 dark:bg-muted/10 rounded-xl">
           <div className="col-span-2 sm:col-span-1">
-            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Client</p>
+            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">{businessBookingsT(locale, 'card_client')}</p>
             <p className={`text-sm font-semibold truncate ${variant === 'past' || variant === 'cancelled' ? 'text-muted-foreground' : 'text-foreground'}`}>
               {booking.clientName}
             </p>
           </div>
           <div className="col-span-2 sm:col-span-1">
-            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Contact</p>
+            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">{businessBookingsT(locale, 'card_contact')}</p>
             <p className="text-xs text-muted-foreground truncate">{booking.clientEmail}</p>
             {booking.clientPhone && (
               <a href={`tel:${booking.clientPhone}`} className="text-xs text-primary hover:underline flex items-center gap-1 mt-0.5">
@@ -131,24 +187,30 @@ export const BookingCard: React.FC<BookingCardProps> = ({
             )}
           </div>
           <div>
-            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Date</p>
+            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">{businessBookingsT(locale, 'card_date')}</p>
             <p className={`text-sm font-semibold ${
-              bookingIsToday && variant === 'default' ? 'text-primary' : variant === 'past' || variant === 'cancelled' ? 'text-muted-foreground' : 'text-foreground'
+              getDateClass(variant, bookingIsToday)
             }`}>
-              {bookingIsToday ? 'Today' : new Date(booking.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+              {bookingIsToday
+                ? businessBookingsT(locale, 'card_today')
+                : new Date(booking.date).toLocaleDateString(businessBookingsDateLocale(locale), {
+                    weekday: 'short',
+                    month: 'short',
+                    day: 'numeric',
+                  })}
             </p>
           </div>
           <div>
-            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Time</p>
+            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">{businessBookingsT(locale, 'card_time')}</p>
             <p className={`text-sm font-semibold ${
-              isActive ? 'text-emerald-600 dark:text-emerald-400' : bookingIsToday && variant === 'default' ? 'text-primary' : variant === 'past' || variant === 'cancelled' ? 'text-muted-foreground' : 'text-foreground'
+              getTimeClass(variant, bookingIsToday, isActive)
             }`}>
-              {formatTime(booking.startTime)} - {formatTime(booking.endTime)}
+              {formatTime(booking.startTime)} {businessBookingsT(locale, 'time_to')} {formatTime(booking.endTime)}
             </p>
           </div>
           <div className="col-span-2 sm:col-span-4 lg:col-span-4 flex items-center justify-between pt-3 sm:pt-0 border-t sm:border-t-0 border-border/50">
             <div className="sm:hidden">
-              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Price</p>
+              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">{businessBookingsT(locale, 'card_price')}</p>
             </div>
             <p className={`text-lg font-bold ${variant === 'past' || variant === 'cancelled' ? 'text-muted-foreground' : 'text-emerald-600 dark:text-emerald-400'}`}>
               ${booking.price.toFixed(2)}
@@ -166,7 +228,7 @@ export const BookingCard: React.FC<BookingCardProps> = ({
                 onClick={() => onStatusUpdate(booking.id, 'CONFIRMED')}
               >
                 <UserCheck className="w-5 h-5 mr-2" />
-                Confirm Booking
+                {businessBookingsT(locale, 'action_confirm_booking')}
               </Button>
             )}
             {booking.status.toLowerCase() === 'confirmed' && (
@@ -177,7 +239,7 @@ export const BookingCard: React.FC<BookingCardProps> = ({
                   onClick={() => onStatusUpdate(booking.id, 'COMPLETED')}
                 >
                   <CheckCircle className="w-5 h-5 mr-2" />
-                  Mark Complete
+                  {businessBookingsT(locale, 'action_mark_complete')}
                 </Button>
                 {canSendComeNowReminder && onSendReminderNow && (
                   <Button
@@ -187,7 +249,7 @@ export const BookingCard: React.FC<BookingCardProps> = ({
                     onClick={() => onSendReminderNow(booking.id)}
                   >
                     <Bell className="w-4 h-4 mr-2" />
-                    Call Client Now
+                    {businessBookingsT(locale, 'action_call_client_now')}
                   </Button>
                 )}
               </div>
@@ -201,7 +263,7 @@ export const BookingCard: React.FC<BookingCardProps> = ({
                   onClick={() => onMarkNoShow(booking.id, booking.clientName)}
                 >
                   <Ban className="w-4 h-4 mr-2" />
-                  No Show
+                  {businessBookingsT(locale, 'action_no_show')}
                 </Button>
                 <Button
                   variant="outline"
@@ -210,7 +272,9 @@ export const BookingCard: React.FC<BookingCardProps> = ({
                   onClick={() => onCancel(booking.id, booking.clientName, booking.status)}
                 >
                   <XCircle className="w-4 h-4 mr-2" />
-                  {booking.status.toUpperCase() === 'PENDING' ? 'Reject' : 'Cancel'}
+                  {booking.status.toUpperCase() === 'PENDING'
+                    ? businessBookingsT(locale, 'action_reject')
+                    : businessBookingsT(locale, 'action_cancel')}
                 </Button>
               </div>
             )}
@@ -221,7 +285,7 @@ export const BookingCard: React.FC<BookingCardProps> = ({
         {booking.notes && (
           <div className={`mt-5 pt-4 border-t ${variant === 'cancelled' ? 'border-red-200/50 dark:border-red-900/30' : 'border-border'}`}>
             <p className="text-sm text-muted-foreground">
-              <span className="font-semibold text-foreground">Notes:</span> {booking.notes}
+              <span className="font-semibold text-foreground">{businessBookingsT(locale, 'card_notes_label')}:</span> {booking.notes}
             </p>
           </div>
         )}

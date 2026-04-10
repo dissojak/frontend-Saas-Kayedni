@@ -1,21 +1,23 @@
+"use client";
+
 import React from 'react';
 import { Button } from '@components/ui/button';
 import { Clock, UserCheck } from 'lucide-react';
-import type { Booking } from '../types/Booking';
+import { useLocale } from '@global/hooks/useLocale';
 import type { UpNextBookingBannerProps } from '../types/UpNextBookingBannerProps';
 import { formatTime } from '../utils';
+import { businessBookingsT } from '@/(pages)/(business)/business/bookings/i18n';
 
-export const UpNextBookingBanner: React.FC<UpNextBookingBannerProps> = ({
-  booking,
-  onStatusUpdate
-}) => {
+export function UpNextBookingBanner({ booking, onStatusUpdate }: UpNextBookingBannerProps) {
+  const { locale } = useLocale();
+
   return (
     <div className="bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-amber-500/10 dark:from-amber-500/20 dark:via-orange-500/20 dark:to-amber-500/20 border-2 border-amber-500/30 rounded-2xl p-6 sm:p-8">
       <div className="flex items-center gap-2 mb-4">
         <Clock className="w-5 h-5 text-amber-600 dark:text-amber-400 animate-pulse" />
-        <span className="text-amber-600 dark:text-amber-400 font-bold text-sm uppercase tracking-wider">Up Next</span>
+        <span className="text-amber-600 dark:text-amber-400 font-bold text-sm uppercase tracking-wider">{businessBookingsT(locale, 'banner_up_next')}</span>
         <span className="bg-amber-500/20 text-amber-700 dark:text-amber-300 text-xs font-bold px-2 py-1 rounded-full">
-          Starting Soon
+          {businessBookingsT(locale, 'banner_starting_soon')}
         </span>
       </div>
       
@@ -27,7 +29,7 @@ export const UpNextBookingBanner: React.FC<UpNextBookingBannerProps> = ({
           <div>
             <h3 className="text-xl font-bold text-foreground">{booking.clientName}</h3>
             <p className="text-muted-foreground">{booking.serviceName}</p>
-            <p className="text-amber-600 dark:text-amber-400 font-semibold">{formatTime(booking.startTime)} - {formatTime(booking.endTime)}</p>
+            <p className="text-amber-600 dark:text-amber-400 font-semibold">{formatTime(booking.startTime)} {businessBookingsT(locale, 'time_to')} {formatTime(booking.endTime)}</p>
           </div>
         </div>
         
@@ -38,10 +40,10 @@ export const UpNextBookingBanner: React.FC<UpNextBookingBannerProps> = ({
             onClick={() => onStatusUpdate(booking.id, 'CONFIRMED')}
           >
             <UserCheck className="w-5 h-5 mr-2" />
-            Confirm Booking
+            {businessBookingsT(locale, 'action_confirm_booking')}
           </Button>
         )}
       </div>
     </div>
   );
-};
+}

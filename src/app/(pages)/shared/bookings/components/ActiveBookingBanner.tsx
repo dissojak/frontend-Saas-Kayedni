@@ -1,18 +1,18 @@
 import React from 'react';
 import { Button } from '@components/ui/button';
+import { useLocale } from '@global/hooks/useLocale';
 import { 
   Clock, 
   CheckCircle, 
-  UserCheck, 
   Ban, 
   XCircle, 
   Phone, 
   Mail,
   DollarSign 
 } from 'lucide-react';
-import type { Booking } from '../types/Booking';
 import type { ActiveBookingBannerProps } from '../types/ActiveBookingBannerProps';
 import { formatTime } from '../utils';
+import { businessBookingsT } from '@/(pages)/(business)/business/bookings/i18n';
 
 export const ActiveBookingBanner: React.FC<ActiveBookingBannerProps> = ({
   booking,
@@ -20,6 +20,8 @@ export const ActiveBookingBanner: React.FC<ActiveBookingBannerProps> = ({
   onCancel,
   onMarkNoShow
 }) => {
+  const { locale } = useLocale();
+
   return (
     <div className="relative">
       {/* Glow effect */}
@@ -39,7 +41,7 @@ export const ActiveBookingBanner: React.FC<ActiveBookingBannerProps> = ({
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-3 w-3 bg-white"></span>
               </span>
-              <span className="text-white font-bold text-sm uppercase tracking-wider">In Session Now</span>
+              <span className="text-white font-bold text-sm uppercase tracking-wider">{businessBookingsT(locale, 'banner_in_session_now')}</span>
             </div>
           </div>
 
@@ -77,7 +79,7 @@ export const ActiveBookingBanner: React.FC<ActiveBookingBannerProps> = ({
               <div className="flex flex-wrap items-center gap-4 text-white/90">
                 <div className="flex items-center gap-2">
                   <Clock className="w-5 h-5" />
-                  <span className="text-lg font-semibold">{formatTime(booking.startTime)} - {formatTime(booking.endTime)}</span>
+                  <span className="text-lg font-semibold">{formatTime(booking.startTime)} {businessBookingsT(locale, 'time_to')} {formatTime(booking.endTime)}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <DollarSign className="w-5 h-5" />
@@ -87,7 +89,7 @@ export const ActiveBookingBanner: React.FC<ActiveBookingBannerProps> = ({
               
               {booking.notes && (
                 <p className="mt-4 text-white/70 text-sm bg-white/10 rounded-xl px-4 py-2">
-                  <span className="font-medium text-white/90">Note:</span> {booking.notes}
+                  <span className="font-medium text-white/90">{businessBookingsT(locale, 'note_label')}:</span> {booking.notes}
                 </p>
               )}
             </div>
@@ -100,7 +102,7 @@ export const ActiveBookingBanner: React.FC<ActiveBookingBannerProps> = ({
                 onClick={() => onStatusUpdate(booking.id, 'COMPLETED')}
               >
                 <CheckCircle className="w-5 h-5 mr-2" />
-                Complete Session
+                {businessBookingsT(locale, 'action_complete_session')}
               </Button>
               <div className="grid grid-cols-2 gap-3">
                 <Button
@@ -110,7 +112,7 @@ export const ActiveBookingBanner: React.FC<ActiveBookingBannerProps> = ({
                   onClick={() => onMarkNoShow(booking.id, booking.clientName)}
                 >
                   <Ban className="w-4 h-4 mr-1" />
-                  No Show
+                  {businessBookingsT(locale, 'action_no_show')}
                 </Button>
                 <Button
                   variant="outline"
@@ -119,7 +121,7 @@ export const ActiveBookingBanner: React.FC<ActiveBookingBannerProps> = ({
                   onClick={() => onCancel(booking.id, booking.clientName)}
                 >
                   <XCircle className="w-4 h-4 mr-1" />
-                  Cancel
+                  {businessBookingsT(locale, 'action_cancel')}
                 </Button>
               </div>
             </div>

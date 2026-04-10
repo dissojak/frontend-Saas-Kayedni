@@ -6,6 +6,8 @@ import { Card, CardContent } from '@components/ui/card';
 import { Button } from '@components/ui/button';
 import { createBusinessSlug } from '@global/lib/businessSlug';
 import { Star } from 'lucide-react';
+import { useLocale } from '@global/hooks/useLocale';
+import { bookingT } from '@/(pages)/(booking)/i18n';
 import type { Booking } from '../types';
 import type { ReviewBookingInfo } from '@components/reviews';
 
@@ -19,8 +21,18 @@ type Props = {
   onReview?: (bookingInfo: ReviewBookingInfo) => void;
 };
 
-export default function PastList({ items, getService, getBusinessName, getStaffName, formatDate, formatTime, onReview }: Props) {
+export default function PastList({ items, getService, getBusinessName, getStaffName, formatDate, formatTime, onReview }: Readonly<Props>) {
   const router = useRouter();
+  const { locale } = useLocale();
+
+  const statusText = (status: Booking['status']) => {
+    if (status === 'confirmed') return bookingT(locale, 'bookings_status_confirmed');
+    if (status === 'pending') return bookingT(locale, 'bookings_status_pending');
+    if (status === 'completed') return bookingT(locale, 'bookings_status_completed');
+    if (status === 'cancelled') return bookingT(locale, 'bookings_status_cancelled');
+    if (status === 'no_show') return bookingT(locale, 'bookings_status_no_show');
+    return bookingT(locale, 'bookings_status_unknown');
+  };
 
   const handleReviewClick = (booking: Booking) => {
     if (!onReview) return;
@@ -32,7 +44,7 @@ export default function PastList({ items, getService, getBusinessName, getStaffN
     onReview({
       id: booking.id,
       businessName,
-      serviceName: service?.name || 'Service',
+      serviceName: service?.name || bookingT(locale, 'bookings_unknown_service'),
       staffName,
     });
   };
@@ -49,12 +61,12 @@ export default function PastList({ items, getService, getBusinessName, getStaffN
               <div className="flex flex-col md:flex-row justify-between">
                 <div className="mb-4 md:mb-0">
                   <h3 className="font-bold text-lg">{businessName}</h3>
-                  <p>{service.name} with {getStaffName(booking.staffId)}</p>
+                  <p>{service.name} {bookingT(locale, 'bookings_with')} {getStaffName(booking.staffId)}</p>
                   <div className="flex flex-col md:flex-row md:items-center mt-2 md:space-x-4">
                     <p className="text-gray-600">{formatDate(booking.date)}</p>
                     <p className="text-gray-600">{formatTime(booking.startTime)} - {formatTime(booking.endTime)}</p>
                     <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${booking.status === 'completed' ? 'bg-blue-100 text-blue-800' : 'bg-red-100 text-red-800'}`}>
-                      {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
+                      {statusText(booking.status)}
                     </span>
                   </div>
                 </div>
@@ -69,10 +81,12 @@ export default function PastList({ items, getService, getBusinessName, getStaffN
                         onClick={() => handleReviewClick(booking)}
                       >
                         <Star className="h-4 w-4" />
-                        Leave Review
+                        {bookingT(locale, 'bookings_leave_review')}
                       </Button>
                     )}
-                    <Button variant="secondary" size="sm" onClick={() => router.push(`/business/${businessSlug}`)}>Book Again</Button>
+                    <Button variant="secondary" size="sm" onClick={() => router.push(`/business/${businessSlug}`)}>
+                      {bookingT(locale, 'bookings_book_again')}
+                    </Button>
                   </div>
                 </div>
               </div>

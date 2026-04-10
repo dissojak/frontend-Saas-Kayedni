@@ -1,13 +1,17 @@
 import React from 'react';
 import type { MonthlyData } from '../types';
 import { BarChart3 } from 'lucide-react';
+import { useLocale } from '@global/hooks/useLocale';
+import { dashboardMonthT, dashboardT } from '../i18n';
 
 interface MonthlyBarChartProps {
   monthlyData: MonthlyData[];
   maxMonthlyTotal: number;
 }
 
-export function MonthlyBarChart({ monthlyData, maxMonthlyTotal }: MonthlyBarChartProps) {
+export function MonthlyBarChart({ monthlyData, maxMonthlyTotal }: Readonly<MonthlyBarChartProps>) {
+  const { locale } = useLocale();
+
   // Don't render if no data
   if (!monthlyData || monthlyData.length === 0) {
     return (
@@ -16,10 +20,10 @@ export function MonthlyBarChart({ monthlyData, maxMonthlyTotal }: MonthlyBarChar
           <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center">
             <BarChart3 className="w-4 h-4 text-white" />
           </div>
-          <h3 className="font-semibold text-slate-800 dark:text-white">Monthly Bookings</h3>
+            <h3 className="font-semibold text-slate-800 dark:text-white">{dashboardT(locale, 'dashboard_chart_monthly_bookings')}</h3>
         </div>
         <div className="text-center py-8 text-slate-500 dark:text-slate-400">
-          <p>No data available</p>
+            <p>{dashboardT(locale, 'dashboard_chart_no_data')}</p>
         </div>
       </div>
     );
@@ -31,14 +35,14 @@ export function MonthlyBarChart({ monthlyData, maxMonthlyTotal }: MonthlyBarChar
         <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center">
           <BarChart3 className="w-4 h-4 text-white" />
         </div>
-        <h3 className="font-semibold text-slate-800 dark:text-white">Monthly Bookings</h3>
+        <h3 className="font-semibold text-slate-800 dark:text-white">{dashboardT(locale, 'dashboard_chart_monthly_bookings')}</h3>
       </div>
       
       <div className="space-y-4">
-        {monthlyData.map((month, index) => (
-          <div key={index} className="group">
+        {monthlyData.map((month) => (
+          <div key={month.month} className="group">
             <div className="flex items-center justify-between text-sm mb-2">
-              <span className="text-slate-500 dark:text-slate-400 font-medium w-12">{month.month}</span>
+              <span className="text-slate-500 dark:text-slate-400 font-medium w-12">{dashboardMonthT(locale, month.month)}</span>
               <span className="text-slate-700 dark:text-slate-300 font-semibold">{month.total}</span>
             </div>
             <div className="h-9 bg-slate-100/80 dark:bg-slate-800/60 rounded-xl overflow-hidden flex relative group-hover:bg-slate-200/80 dark:group-hover:bg-slate-700/60 transition-colors">
@@ -79,19 +83,19 @@ export function MonthlyBarChart({ monthlyData, maxMonthlyTotal }: MonthlyBarChar
       <div className="flex flex-wrap gap-3 mt-6 pt-5 border-t border-slate-200/60 dark:border-slate-700/60">
         <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-teal-50 dark:bg-teal-950/40 border border-teal-200/50 dark:border-teal-800/50">
           <div className="w-2.5 h-2.5 rounded-full bg-gradient-to-r from-teal-500 to-teal-400"></div>
-          <span className="text-xs font-medium text-teal-700 dark:text-teal-400">Completed</span>
+          <span className="text-xs font-medium text-teal-700 dark:text-teal-400">{dashboardT(locale, 'dashboard_chart_legend_completed')}</span>
         </div>
         <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-rose-50 dark:bg-rose-950/40 border border-rose-200/50 dark:border-rose-800/50">
           <div className="w-2.5 h-2.5 rounded-full bg-gradient-to-r from-rose-500 to-rose-400"></div>
-          <span className="text-xs font-medium text-rose-700 dark:text-rose-400">Cancelled</span>
+          <span className="text-xs font-medium text-rose-700 dark:text-rose-400">{dashboardT(locale, 'dashboard_chart_legend_cancelled')}</span>
         </div>
         <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-50 dark:bg-amber-950/40 border border-amber-200/50 dark:border-amber-800/50">
           <div className="w-2.5 h-2.5 rounded-full bg-gradient-to-r from-amber-500 to-orange-400"></div>
-          <span className="text-xs font-medium text-amber-700 dark:text-amber-400">No Show</span>
+          <span className="text-xs font-medium text-amber-700 dark:text-amber-400">{dashboardT(locale, 'dashboard_chart_legend_no_show')}</span>
         </div>
         <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-violet-50 dark:bg-violet-950/40 border border-violet-200/50 dark:border-violet-800/50">
           <div className="w-2.5 h-2.5 rounded-full bg-gradient-to-r from-violet-500 to-purple-400"></div>
-          <span className="text-xs font-medium text-violet-700 dark:text-violet-400">Upcoming</span>
+          <span className="text-xs font-medium text-violet-700 dark:text-violet-400">{dashboardT(locale, 'dashboard_chart_legend_upcoming')}</span>
         </div>
       </div>
     </div>

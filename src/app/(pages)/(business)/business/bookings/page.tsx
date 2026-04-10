@@ -10,6 +10,12 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@components/ui/tabs";
 import { Calendar, Search, CheckCircle, UserCheck, XCircle } from "lucide-react";
 import { fetchBookingsForBusiness, updateBookingStatus } from "../../actions/backend";
 import { useAuth } from "@/(pages)/(auth)/context/AuthContext";
+import { useLocale } from '@global/hooks/useLocale';
+import {
+  businessBookingsDateLocale,
+  businessBookingsT,
+  businessBookingStatusT,
+} from './i18n';
 
 // Import types from shared location
 import { Booking, ConfirmDialogState } from '../../../shared/bookings/types';
@@ -32,6 +38,7 @@ import TelegramOnboardingPrompt from '@components/telegram/TelegramOnboardingPro
 
 export default function BusinessBookingsPage() {
   const { activeMode, user } = useAuth();
+  const { locale } = useLocale();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -48,10 +55,14 @@ export default function BusinessBookingsPage() {
     bookingId: null, 
     clientName: '' 
   });
+  const dialogAuthToken =
+    globalThis.window
+      ? localStorage.getItem('token') || localStorage.getItem('accessToken') || undefined
+      : undefined;
 
   // Filter bookings based on active mode
   const displayedBookings = activeMode === 'staff' && user?.staffId
-    ? filteredBookings.filter(booking => booking.staffId === parseInt(user.staffId as string))
+    ? filteredBookings.filter(booking => booking.staffId === Number.parseInt(user.staffId as string, 10))
     : filteredBookings;
 
   useEffect(() => {
@@ -95,7 +106,7 @@ export default function BusinessBookingsPage() {
       }
     } catch (error: any) {
       console.error('[Business Bookings] Error loading bookings:', error);
-      setError('Failed to load bookings. Please try again.');
+      setError(businessBookingsT(locale, 'error_load_bookings'));
       setBookings([]);
     } finally {
       setLoading(false);
@@ -143,7 +154,7 @@ export default function BusinessBookingsPage() {
         <div className="flex items-center justify-center h-96">
           <div className="text-center">
             <div className="animate-spin rounded-full h-10 w-10 border-2 border-primary border-t-transparent mx-auto"></div>
-            <p className="mt-4 text-sm text-muted-foreground">Loading bookings...</p>
+            <p className="mt-4 text-sm text-muted-foreground">{businessBookingsT(locale, 'loading_bookings')}</p>
           </div>
         </div>
       </Layout>
@@ -159,10 +170,10 @@ export default function BusinessBookingsPage() {
             <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto mb-4">
               <XCircle className="w-8 h-8 text-destructive" />
             </div>
-            <h2 className="text-xl font-semibold text-foreground mb-2">Something went wrong</h2>
+            <h2 className="text-xl font-semibold text-foreground mb-2">{businessBookingsT(locale, 'error_title')}</h2>
             <p className="text-sm text-muted-foreground mb-6">{error}</p>
             <Button onClick={() => loadBookings()} variant="outline" className="h-11 px-6">
-              Try Again
+              {businessBookingsT(locale, 'error_retry')}
             </Button>
           </div>
         </div>
@@ -178,9 +189,13 @@ export default function BusinessBookingsPage() {
           {/* Header with Live Time */}
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">Business Bookings</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">{businessBookingsT(locale, 'title')}</h1>
               <p className="text-muted-foreground mt-1">
-                {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                {new Date().toLocaleDateString(businessBookingsDateLocale(locale), {
+                  weekday: 'long',
+                  month: 'long',
+                  day: 'numeric',
+                })}
               </p>
             </div>
             
@@ -228,8 +243,8 @@ export default function BusinessBookingsPage() {
                       <Calendar className="w-5 h-5 text-primary" />
                     </div>
                     <div>
-                      <h2 className="text-lg font-bold text-foreground">Today's Schedule</h2>
-                      <p className="text-sm text-muted-foreground">{todayBookings.length} appointments</p>
+                      <h2 className="text-lg font-bold text-foreground">{businessBookingsT(locale, 'today_schedule')}</h2>
+                      <p className="text-sm text-muted-foreground">{businessBookingsT(locale, 'appointments_count', { count: todayBookings.length })}</p>
                     </div>
                   </div>
                 </div>
@@ -239,35 +254,41 @@ export default function BusinessBookingsPage() {
                 {todayBookings.map((booking) => {
                   const isActive = isCurrentlyActive(booking, currentTime);
                   const isNext = isUpNext(booking, currentTime);
+                  let rowBgClass = 'hover:bg-muted/50';
+                  if (isActive) {
+                    rowBgClass = 'bg-emerald-50 dark:bg-emerald-950/30';
+                  } else if (isNext) {
+                    rowBgClass = 'bg-amber-50/50 dark:bg-amber-950/20';
+                  }
+
+                  let timeTextClass = 'text-muted-foreground';
+                  if (isActive) {
+                    timeTextClass = 'text-emerald-600 dark:text-emerald-400';
+                  } else if (isNext) {
+                    timeTextClass = 'text-amber-600 dark:text-amber-400';
+                  }
+
+                  let timeBadgeClass = 'bg-muted text-muted-foreground';
+                  if (isActive) {
+                    timeBadgeClass = 'bg-emerald-500 text-white';
+                  } else if (isNext) {
+                    timeBadgeClass = 'bg-amber-500/20 text-amber-600 dark:text-amber-400';
+                  }
                   
                   return (
                     <div 
                       key={booking.id}
-                      className={`p-4 sm:p-5 transition-all ${
-                        isActive 
-                          ? 'bg-emerald-50 dark:bg-emerald-950/30' 
-                          : isNext 
-                          ? 'bg-amber-50/50 dark:bg-amber-950/20' 
-                          : 'hover:bg-muted/50'
-                      }`}
+                      className={`p-4 sm:p-5 transition-all ${rowBgClass}`}
                     >
                       <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                         {/* Time */}
-                        <div className={`flex items-center gap-3 min-w-[140px] ${
-                          isActive ? 'text-emerald-600 dark:text-emerald-400' : isNext ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'
-                        }`}>
-                          <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-bold text-sm ${
-                            isActive 
-                              ? 'bg-emerald-500 text-white' 
-                              : isNext 
-                              ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400'
-                              : 'bg-muted text-muted-foreground'
-                          }`}>
+                        <div className={`flex items-center gap-3 min-w-[140px] ${timeTextClass}`}>
+                          <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-bold text-sm ${timeBadgeClass}`}>
                             {formatTime(booking.startTime)}
                           </div>
                           <div className="text-sm">
                             <p className="font-semibold">{formatTime(booking.startTime)}</p>
-                            <p className="text-xs opacity-70">to {formatTime(booking.endTime)}</p>
+                            <p className="text-xs opacity-70">{businessBookingsT(locale, 'time_to')} {formatTime(booking.endTime)}</p>
                           </div>
                         </div>
 
@@ -278,20 +299,20 @@ export default function BusinessBookingsPage() {
                             {isActive && (
                               <span className="flex items-center gap-1 bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">
                                 <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span>
-                                Now
+                                {businessBookingsT(locale, 'card_today')}
                               </span>
                             )}
                             {isNext && (
                               <span className="bg-amber-500/20 text-amber-700 dark:text-amber-300 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">
-                                Next
+                                {businessBookingsT(locale, 'banner_up_next')}
                               </span>
                             )}
                             <Badge className={`${getStatusColor(booking.status)} text-[10px]`}>
-                              {booking.status}
+                              {businessBookingStatusT(locale, booking.status)}
                             </Badge>
                           </div>
                           <p className="text-sm text-muted-foreground mt-0.5">{booking.serviceName} • ${booking.price.toFixed(2)}</p>
-                          <p className="text-xs text-muted-foreground mt-0.5">Staff: {booking.staffName}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">{businessBookingsT(locale, 'staff_label')}: {booking.staffName}</p>
                         </div>
 
                         {/* Actions */}
@@ -302,7 +323,7 @@ export default function BusinessBookingsPage() {
                               onClick={() => handleStatusUpdate(booking.id, 'CONFIRMED')}
                             >
                               <UserCheck className="w-4 h-4 mr-2" />
-                              Confirm
+                              {businessBookingsT(locale, 'action_confirm_booking')}
                             </Button>
                           )}
                           {booking.status.toLowerCase() === 'confirmed' && (
@@ -311,7 +332,7 @@ export default function BusinessBookingsPage() {
                               onClick={() => handleStatusUpdate(booking.id, 'COMPLETED')}
                             >
                               <CheckCircle className="w-4 h-4 mr-2" />
-                              Complete
+                              {businessBookingsT(locale, 'action_mark_complete')}
                             </Button>
                           )}
                           {!['cancelled', 'completed', 'no_show'].includes(booking.status.toLowerCase()) && (
@@ -321,14 +342,14 @@ export default function BusinessBookingsPage() {
                                 className="border-border hover:bg-muted text-muted-foreground font-medium h-11 px-4 rounded-xl"
                                 onClick={() => handleMarkNotShown(booking.id, booking.clientName)}
                               >
-                                No Show
+                                {businessBookingsT(locale, 'action_no_show')}
                               </Button>
                               <Button
                                 variant="outline"
                                 className="border-border hover:bg-destructive/10 hover:text-destructive hover:border-destructive/50 text-muted-foreground font-medium h-11 px-4 rounded-xl"
                                 onClick={() => handleCancelBooking(booking.id, booking.clientName)}
                               >
-                                Cancel
+                                {businessBookingsT(locale, 'action_cancel')}
                               </Button>
                             </>
                           )}
@@ -347,8 +368,8 @@ export default function BusinessBookingsPage() {
               <div className="w-16 h-16 rounded-2xl bg-muted/50 flex items-center justify-center mx-auto mb-4">
                 <Calendar className="w-8 h-8 text-muted-foreground/50" />
               </div>
-              <h3 className="text-lg font-semibold text-foreground mb-2">No appointments today</h3>
-              <p className="text-muted-foreground">Check the upcoming tab for future bookings.</p>
+              <h3 className="text-lg font-semibold text-foreground mb-2">{businessBookingsT(locale, 'no_appointments_today_title')}</h3>
+              <p className="text-muted-foreground">{businessBookingsT(locale, 'no_appointments_today_desc')}</p>
             </div>
           )}
 
@@ -360,7 +381,7 @@ export default function BusinessBookingsPage() {
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                   <Input
                     type="text"
-                    placeholder="Search by client, service, or staff..."
+                    placeholder={businessBookingsT(locale, 'search_placeholder')}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-12 bg-background border-input rounded-xl h-12 text-base"
@@ -369,25 +390,25 @@ export default function BusinessBookingsPage() {
                 <div className="flex gap-3">
                   <Select value={statusFilter} onValueChange={(value: string) => setStatusFilter(value as any)}>
                     <SelectTrigger className="w-full sm:w-44 bg-background border-input rounded-xl h-12 text-base">
-                      <SelectValue placeholder="Status" />
+                      <SelectValue placeholder={businessBookingsT(locale, 'status_placeholder')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All Status</SelectItem>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="confirmed">Confirmed</SelectItem>
-                      <SelectItem value="completed">Completed</SelectItem>
-                      <SelectItem value="cancelled">Cancelled</SelectItem>
-                      <SelectItem value="no_show">No Show</SelectItem>
+                      <SelectItem value="all">{businessBookingsT(locale, 'status_all')}</SelectItem>
+                      <SelectItem value="pending">{businessBookingsT(locale, 'status_pending')}</SelectItem>
+                      <SelectItem value="confirmed">{businessBookingsT(locale, 'status_confirmed')}</SelectItem>
+                      <SelectItem value="completed">{businessBookingsT(locale, 'status_completed')}</SelectItem>
+                      <SelectItem value="cancelled">{businessBookingsT(locale, 'status_cancelled')}</SelectItem>
+                      <SelectItem value="no_show">{businessBookingsT(locale, 'status_no_show')}</SelectItem>
                     </SelectContent>
                   </Select>
                   <Select value={sortBy} onValueChange={(value: string) => setSortBy(value as any)}>
                     <SelectTrigger className="w-full sm:w-40 bg-background border-input rounded-xl h-12 text-base">
-                      <SelectValue placeholder="Sort" />
+                      <SelectValue placeholder={businessBookingsT(locale, 'sort_placeholder')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="date">By Date</SelectItem>
-                      <SelectItem value="price">By Price</SelectItem>
-                      <SelectItem value="client">By Client</SelectItem>
+                      <SelectItem value="date">{businessBookingsT(locale, 'sort_date')}</SelectItem>
+                      <SelectItem value="price">{businessBookingsT(locale, 'sort_price')}</SelectItem>
+                      <SelectItem value="client">{businessBookingsT(locale, 'sort_client')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -402,8 +423,8 @@ export default function BusinessBookingsPage() {
                 value="upcoming" 
                 className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground py-3 text-sm font-semibold text-muted-foreground shadow-none transition-all"
               >
-                <span className="hidden sm:inline">Upcoming</span>
-                <span className="sm:hidden">Active</span>
+                <span className="hidden sm:inline">{businessBookingsT(locale, 'tab_upcoming')}</span>
+                <span className="sm:hidden">{businessBookingsT(locale, 'tab_active_short')}</span>
                 <span className="ml-2 bg-primary/20 data-[state=active]:bg-white/20 px-2 py-0.5 rounded-full text-xs">
                   {upcomingBookings.length}
                 </span>
@@ -412,8 +433,8 @@ export default function BusinessBookingsPage() {
                 value="past" 
                 className="rounded-xl data-[state=active]:bg-emerald-600 data-[state=active]:text-white py-3 text-sm font-semibold text-muted-foreground shadow-none transition-all"
               >
-                <span className="hidden sm:inline">Completed</span>
-                <span className="sm:hidden">Done</span>
+                <span className="hidden sm:inline">{businessBookingsT(locale, 'tab_completed')}</span>
+                <span className="sm:hidden">{businessBookingsT(locale, 'tab_done_short')}</span>
                 <span className="ml-2 bg-emerald-500/20 data-[state=active]:bg-white/20 px-2 py-0.5 rounded-full text-xs">
                   {pastBookings.length}
                 </span>
@@ -422,8 +443,8 @@ export default function BusinessBookingsPage() {
                 value="cancelled" 
                 className="rounded-xl data-[state=active]:bg-red-600 data-[state=active]:text-white py-3 text-sm font-semibold text-muted-foreground shadow-none transition-all"
               >
-                <span className="hidden sm:inline">Cancelled</span>
-                <span className="sm:hidden">Canceled</span>
+                <span className="hidden sm:inline">{businessBookingsT(locale, 'tab_cancelled')}</span>
+                <span className="sm:hidden">{businessBookingsT(locale, 'tab_canceled_short')}</span>
                 <span className="ml-2 bg-red-500/20 data-[state=active]:bg-white/20 px-2 py-0.5 rounded-full text-xs">
                   {cancelledBookings.length}
                 </span>
@@ -437,8 +458,8 @@ export default function BusinessBookingsPage() {
                   <div className="w-16 h-16 rounded-2xl bg-muted/50 flex items-center justify-center mx-auto mb-4">
                     <Calendar className="w-8 h-8 text-muted-foreground/50" />
                   </div>
-                  <h3 className="text-lg font-semibold text-foreground mb-2">No upcoming bookings</h3>
-                  <p className="text-muted-foreground">New bookings will appear here</p>
+                  <h3 className="text-lg font-semibold text-foreground mb-2">{businessBookingsT(locale, 'empty_upcoming_title')}</h3>
+                  <p className="text-muted-foreground">{businessBookingsT(locale, 'empty_upcoming_desc')}</p>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -464,8 +485,8 @@ export default function BusinessBookingsPage() {
                   <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 flex items-center justify-center mx-auto mb-4">
                     <CheckCircle className="w-8 h-8 text-emerald-500/50" />
                   </div>
-                  <h3 className="text-lg font-semibold text-foreground mb-2">No completed bookings yet</h3>
-                  <p className="text-muted-foreground">Completed sessions will appear here</p>
+                  <h3 className="text-lg font-semibold text-foreground mb-2">{businessBookingsT(locale, 'empty_completed_title')}</h3>
+                  <p className="text-muted-foreground">{businessBookingsT(locale, 'empty_completed_desc')}</p>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -491,8 +512,8 @@ export default function BusinessBookingsPage() {
                   <div className="w-16 h-16 rounded-2xl bg-muted/50 flex items-center justify-center mx-auto mb-4">
                     <XCircle className="w-8 h-8 text-muted-foreground/50" />
                   </div>
-                  <h3 className="text-lg font-semibold text-foreground mb-2">No cancelled bookings</h3>
-                  <p className="text-muted-foreground">Cancelled bookings will appear here</p>
+                  <h3 className="text-lg font-semibold text-foreground mb-2">{businessBookingsT(locale, 'empty_cancelled_title')}</h3>
+                  <p className="text-muted-foreground">{businessBookingsT(locale, 'empty_cancelled_desc')}</p>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -518,6 +539,8 @@ export default function BusinessBookingsPage() {
         dialogState={confirmDialog}
         onClose={() => setConfirmDialog({ open: false, type: null, bookingId: null, clientName: '' })}
         onConfirm={confirmAction}
+        businessId={businessId ? Number.parseInt(businessId, 10) : null}
+        authToken={dialogAuthToken}
       />
     </Layout>
   );

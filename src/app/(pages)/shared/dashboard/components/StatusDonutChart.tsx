@@ -1,19 +1,23 @@
 import React from 'react';
 import type { DashboardStats } from '../types';
 import { PieChart } from 'lucide-react';
+import { useLocale } from '@global/hooks/useLocale';
+import { dashboardT } from '../i18n';
 
 interface StatusDonutChartProps {
   stats: DashboardStats;
 }
 
-export function StatusDonutChart({ stats }: StatusDonutChartProps) {
+export function StatusDonutChart({ stats }: Readonly<StatusDonutChartProps>) {
+  const { locale } = useLocale();
+
   return (
     <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border border-slate-200/60 dark:border-slate-700/60 rounded-2xl p-6 shadow-lg shadow-slate-200/40 dark:shadow-slate-900/40">
       <div className="flex items-center gap-3 mb-6">
         <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center">
           <PieChart className="w-4 h-4 text-white" />
         </div>
-        <h3 className="font-semibold text-slate-800 dark:text-white">Status Distribution</h3>
+        <h3 className="font-semibold text-slate-800 dark:text-white">{dashboardT(locale, 'dashboard_chart_status_distribution')}</h3>
       </div>
 
       {/* Visual Donut Chart - Enhanced */}
@@ -118,7 +122,7 @@ export function StatusDonutChart({ stats }: StatusDonutChartProps) {
           {/* Center content - enhanced */}
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             <span className="text-4xl font-bold bg-gradient-to-br from-slate-800 to-slate-600 dark:from-white dark:to-slate-300 bg-clip-text text-transparent">{stats.total}</span>
-            <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">Total</span>
+            <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">{dashboardT(locale, 'dashboard_chart_total')}</span>
           </div>
         </div>
       </div>
@@ -129,28 +133,28 @@ export function StatusDonutChart({ stats }: StatusDonutChartProps) {
           <div className="w-3.5 h-3.5 rounded-full bg-gradient-to-br from-teal-500 to-cyan-500 shadow-lg shadow-teal-500/30"></div>
           <div>
             <p className="text-base font-bold text-slate-800 dark:text-white">{stats.completed}</p>
-            <p className="text-xs text-slate-500 dark:text-slate-400">Completed</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">{dashboardT(locale, 'dashboard_chart_legend_completed')}</p>
           </div>
         </div>
         <div className="flex items-center gap-3 p-3.5 bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-950/40 dark:to-purple-950/40 rounded-xl border border-violet-100 dark:border-violet-900/50 group hover:shadow-md transition-shadow">
           <div className="w-3.5 h-3.5 rounded-full bg-gradient-to-br from-violet-500 to-purple-500 shadow-lg shadow-violet-500/30"></div>
           <div>
             <p className="text-base font-bold text-slate-800 dark:text-white">{stats.upcoming}</p>
-            <p className="text-xs text-slate-500 dark:text-slate-400">Upcoming</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">{dashboardT(locale, 'dashboard_chart_legend_upcoming')}</p>
           </div>
         </div>
         <div className="flex items-center gap-3 p-3.5 bg-gradient-to-br from-rose-50 to-pink-50 dark:from-rose-950/40 dark:to-pink-950/40 rounded-xl border border-rose-100 dark:border-rose-900/50 group hover:shadow-md transition-shadow">
           <div className="w-3.5 h-3.5 rounded-full bg-gradient-to-br from-rose-500 to-pink-500 shadow-lg shadow-rose-500/30"></div>
           <div>
             <p className="text-base font-bold text-slate-800 dark:text-white">{stats.cancelled}</p>
-            <p className="text-xs text-slate-500 dark:text-slate-400">Cancelled</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">{dashboardT(locale, 'dashboard_chart_legend_cancelled')}</p>
           </div>
         </div>
         <div className="flex items-center gap-3 p-3.5 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/40 dark:to-orange-950/40 rounded-xl border border-amber-100 dark:border-amber-900/50 group hover:shadow-md transition-shadow">
           <div className="w-3.5 h-3.5 rounded-full bg-gradient-to-br from-amber-500 to-orange-400 shadow-lg shadow-amber-500/30"></div>
           <div>
             <p className="text-base font-bold text-slate-800 dark:text-white">{stats.noShow}</p>
-            <p className="text-xs text-slate-500 dark:text-slate-400">No Show</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">{dashboardT(locale, 'dashboard_chart_legend_no_show')}</p>
           </div>
         </div>
       </div>

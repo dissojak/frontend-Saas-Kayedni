@@ -1,13 +1,17 @@
 import React from 'react';
 import type { ServiceBreakdown } from '../types';
 import { Award } from 'lucide-react';
+import { useLocale } from '@global/hooks/useLocale';
+import { dashboardT } from '../i18n';
 
 interface TopServicesChartProps {
   serviceBreakdown: ServiceBreakdown[];
   maxServiceCount: number;
 }
 
-export function TopServicesChart({ serviceBreakdown, maxServiceCount }: TopServicesChartProps) {
+export function TopServicesChart({ serviceBreakdown, maxServiceCount }: Readonly<TopServicesChartProps>) {
+  const { locale } = useLocale();
+
   if (serviceBreakdown.length === 0) {
     return null;
   }
@@ -34,12 +38,12 @@ export function TopServicesChart({ serviceBreakdown, maxServiceCount }: TopServi
         <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
           <Award className="w-4 h-4 text-white" />
         </div>
-        <h3 className="font-semibold text-slate-800 dark:text-white">Top Services (Completed)</h3>
+        <h3 className="font-semibold text-slate-800 dark:text-white">{dashboardT(locale, 'dashboard_chart_top_services_completed')}</h3>
       </div>
 
       <div className="space-y-5">
         {serviceBreakdown.map((service, index) => (
-          <div key={index} className="group">
+          <div key={service.name} className="group">
             <div className="flex items-center justify-between mb-2.5">
               <div className="flex items-center gap-3">
                 <span className={`w-7 h-7 rounded-lg ${badgeColors[index]} flex items-center justify-center text-xs font-bold text-white shadow-lg`}>
@@ -47,7 +51,9 @@ export function TopServicesChart({ serviceBreakdown, maxServiceCount }: TopServi
                 </span>
                 <span className="text-sm font-medium text-slate-700 dark:text-slate-200">{service.name}</span>
               </div>
-              <span className="text-sm font-semibold text-slate-600 dark:text-slate-300">{service.count} bookings</span>
+              <span className="text-sm font-semibold text-slate-600 dark:text-slate-300">
+                {dashboardT(locale, 'dashboard_chart_bookings_count', { count: service.count })}
+              </span>
             </div>
             <div className="h-3 bg-slate-100/80 dark:bg-slate-800/60 rounded-full overflow-hidden group-hover:bg-slate-200/80 dark:group-hover:bg-slate-700/60 transition-colors">
               <div 
