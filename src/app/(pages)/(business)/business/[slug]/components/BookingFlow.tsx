@@ -377,7 +377,7 @@ const BookingFlow: React.FC<BookingFlowProps> = ({
                                 {meta.isSoon && !meta.isCriticalSoon && (
                                   <span className="mt-1 text-[10px] font-medium">
                                     {t("slot_starts_in_minutes", {
-                                      minutes: meta.minutesUntilStart,
+                                      minutes: meta.minutesUntilStart ?? "error",
                                     })}
                                   </span>
                                 )}

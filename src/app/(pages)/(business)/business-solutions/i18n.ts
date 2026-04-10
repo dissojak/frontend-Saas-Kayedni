@@ -123,7 +123,7 @@ const COPY: Record<LocaleCode, BusinessSolutionsCopy> = {
     plans: [
       {
         name: 'Starter',
-        price: '$29',
+        price: '29DT',
         period: '/month',
         desc: 'Great for solo founders and small teams.',
         highlight: false,
@@ -131,14 +131,14 @@ const COPY: Record<LocaleCode, BusinessSolutionsCopy> = {
       },
       {
         name: 'Professional',
-        price: '$79',
+        price: '79DT',
         period: '/month',
         desc: 'Best for growing companies.',
         highlight: true,
         features: ['Unlimited bookings', 'Staff management (up to 5)', 'SMS and email reminders', 'Analytics dashboard', 'Integrations', 'Custom branding', 'Priority support', 'API access'],
       },
       {
-        name: 'Enterprise',
+        name: 'Major Companies',
         price: 'Custom',
         period: 'pricing',
         desc: 'For large operations and multi-branch teams.',
@@ -232,7 +232,7 @@ const COPY: Record<LocaleCode, BusinessSolutionsCopy> = {
     plans: [
       {
         name: 'Starter',
-        price: '$29',
+        price: '29DT',
         period: '/mois',
         desc: 'Ideal pour independants et petites equipes.',
         highlight: false,
@@ -240,7 +240,7 @@ const COPY: Record<LocaleCode, BusinessSolutionsCopy> = {
       },
       {
         name: 'Professional',
-        price: '$79',
+        price: '79DT',
         period: '/mois',
         desc: 'Le meilleur choix pour les businesses en croissance.',
         highlight: true,
@@ -341,15 +341,15 @@ const COPY: Record<LocaleCode, BusinessSolutionsCopy> = {
     plans: [
       {
         name: 'Starter',
-        price: '$29',
+        price: '29DT',
         period: '/شهريا',
         desc: 'مناسبة للمشاريع الصغيرة وفرق العمل المحدودة.',
         highlight: false,
         features: ['حتى 100 حجز شهريا', 'جدولة اساسية', 'تذكيرات عبر البريد', 'دعم الموبايل', 'دعم فني متاح'],
       },
       {
-        name: 'Professional',
-        price: '$79',
+        name: 'احترافي',
+        price: '79DT',
         period: '/شهريا',
         desc: 'الخيار الافضل للشركات التي تنمو بسرعة.',
         highlight: true,

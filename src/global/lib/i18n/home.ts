@@ -41,7 +41,21 @@ export type HomeKey =
   | 'booking_demo_cta'
   | 'booking_demo_feature_telegram'
   | 'booking_demo_feature_reviews'
-  | 'booking_demo_feature_247';
+  | 'booking_demo_feature_247'
+  | 'booking_demo_alt_staff_service'
+  | 'booking_demo_alt_date_time'
+  | 'featured_category_barber'
+  | 'featured_category_education'
+  | 'featured_category_gaming'
+  | 'featured_location_downtown'
+  | 'featured_location_online'
+  | 'featured_location_west_mall'
+  | 'testimonials_fallback_business_style_studio'
+  | 'testimonials_fallback_business_gamezone'
+  | 'testimonials_fallback_service_tech_support'
+  | 'testimonials_fallback_comment_1'
+  | 'testimonials_fallback_comment_2'
+  | 'testimonials_fallback_comment_3';
 
 const HOME_DICTIONARY: Record<LocaleCode, Record<HomeKey, string>> = {
   en: {
@@ -89,6 +103,23 @@ const HOME_DICTIONARY: Record<LocaleCode, Record<HomeKey, string>> = {
     booking_demo_feature_telegram: 'Telegram reminders',
     booking_demo_feature_reviews: 'Browse real reviews',
     booking_demo_feature_247: 'Book 24/7',
+    booking_demo_alt_staff_service: 'Select staff and service',
+    booking_demo_alt_date_time: 'Select date and time',
+    featured_category_barber: 'Barber',
+    featured_category_education: 'Education',
+    featured_category_gaming: 'Gaming',
+    featured_location_downtown: 'Downtown',
+    featured_location_online: 'Online',
+    featured_location_west_mall: 'West Mall',
+    testimonials_fallback_business_style_studio: 'Style Studio',
+    testimonials_fallback_business_gamezone: 'GameZone',
+    testimonials_fallback_service_tech_support: 'Tech Support',
+    testimonials_fallback_comment_1:
+      'The platform transformed how I manage appointments. My revenue increased by 40% in the first month alone.',
+    testimonials_fallback_comment_2:
+      'Finally, a booking platform that actually works! Easy to find services, fast booking, and reliable reminders.',
+    testimonials_fallback_comment_3:
+      'The best tool for managing my schedule. My clients love the instant confirmations and I love the automated admin.',
   },
   fr: {
     hero_badge_prefix: 'Nouveau :',
@@ -135,6 +166,23 @@ const HOME_DICTIONARY: Record<LocaleCode, Record<HomeKey, string>> = {
     booking_demo_feature_telegram: 'Rappels Telegram',
     booking_demo_feature_reviews: 'Avis verifies',
     booking_demo_feature_247: 'Reservation 24/7',
+    booking_demo_alt_staff_service: 'Selection du staff et du service',
+    booking_demo_alt_date_time: 'Selection de la date et de l\'heure',
+    featured_category_barber: 'Barber',
+    featured_category_education: 'Education',
+    featured_category_gaming: 'Gaming',
+    featured_location_downtown: 'Centre-ville',
+    featured_location_online: 'En ligne',
+    featured_location_west_mall: 'West Mall',
+    testimonials_fallback_business_style_studio: 'Style Studio',
+    testimonials_fallback_business_gamezone: 'GameZone',
+    testimonials_fallback_service_tech_support: 'Support technique',
+    testimonials_fallback_comment_1:
+      'La plateforme a transforme ma gestion des rendez-vous. Mon chiffre d\'affaires a augmente de 40 % des le premier mois.',
+    testimonials_fallback_comment_2:
+      'Enfin une plateforme de reservation qui fonctionne vraiment ! Recherche facile, reservation rapide et rappels fiables.',
+    testimonials_fallback_comment_3:
+      'Le meilleur outil pour gerer mon planning. Mes clients adorent les confirmations instantanees et moi, l\'automatisation.',
   },
   ar: {
     hero_badge_prefix: 'جديد:',
@@ -181,6 +229,23 @@ const HOME_DICTIONARY: Record<LocaleCode, Record<HomeKey, string>> = {
     booking_demo_feature_telegram: 'تذكيرات تيليجرام',
     booking_demo_feature_reviews: 'تقييمات موثوقة',
     booking_demo_feature_247: 'حجز على مدار الساعة',
+    booking_demo_alt_staff_service: 'اختيار الموظف والخدمة',
+    booking_demo_alt_date_time: 'اختيار التاريخ والوقت',
+    featured_category_barber: 'حلاقة',
+    featured_category_education: 'تعليم',
+    featured_category_gaming: 'العاب',
+    featured_location_downtown: 'وسط المدينة',
+    featured_location_online: 'اونلاين',
+    featured_location_west_mall: 'ويست مول',
+    testimonials_fallback_business_style_studio: 'ستايل ستوديو',
+    testimonials_fallback_business_gamezone: 'جيم زون',
+    testimonials_fallback_service_tech_support: 'دعم تقني',
+    testimonials_fallback_comment_1:
+      'هذه المنصة غيرت طريقة ادارة المواعيد لدي. زادت ايراداتي بنسبة 40٪ خلال الشهر الاول فقط.',
+    testimonials_fallback_comment_2:
+      'اخيرا منصة حجز تعمل فعلا! البحث سهل، الحجز سريع، والتذكيرات موثوقة.',
+    testimonials_fallback_comment_3:
+      'افضل اداة لادارة جدولي. عملائي يحبون التأكيدات الفورية وانا احب تقليل العمل اليدوي.',
   },
 };
 

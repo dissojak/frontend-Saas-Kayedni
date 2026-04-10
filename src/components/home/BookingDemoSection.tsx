@@ -140,7 +140,7 @@ export default function BookingDemoSection() {
               </div>
               <Image
                 src="/videos/kayedni-mobile-booking-staff&service_selection.png"
-                alt="Select Staff and Service"
+                alt={homeT(locale, "booking_demo_alt_staff_service")}
                 width={190}
                 height={411}
                 className="w-full h-auto rounded-[1.2rem] ring-1 ring-gray-900/5 dark:ring-slate-700/50"
@@ -156,7 +156,7 @@ export default function BookingDemoSection() {
               </div>
               <Image
                 src="/videos/kayedni-mobile-booking-date_selection.png"
-                alt="Select Date and Time"
+                alt={homeT(locale, "booking_demo_alt_date_time")}
                 width={200}
                 height={433}
                 className="w-full h-auto rounded-[1.2rem] ring-1 ring-gray-900/5 dark:ring-slate-700/50"

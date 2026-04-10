@@ -33,6 +33,11 @@ import BookingDemoSection from "@components/home/BookingDemoSection";
 import { resolveBusinessLandingPathFromCategorySlug } from "@global/lib/slices";
 import { searchT } from "@global/lib/i18n/search";
 import { homeT } from "@global/lib/i18n/home";
+import {
+  mockBusinesses,
+  mockBusinessReviewCountById,
+  mockHomeTestimonialSeeds,
+} from "@global/data";
 
 interface Testimonial {
   clientName: string;
@@ -44,6 +49,42 @@ interface Testimonial {
   businessName?: string;
   businessId?: number;
 }
+
+const FALLBACK_CATEGORY_KEY_BY_VALUE = {
+  Barber: "featured_category_barber",
+  Education: "featured_category_education",
+  Gaming: "featured_category_gaming",
+} as const;
+
+const buildFallbackFeaturedBusinesses = (locale: "en" | "fr" | "ar") =>
+  mockBusinesses.slice(0, 3).map((business) => {
+    const categoryKey =
+      FALLBACK_CATEGORY_KEY_BY_VALUE[
+        business.category as keyof typeof FALLBACK_CATEGORY_KEY_BY_VALUE
+      ];
+
+    return {
+      id: business.id,
+      name: business.name,
+      category: categoryKey ? homeT(locale, categoryKey) : business.category,
+      rating: business.rating,
+      reviewCount: mockBusinessReviewCountById[business.id] ?? 0,
+      location: business.address,
+      image: business.logo ?? "/assets/placeholder.svg",
+    };
+  });
+
+const buildFallbackTestimonials = (locale: "en" | "fr" | "ar"): Testimonial[] =>
+  mockHomeTestimonialSeeds.map((seed) => ({
+    clientName: seed.clientName,
+    serviceComment: seed.serviceCommentKey ? homeT(locale, seed.serviceCommentKey) : undefined,
+    businessComment: seed.businessCommentKey ? homeT(locale, seed.businessCommentKey) : undefined,
+    serviceRating: seed.serviceRating,
+    businessRating: seed.businessRating,
+    serviceName: seed.serviceNameKey ? homeT(locale, seed.serviceNameKey) : undefined,
+    businessName: seed.businessNameKey ? homeT(locale, seed.businessNameKey) : undefined,
+    businessId: seed.businessId,
+  }));
 
 export default function Index() {
   const router = useRouter();
@@ -117,112 +158,11 @@ export default function Index() {
     a.getMonth() === b.getMonth() &&
     a.getDate() === b.getDate();
 
-  // Service categories (default fallback)
-  const defaultCategories = [
-    {
-      id: "barber",
-      name: "Barbers & Salons",
-      icon: "✂️",
-      count: 248,
-      color: "bg-primary/5 text-primary",
-    },
-    {
-      id: "education",
-      name: "Coaching & Tutoring",
-      icon: "📚",
-      count: 157,
-      color: "bg-brand-orange/10 text-brand-orange",
-    },
-    {
-      id: "gaming",
-      name: "Gaming Lounges",
-      icon: "🎮",
-      count: 92,
-      color: "bg-brand-teal/10 text-brand-teal",
-    },
-    {
-      id: "fitness",
-      name: "Fitness & Wellness",
-      icon: "💪",
-      count: 203,
-      color: "bg-brand-pink/10 text-brand-pink",
-    },
-    {
-      id: "spa",
-      name: "Spa & Massage",
-      icon: "💆‍♀️",
-      count: 185,
-      color: "bg-primary/10 text-primary",
-    },
-    {
-      id: "therapy",
-      name: "Therapy & Counseling",
-      icon: "🧠",
-      count: 167,
-      color: "bg-brand-orange/5 text-brand-orange",
-    },
-  ];
-
   // Featured businesses (default fallback)
-  const [featuredBusinesses, setFeaturedBusinesses] = useState(() => [
-    {
-      id: "biz-1",
-      name: "Style Studio",
-      category: "Barber",
-      rating: 4.8,
-      reviewCount: 128,
-      location: "Downtown",
-      image:
-        "https://images.unsplash.com/photo-1600948836101-f9ffda59d250?q=80&w=600&auto=format&fit=crop",
-    },
-    {
-      id: "biz-2",
-      name: "Tech Tutors",
-      category: "Education",
-      rating: 4.9,
-      reviewCount: 93,
-      location: "Online",
-      image:
-        "https://images.unsplash.com/photo-1610563166150-b34df4f3bcd6?q=80&w=600&auto=format&fit=crop",
-    },
-    {
-      id: "biz-3",
-      name: "GameZone",
-      category: "Gaming",
-      rating: 4.7,
-      reviewCount: 85,
-      location: "West Mall",
-      image:
-        "https://images.unsplash.com/photo-1586182987320-4f376d39d787?q=80&w=600&auto=format&fit=crop",
-    },
-  ]);
-
-  const [loading, setLoading] = useState(true);
+  const [featuredBusinesses, setFeaturedBusinesses] = useState(() => buildFallbackFeaturedBusinesses(locale));
 
   // Testimonials state with default fallback
-  const [testimonials, setTestimonials] = useState<Testimonial[]>([
-    {
-      clientName: "Sarah Johnson",
-      serviceComment:
-        "The platform transformed how I manage appointments. My revenue increased by 40% in the first month alone.",
-      serviceRating: 5,
-      businessName: "Style Studio",
-    },
-    {
-      clientName: "Mike Chen",
-      businessComment:
-        "Finally, a booking platform that actually works! Easy to find services, fast booking, and reliable reminders.",
-      businessRating: 5,
-      serviceName: "Tech Support",
-    },
-    {
-      clientName: "Emma Davis",
-      serviceComment:
-        "The best tool for managing my schedule. My clients love the instant confirmations and I love the automated admin.",
-      serviceRating: 5,
-      businessName: "GameZone",
-    },
-  ]);
+  const [testimonials, setTestimonials] = useState<Testimonial[]>(() => buildFallbackTestimonials(locale));
   const [testimonialsLoading, setTestimonialsLoading] = useState(false);
   const testimonialsSectionRef = useRef<HTMLElement | null>(null);
   const testimonialsImpressedRef = useRef(false);
@@ -281,16 +221,16 @@ export default function Index() {
       .then(([cats, businesses]) => {
         if (!mounted) return;
         if (Array.isArray(cats) && cats.length > 0) {
-          const mapped = cats
-            .filter((c) => c !== "All")
-            .map((c) => ({
-              id: String(c).toLowerCase(),
-              name: String(c),
-              icon: "📌",
-              count: 0,
-              color: "bg-primary/5 text-primary",
-            }));
           // REAL BACKEND WILL HAVE THIS UNCOMMENTED
+          // const mapped = cats
+          //   .filter((c) => c !== "All")
+          //   .map((c) => ({
+          //     id: String(c).toLowerCase(),
+          //     name: String(c),
+          //     icon: "📌",
+          //     count: 0,
+          //     color: "bg-primary/5 text-primary",
+          //   }));
           // if (mapped.length) setCategories(mapped);
         }
 
@@ -305,14 +245,29 @@ export default function Index() {
             image: b.logo ?? "/assets/placeholder.svg",
           }));
           setFeaturedBusinesses(mapped);
+        } else {
+          setFeaturedBusinesses(buildFallbackFeaturedBusinesses(locale));
         }
       })
-      .catch((err) => console.error("Failed to load dummy data", err))
-      .finally(() => mounted && setLoading(false));
+      .catch((err) => {
+        console.error("Failed to load dummy data", err);
+        if (mounted) {
+          setFeaturedBusinesses(buildFallbackFeaturedBusinesses(locale));
+        }
+      });
     return () => {
       mounted = false;
     };
   }, [locale]);
+
+  useEffect(() => {
+    if (!testimonialsLoading) {
+      setTestimonials((prev) => {
+        const hasRealData = prev.some((item) => item.businessId != null);
+        return hasRealData ? prev : buildFallbackTestimonials(locale);
+      });
+    }
+  }, [locale, testimonialsLoading]);
 
   // Auto-scroll logic for desktop when typing search
   useEffect(() => {
@@ -353,13 +308,15 @@ export default function Index() {
         }
       })
       .catch(() => {
-        // silently fall back to default testimonials on error
+        if (mounted) {
+          setTestimonials(buildFallbackTestimonials(locale));
+        }
       })
       .finally(() => mounted && setTestimonialsLoading(false));
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [locale]);
 
   // Track testimonials section impression (once, when it first enters the viewport)
   useEffect(() => {
