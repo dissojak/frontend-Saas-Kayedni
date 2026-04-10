@@ -103,6 +103,7 @@ export const BookingCard: React.FC<BookingCardProps> = ({
   onSendReminderNow
 }) => {
   const { locale } = useLocale();
+  const isArabic = locale === 'ar';
   const bookingIsToday = isToday(booking.date, currentTime);
   const isActive = isCurrentlyActive(booking, currentTime);
   const isNext = isUpNext(booking, currentTime);
@@ -126,7 +127,10 @@ export const BookingCard: React.FC<BookingCardProps> = ({
   }
 
   return (
-    <div className={`rounded-2xl border-2 shadow-sm hover:shadow-lg transition-all duration-200 ${cardStyle}`}>
+    <div
+      dir={isArabic ? 'rtl' : 'ltr'}
+      className={`rounded-2xl border-2 shadow-sm hover:shadow-lg transition-all duration-200 ${cardStyle} ${isArabic ? 'text-right' : ''}`}
+    >
       <div className="p-5 sm:p-6">
         {/* Status Indicator for Active/Next */}
         {isActive && variant === 'default' && (
@@ -205,7 +209,10 @@ export const BookingCard: React.FC<BookingCardProps> = ({
             <p className={`text-sm font-semibold ${
               getTimeClass(variant, bookingIsToday, isActive)
             }`}>
-              {formatTime(booking.startTime)} {businessBookingsT(locale, 'time_to')} {formatTime(booking.endTime)}
+               {businessBookingsT(locale, 'time_booking_from_to', {
+                 from: formatTime(booking.startTime),
+                 to: formatTime(booking.endTime),
+               })}
             </p>
           </div>
           <div className="col-span-2 sm:col-span-4 lg:col-span-4 flex items-center justify-between pt-3 sm:pt-0 border-t sm:border-t-0 border-border/50">

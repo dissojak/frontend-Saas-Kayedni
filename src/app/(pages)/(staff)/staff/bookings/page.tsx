@@ -11,7 +11,9 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@components/ui/tabs";
 import { Calendar, Search, CheckCircle, UserCheck, XCircle, UserPlus, Clock, Bell } from "lucide-react";
 import { fetchBookingsForStaff, updateBookingStatus, cancelBooking, sendStaffReminderNow } from "../../../(business)/actions/backend";
 import { useAuth } from "@/(pages)/(auth)/context/AuthContext";
+import { useLocale } from '@global/hooks/useLocale';
 import { useToast } from "@global/hooks/use-toast";
+import { staffBookingsLocaleTag, staffBookingsT } from './i18n';
 
 // Import types from shared location
 import { Booking, ConfirmDialogState } from '../../../shared/bookings/types';
@@ -35,10 +37,13 @@ import TelegramOnboardingPrompt from '@components/telegram/TelegramOnboardingPro
 
 export default function StaffBookingsPage() {
   const { user, token, logout } = useAuth();
+  const { locale } = useLocale();
+  const isArabic = locale === 'ar';
   const { toast } = useToast();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [sessionExpired, setSessionExpired] = useState(false);
   const [businessId, setBusinessId] = useState<number | null>(null);
   const [sendingReminderIds, setSendingReminderIds] = useState<Record<number, boolean>>({});
   const bootstrapFetchKeyRef = useRef<string | null>(null);
@@ -66,6 +71,7 @@ export default function StaffBookingsPage() {
     try {
       setLoading(true);
       setError(null);
+      setSessionExpired(false);
       console.log('[Staff Bookings Page] Fetching bookings for staff ID:', user.id);
       console.log('[Staff Bookings Page] Using token:', token.substring(0, 30) + '...');
       const data = await fetchBookingsForStaff(user.id, undefined, undefined, token);
@@ -91,16 +97,18 @@ export default function StaffBookingsPage() {
       
       // Check if it's a token error
       if (error.message?.includes('token') || error.message?.includes('401') || error.message?.includes('unauthorized')) {
-        setError('Session expired. Please log in again.');
+        setSessionExpired(true);
+        setError(staffBookingsT(locale, 'session_expired_error'));
       } else {
-        setError('Failed to load bookings. Please try again.');
+        setSessionExpired(false);
+        setError(staffBookingsT(locale, 'failed_load_error'));
       }
       
       setBookings([]);
     } finally {
       setLoading(false);
     }
-  }, [token, user?.id]);
+  }, [locale, token, user?.id]);
 
   useEffect(() => {
     if (user?.id && token) {
@@ -139,14 +147,14 @@ export default function StaffBookingsPage() {
       setSendingReminderIds((prev) => ({ ...prev, [bookingId]: true }));
       await sendStaffReminderNow(bookingId, token);
       toast({
-        title: 'Reminder sent',
-        description: 'Telegram reminder was sent to the client.',
+        title: staffBookingsT(locale, 'reminder_sent_title'),
+        description: staffBookingsT(locale, 'reminder_sent_desc'),
       });
     } catch (error: any) {
       console.error('Error sending immediate reminder:', error);
       toast({
-        title: 'Failed to send reminder',
-        description: error?.message || 'Please try again.',
+        title: staffBookingsT(locale, 'reminder_failed_title'),
+        description: error?.message || staffBookingsT(locale, 'reminder_failed_desc'),
         variant: 'destructive',
       });
     } finally {
@@ -215,10 +223,10 @@ export default function StaffBookingsPage() {
   if (loading) {
     return (
       <Layout>
-        <div className="flex items-center justify-center h-96">
+        <div dir={isArabic ? 'rtl' : 'ltr'} className="flex items-center justify-center h-96">
           <div className="text-center">
             <div className="animate-spin rounded-full h-10 w-10 border-2 border-primary border-t-transparent mx-auto"></div>
-            <p className="mt-4 text-sm text-muted-foreground">Loading bookings...</p>
+            <p className="mt-4 text-sm text-muted-foreground">{staffBookingsT(locale, 'loading_bookings')}</p>
           </div>
         </div>
       </Layout>
@@ -229,20 +237,20 @@ export default function StaffBookingsPage() {
   if (error) {
     return (
       <Layout>
-        <div className="flex items-center justify-center h-96">
+        <div dir={isArabic ? 'rtl' : 'ltr'} className="flex items-center justify-center h-96">
           <div className="text-center max-w-md">
             <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto mb-4">
               <XCircle className="w-8 h-8 text-destructive" />
             </div>
-            <h2 className="text-xl font-semibold text-foreground mb-2">Something went wrong</h2>
+            <h2 className="text-xl font-semibold text-foreground mb-2">{staffBookingsT(locale, 'error_title')}</h2>
             <p className="text-sm text-muted-foreground mb-6">{error}</p>
             <div className="flex gap-3 justify-center">
               <Button onClick={() => loadBookings()} variant="outline" className="h-11 px-6">
-                Try Again
+                {staffBookingsT(locale, 'try_again')}
               </Button>
-              {error.includes('Session expired') && (
+              {sessionExpired && (
                 <Button onClick={() => logout()} className="h-11 px-6 bg-primary">
-                  Log In Again
+                  {staffBookingsT(locale, 'log_in_again')}
                 </Button>
               )}
             </div>
@@ -254,15 +262,15 @@ export default function StaffBookingsPage() {
 
   return (
     <Layout>
-      <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/20">
+      <div dir={isArabic ? 'rtl' : 'ltr'} className="min-h-screen bg-gradient-to-b from-background via-background to-muted/20">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8">
           
           {/* Header with Live Time */}
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">My Bookings</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">{staffBookingsT(locale, 'title')}</h1>
               <p className="text-muted-foreground mt-1">
-                {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                {new Date().toLocaleDateString(staffBookingsLocaleTag(locale), { weekday: 'long', month: 'long', day: 'numeric' })}
               </p>
             </div>
             
@@ -283,16 +291,16 @@ export default function StaffBookingsPage() {
           />
 
           {/* Walk-in Booking - NEW Feature */}
-          {user?.id && token && businessId && (
+          {user?.id != null && typeof token === 'string' && businessId !== null && (
             <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-background border-2 border-primary/20 rounded-2xl p-6 shadow-lg">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div className="space-y-1">
                   <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
                     <UserPlus className="w-5 h-5 text-primary" />
-                    Walk-in Client Booking
+                    {staffBookingsT(locale, 'walk_in_title')}
                   </h3>
                   <p className="text-sm text-muted-foreground">
-                    Quickly book a service for walk-in clients. Select an existing client or create a new one.
+                    {staffBookingsT(locale, 'walk_in_desc')}
                   </p>
                 </div>
                 <WalkInBooking
@@ -333,8 +341,8 @@ export default function StaffBookingsPage() {
                       <Calendar className="w-5 h-5 text-primary" />
                     </div>
                     <div>
-                      <h2 className="text-lg font-bold text-foreground">Today's Schedule</h2>
-                      <p className="text-sm text-muted-foreground">{todayBookings.length} appointments</p>
+                      <h2 className="text-lg font-bold text-foreground">{staffBookingsT(locale, 'today_schedule_title')}</h2>
+                      <p className="text-sm text-muted-foreground">{staffBookingsT(locale, 'appointments_count', { count: todayBookings.length })}</p>
                     </div>
                   </div>
                 </div>
@@ -344,35 +352,34 @@ export default function StaffBookingsPage() {
                 {todayBookings.map((booking) => {
                   const isActive = isCurrentlyActive(booking, currentTime);
                   const isNext = isUpNext(booking, currentTime);
+                  let rowClass = 'hover:bg-muted/50';
+                  let timeTextClass = 'text-muted-foreground';
+                  let timeBadgeClass = 'bg-muted text-muted-foreground';
+
+                  if (isActive) {
+                    rowClass = 'bg-emerald-50 dark:bg-emerald-950/30';
+                    timeTextClass = 'text-emerald-600 dark:text-emerald-400';
+                    timeBadgeClass = 'bg-emerald-500 text-white';
+                  } else if (isNext) {
+                    rowClass = 'bg-amber-50/50 dark:bg-amber-950/20';
+                    timeTextClass = 'text-amber-600 dark:text-amber-400';
+                    timeBadgeClass = 'bg-amber-500/20 text-amber-600 dark:text-amber-400';
+                  }
                   
                   return (
                     <div 
                       key={booking.id}
-                      className={`p-4 sm:p-5 transition-all ${
-                        isActive 
-                          ? 'bg-emerald-50 dark:bg-emerald-950/30' 
-                          : isNext 
-                          ? 'bg-amber-50/50 dark:bg-amber-950/20' 
-                          : 'hover:bg-muted/50'
-                      }`}
+                      className={`p-4 sm:p-5 transition-all ${rowClass}`}
                     >
                       <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                         {/* Time */}
-                        <div className={`flex items-center gap-3 min-w-[140px] ${
-                          isActive ? 'text-emerald-600 dark:text-emerald-400' : isNext ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'
-                        }`}>
-                          <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-bold text-sm ${
-                            isActive 
-                              ? 'bg-emerald-500 text-white' 
-                              : isNext 
-                              ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400'
-                              : 'bg-muted text-muted-foreground'
-                          }`}>
+                        <div className={`flex items-center gap-3 min-w-[140px] ${timeTextClass}`}>
+                          <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-bold text-sm ${timeBadgeClass}`}>
                             {formatTime(booking.startTime)}
                           </div>
                           <div className="text-sm">
                             <p className="font-semibold">{formatTime(booking.startTime)}</p>
-                            <p className="text-xs opacity-70">to {formatTime(booking.endTime)}</p>
+                            <p className="text-xs opacity-70">{staffBookingsT(locale, 'time_to')} {formatTime(booking.endTime)}</p>
                           </div>
                         </div>
 
@@ -383,12 +390,12 @@ export default function StaffBookingsPage() {
                             {isActive && (
                               <span className="flex items-center gap-1 bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">
                                 <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span>
-                                Now
+                                {staffBookingsT(locale, 'now_badge')}
                               </span>
                             )}
                             {isNext && (
                               <span className="bg-amber-500/20 text-amber-700 dark:text-amber-300 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">
-                                Next
+                                {staffBookingsT(locale, 'next_badge')}
                               </span>
                             )}
                             <Badge className={`${getStatusColor(booking.status)} text-[10px]`}>
@@ -406,7 +413,7 @@ export default function StaffBookingsPage() {
                               onClick={() => handleStatusUpdate(booking.id, 'CONFIRMED')}
                             >
                               <UserCheck className="w-4 h-4 mr-2" />
-                              Confirm
+                              {staffBookingsT(locale, 'confirm')}
                             </Button>
                           )}
                           {booking.status.toLowerCase() === 'confirmed' && (
@@ -416,7 +423,7 @@ export default function StaffBookingsPage() {
                                 onClick={() => handleStatusUpdate(booking.id, 'COMPLETED')}
                               >
                                 <CheckCircle className="w-4 h-4 mr-2" />
-                                Complete
+                                {staffBookingsT(locale, 'complete')}
                               </Button>
                               {isFutureBooking(booking) && (
                                 <Button
@@ -426,7 +433,9 @@ export default function StaffBookingsPage() {
                                   disabled={!!sendingReminderIds[booking.id]}
                                 >
                                   <Bell className="w-4 h-4 mr-2" />
-                                  {sendingReminderIds[booking.id] ? 'Sending...' : 'Call Client Now'}
+                                  {sendingReminderIds[booking.id]
+                                    ? staffBookingsT(locale, 'sending')
+                                    : staffBookingsT(locale, 'call_client_now')}
                                 </Button>
                               )}
                             </>
@@ -438,14 +447,16 @@ export default function StaffBookingsPage() {
                                 className="border-border hover:bg-muted text-muted-foreground font-medium h-11 px-4 rounded-xl"
                                 onClick={() => handleMarkNotShown(booking.id, booking.clientName)}
                               >
-                                No Show
+                                {staffBookingsT(locale, 'no_show')}
                               </Button>
                               <Button
                                 variant="outline"
                                 className="border-border hover:bg-destructive/10 hover:text-destructive hover:border-destructive/50 text-muted-foreground font-medium h-11 px-4 rounded-xl"
                                 onClick={() => setConfirmDialog({ open: true, type: 'cancel', bookingId: booking.id, clientName: booking.clientName, bookingStatus: booking.status })}
                               >
-                                {booking.status.toUpperCase() === 'PENDING' ? 'Reject' : 'Cancel'}
+                                {booking.status.toUpperCase() === 'PENDING'
+                                  ? staffBookingsT(locale, 'reject')
+                                  : staffBookingsT(locale, 'cancel')}
                               </Button>
                             </>
                           )}
@@ -464,8 +475,8 @@ export default function StaffBookingsPage() {
               <div className="w-16 h-16 rounded-2xl bg-muted/50 flex items-center justify-center mx-auto mb-4">
                 <Calendar className="w-8 h-8 text-muted-foreground/50" />
               </div>
-              <h3 className="text-lg font-semibold text-foreground mb-2">No appointments today</h3>
-              <p className="text-muted-foreground">Enjoy your free day! Check the upcoming tab for future bookings.</p>
+              <h3 className="text-lg font-semibold text-foreground mb-2">{staffBookingsT(locale, 'no_appointments_today_title')}</h3>
+              <p className="text-muted-foreground">{staffBookingsT(locale, 'no_appointments_today_desc')}</p>
             </div>
           )}
 
@@ -474,38 +485,38 @@ export default function StaffBookingsPage() {
             <div className="p-4 sm:p-5">
               <div className="flex flex-col sm:flex-row gap-3">
                 <div className="flex-1 relative">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                  <Search className={`absolute top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground ${isArabic ? 'right-4' : 'left-4'}`} />
                   <Input
                     type="text"
-                    placeholder="Search by client or service..."
+                    placeholder={staffBookingsT(locale, 'search_placeholder')}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-12 bg-background border-input rounded-xl h-12 text-base"
+                    className={`bg-background border-input rounded-xl h-12 text-base ${isArabic ? 'pr-12' : 'pl-12'}`}
                   />
                 </div>
                 <div className="flex gap-3">
                   <Select value={statusFilter} onValueChange={(value: string) => setStatusFilter(value as any)}>
                     <SelectTrigger className="w-full sm:w-44 bg-background border-input rounded-xl h-12 text-base">
-                      <SelectValue placeholder="Status" />
+                      <SelectValue placeholder={staffBookingsT(locale, 'status_placeholder')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All Status</SelectItem>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="confirmed">Confirmed</SelectItem>
-                      <SelectItem value="completed">Completed</SelectItem>
-                      <SelectItem value="cancelled">Cancelled</SelectItem>
-                      <SelectItem value="rejected">Rejected</SelectItem>
-                      <SelectItem value="no_show">No Show</SelectItem>
+                      <SelectItem value="all">{staffBookingsT(locale, 'status_all')}</SelectItem>
+                      <SelectItem value="pending">{staffBookingsT(locale, 'status_pending')}</SelectItem>
+                      <SelectItem value="confirmed">{staffBookingsT(locale, 'status_confirmed')}</SelectItem>
+                      <SelectItem value="completed">{staffBookingsT(locale, 'status_completed')}</SelectItem>
+                      <SelectItem value="cancelled">{staffBookingsT(locale, 'status_cancelled')}</SelectItem>
+                      <SelectItem value="rejected">{staffBookingsT(locale, 'status_rejected')}</SelectItem>
+                      <SelectItem value="no_show">{staffBookingsT(locale, 'status_no_show')}</SelectItem>
                     </SelectContent>
                   </Select>
                   <Select value={sortBy} onValueChange={(value: string) => setSortBy(value as any)}>
                     <SelectTrigger className="w-full sm:w-40 bg-background border-input rounded-xl h-12 text-base">
-                      <SelectValue placeholder="Sort" />
+                      <SelectValue placeholder={staffBookingsT(locale, 'sort_placeholder')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="date">By Date</SelectItem>
-                      <SelectItem value="price">By Price</SelectItem>
-                      <SelectItem value="client">By Client</SelectItem>
+                      <SelectItem value="date">{staffBookingsT(locale, 'sort_date')}</SelectItem>
+                      <SelectItem value="price">{staffBookingsT(locale, 'sort_price')}</SelectItem>
+                      <SelectItem value="client">{staffBookingsT(locale, 'sort_client')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -520,8 +531,8 @@ export default function StaffBookingsPage() {
                 value="upcoming" 
                 className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground py-3 text-sm font-semibold text-muted-foreground shadow-none transition-all"
               >
-                <span className="hidden sm:inline">Upcoming</span>
-                <span className="sm:hidden">Active</span>
+                <span className="hidden sm:inline">{staffBookingsT(locale, 'tab_upcoming')}</span>
+                <span className="sm:hidden">{staffBookingsT(locale, 'tab_upcoming_mobile')}</span>
                 <span className="ml-2 bg-primary/20 data-[state=active]:bg-white/20 px-2 py-0.5 rounded-full text-xs">
                   {confirmedUpcomingBookings.length}
                 </span>
@@ -530,8 +541,8 @@ export default function StaffBookingsPage() {
                 value="pending" 
                 className="rounded-xl data-[state=active]:bg-amber-600 data-[state=active]:text-white py-3 text-sm font-semibold text-muted-foreground shadow-none transition-all"
               >
-                <span className="hidden sm:inline">Pending</span>
-                <span className="sm:hidden">Wait</span>
+                <span className="hidden sm:inline">{staffBookingsT(locale, 'tab_pending')}</span>
+                <span className="sm:hidden">{staffBookingsT(locale, 'tab_pending_mobile')}</span>
                 <span className="ml-2 bg-amber-500/20 data-[state=active]:bg-white/20 px-2 py-0.5 rounded-full text-xs">
                   {pendingBookings.length}
                 </span>
@@ -540,8 +551,8 @@ export default function StaffBookingsPage() {
                 value="past" 
                 className="rounded-xl data-[state=active]:bg-emerald-600 data-[state=active]:text-white py-3 text-sm font-semibold text-muted-foreground shadow-none transition-all"
               >
-                <span className="hidden sm:inline">Completed</span>
-                <span className="sm:hidden">Done</span>
+                <span className="hidden sm:inline">{staffBookingsT(locale, 'tab_completed')}</span>
+                <span className="sm:hidden">{staffBookingsT(locale, 'tab_completed_mobile')}</span>
                 <span className="ml-2 bg-emerald-500/20 data-[state=active]:bg-white/20 px-2 py-0.5 rounded-full text-xs">
                   {pastBookings.length}
                 </span>
@@ -550,8 +561,8 @@ export default function StaffBookingsPage() {
                 value="cancelled" 
                 className="rounded-xl data-[state=active]:bg-red-600 data-[state=active]:text-white py-3 text-sm font-semibold text-muted-foreground shadow-none transition-all"
               >
-                <span className="hidden sm:inline">Cancelled</span>
-                <span className="sm:hidden">Canceled</span>
+                <span className="hidden sm:inline">{staffBookingsT(locale, 'tab_cancelled')}</span>
+                <span className="sm:hidden">{staffBookingsT(locale, 'tab_cancelled_mobile')}</span>
                 <span className="ml-2 bg-red-500/20 data-[state=active]:bg-white/20 px-2 py-0.5 rounded-full text-xs">
                   {cancelledBookings.length}
                 </span>
@@ -560,8 +571,8 @@ export default function StaffBookingsPage() {
                 value="rejected" 
                 className="rounded-xl data-[state=active]:bg-rose-700 data-[state=active]:text-white py-3 text-sm font-semibold text-muted-foreground shadow-none transition-all"
               >
-                <span className="hidden sm:inline">Rejected</span>
-                <span className="sm:hidden">Reject</span>
+                <span className="hidden sm:inline">{staffBookingsT(locale, 'tab_rejected')}</span>
+                <span className="sm:hidden">{staffBookingsT(locale, 'tab_rejected_mobile')}</span>
                 <span className="ml-2 bg-rose-500/20 data-[state=active]:bg-white/20 px-2 py-0.5 rounded-full text-xs">
                   {rejectedBookings.length}
                 </span>
@@ -575,8 +586,8 @@ export default function StaffBookingsPage() {
                   <div className="w-16 h-16 rounded-2xl bg-muted/50 flex items-center justify-center mx-auto mb-4">
                     <Calendar className="w-8 h-8 text-muted-foreground/50" />
                   </div>
-                  <h3 className="text-lg font-semibold text-foreground mb-2">No upcoming bookings</h3>
-                  <p className="text-muted-foreground">New bookings will appear here</p>
+                  <h3 className="text-lg font-semibold text-foreground mb-2">{staffBookingsT(locale, 'no_upcoming_title')}</h3>
+                  <p className="text-muted-foreground">{staffBookingsT(locale, 'no_upcoming_desc')}</p>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -603,8 +614,8 @@ export default function StaffBookingsPage() {
                   <div className="w-16 h-16 rounded-2xl bg-amber-500/10 flex items-center justify-center mx-auto mb-4">
                     <Clock className="w-8 h-8 text-amber-500/50" />
                   </div>
-                  <h3 className="text-lg font-semibold text-foreground mb-2">No pending bookings</h3>
-                  <p className="text-muted-foreground">Pending requests will appear here waiting for confirmation</p>
+                  <h3 className="text-lg font-semibold text-foreground mb-2">{staffBookingsT(locale, 'no_pending_title')}</h3>
+                  <p className="text-muted-foreground">{staffBookingsT(locale, 'no_pending_desc')}</p>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -631,8 +642,8 @@ export default function StaffBookingsPage() {
                   <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 flex items-center justify-center mx-auto mb-4">
                     <CheckCircle className="w-8 h-8 text-emerald-500/50" />
                   </div>
-                  <h3 className="text-lg font-semibold text-foreground mb-2">No completed bookings yet</h3>
-                  <p className="text-muted-foreground">Completed sessions will appear here</p>
+                  <h3 className="text-lg font-semibold text-foreground mb-2">{staffBookingsT(locale, 'no_completed_title')}</h3>
+                  <p className="text-muted-foreground">{staffBookingsT(locale, 'no_completed_desc')}</p>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -658,8 +669,8 @@ export default function StaffBookingsPage() {
                   <div className="w-16 h-16 rounded-2xl bg-muted/50 flex items-center justify-center mx-auto mb-4">
                     <XCircle className="w-8 h-8 text-muted-foreground/50" />
                   </div>
-                  <h3 className="text-lg font-semibold text-foreground mb-2">No cancelled bookings</h3>
-                  <p className="text-muted-foreground">Cancelled bookings will appear here</p>
+                  <h3 className="text-lg font-semibold text-foreground mb-2">{staffBookingsT(locale, 'no_cancelled_title')}</h3>
+                  <p className="text-muted-foreground">{staffBookingsT(locale, 'no_cancelled_desc')}</p>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -685,8 +696,8 @@ export default function StaffBookingsPage() {
                   <div className="w-16 h-16 rounded-2xl bg-rose-500/10 flex items-center justify-center mx-auto mb-4">
                     <XCircle className="w-8 h-8 text-rose-500/60" />
                   </div>
-                  <h3 className="text-lg font-semibold text-foreground mb-2">No rejected bookings</h3>
-                  <p className="text-muted-foreground">Rejected requests will appear here</p>
+                  <h3 className="text-lg font-semibold text-foreground mb-2">{staffBookingsT(locale, 'no_rejected_title')}</h3>
+                  <p className="text-muted-foreground">{staffBookingsT(locale, 'no_rejected_desc')}</p>
                 </div>
               ) : (
                 <div className="space-y-4">

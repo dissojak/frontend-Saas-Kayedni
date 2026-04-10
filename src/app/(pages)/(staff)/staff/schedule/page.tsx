@@ -11,12 +11,14 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@components/ui/select";
 import { Calendar as CalendarIcon, Clock, Settings, Save, X, ChevronLeft, ChevronRight, Edit, CheckSquare, Square, Layers } from "lucide-react";
 import { useAuth } from "@/(pages)/(auth)/context/AuthContext";
+import { useLocale } from '@global/hooks/useLocale';
 import { 
   fetchStaffAvailabilities, 
   updateStaffAvailability, 
   updateStaffWorkHours,
   fetchStaffWorkHours 
 } from "../../../(business)/actions/backend";
+import { staffScheduleLocaleTag, staffScheduleT } from './i18n';
 
 interface Availability {
   id: number;
@@ -35,6 +37,8 @@ interface WorkHours {
 
 export default function StaffSchedulePage() {
   const { user, token } = useAuth();
+  const { locale } = useLocale();
+  const isArabic = locale === 'ar';
   const [availabilities, setAvailabilities] = useState<Availability[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingWorkHours, setLoadingWorkHours] = useState(true);
@@ -96,7 +100,7 @@ export default function StaffSchedulePage() {
     try {
       const hours = await fetchStaffWorkHours(user.id, token || undefined);
       console.log('[Schedule] Work hours loaded:', hours);
-      if (hours && hours.defaultStartTime && hours.defaultEndTime) {
+      if (hours?.defaultStartTime && hours?.defaultEndTime) {
         // Format times to HH:mm if they come as HH:mm:ss
         const formattedHours = {
           defaultStartTime: hours.defaultStartTime.substring(0, 5),
@@ -136,13 +140,13 @@ export default function StaffSchedulePage() {
     
     // Validation: BOTH times must be provided
     if (!tempWorkHours.defaultStartTime || !tempWorkHours.defaultEndTime) {
-      alert('Both start time and end time are required. Please fill in both fields.');
+      alert(staffScheduleT(locale, 'validation_both_times_required'));
       return;
     }
     
     // Validate that start time is before end time
     if (tempWorkHours.defaultStartTime >= tempWorkHours.defaultEndTime) {
-      alert('Start time must be before end time.');
+      alert(staffScheduleT(locale, 'validation_start_before_end'));
       return;
     }
     
@@ -159,7 +163,7 @@ export default function StaffSchedulePage() {
       await loadAvailabilities();
     } catch (error) {
       console.error('Failed to update work hours:', error);
-      alert('Failed to update work hours');
+      alert(staffScheduleT(locale, 'error_update_work_hours'));
     }
   };
 
@@ -190,7 +194,7 @@ export default function StaffSchedulePage() {
       await loadAvailabilities();
     } catch (error) {
       console.error('Failed to update availability:', error);
-      alert('Failed to update availability');
+      alert(staffScheduleT(locale, 'error_update_availability'));
     }
   };
 
@@ -226,7 +230,7 @@ export default function StaffSchedulePage() {
     const days = getDaysInMonth();
     const allDates = new Set<string>();
     days.forEach(date => {
-      if (date) {
+      if (date instanceof Date) {
         const year = date.getFullYear();
         const month = String(date.getMonth() + 1).padStart(2, '0');
         const day = String(date.getDate()).padStart(2, '0');
@@ -263,7 +267,7 @@ export default function StaffSchedulePage() {
       setSelectedDates(new Set());
     } catch (error) {
       console.error('Failed to bulk update status:', error);
-      alert('Failed to update status for some dates');
+      alert(staffScheduleT(locale, 'error_bulk_update_status'));
     }
   };
 
@@ -293,7 +297,7 @@ export default function StaffSchedulePage() {
       setSelectedDates(new Set());
     } catch (error) {
       console.error('Failed to bulk update times:', error);
-      alert('Failed to update times for some dates');
+      alert(staffScheduleT(locale, 'error_bulk_update_times'));
     }
   };
 
@@ -335,10 +339,10 @@ export default function StaffSchedulePage() {
     const daysInMonth = lastDay.getDate();
     const startingDayOfWeek = firstDay.getDay();
 
-    const days = [];
+    const days: Array<Date | string> = [];
     // Add empty cells for days before month starts
     for (let i = 0; i < startingDayOfWeek; i++) {
-      days.push(null);
+      days.push(`empty-${year}-${month}-${i}`);
     }
     // Add actual days
     for (let day = 1; day <= daysInMonth; day++) {
@@ -347,16 +351,24 @@ export default function StaffSchedulePage() {
     return days;
   };
 
-  const monthName = currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-  const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const monthName = currentDate.toLocaleDateString(staffScheduleLocaleTag(locale), { month: 'long', year: 'numeric' });
+  const weekDays = [
+    staffScheduleT(locale, 'week_sun'),
+    staffScheduleT(locale, 'week_mon'),
+    staffScheduleT(locale, 'week_tue'),
+    staffScheduleT(locale, 'week_wed'),
+    staffScheduleT(locale, 'week_thu'),
+    staffScheduleT(locale, 'week_fri'),
+    staffScheduleT(locale, 'week_sat'),
+  ];
 
   if (loading && availabilities.length === 0) {
     return (
       <Layout>
-        <div className="flex items-center justify-center h-96">
+        <div dir={isArabic ? 'rtl' : 'ltr'} className="flex items-center justify-center h-96">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-staff mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading schedule...</p>
+            <p className="mt-4 text-gray-600">{staffScheduleT(locale, 'loading_schedule')}</p>
           </div>
         </div>
       </Layout>
@@ -365,24 +377,24 @@ export default function StaffSchedulePage() {
 
   return (
     <Layout>
-      <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
+      <div dir={isArabic ? 'rtl' : 'ltr'} className="p-6 space-y-6 bg-gray-50 min-h-screen">
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">My Schedule</h1>
-            <p className="text-gray-600 mt-1">Manage your availability and work hours</p>
+            <h1 className="text-3xl font-bold text-gray-900">{staffScheduleT(locale, 'title')}</h1>
+            <p className="text-gray-600 mt-1">{staffScheduleT(locale, 'subtitle')}</p>
           </div>
         </div>
 
         <Tabs defaultValue="calendar" className="space-y-4">
-          <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsList className={`grid w-full max-w-md grid-cols-2 ${isArabic ? 'ml-auto' : ''}`}>
             <TabsTrigger value="calendar">
-              <CalendarIcon className="w-4 h-4 mr-2" />
-              Calendar
+              <CalendarIcon className={`w-4 h-4 ${isArabic ? 'ml-2' : 'mr-2'}`} />
+              {staffScheduleT(locale, 'tab_calendar')}
             </TabsTrigger>
             <TabsTrigger value="settings">
-              <Settings className="w-4 h-4 mr-2" />
-              Settings
+              <Settings className={`w-4 h-4 ${isArabic ? 'ml-2' : 'mr-2'}`} />
+              {staffScheduleT(locale, 'tab_settings')}
             </TabsTrigger>
           </TabsList>
 
@@ -399,8 +411,8 @@ export default function StaffSchedulePage() {
                       onClick={toggleBulkEditMode}
                       className={bulkEditMode ? "bg-staff hover:bg-staff-dark text-white" : ""}
                     >
-                      <Layers className="w-4 h-4 mr-2" />
-                      {bulkEditMode ? "Exit Bulk Edit" : "Bulk Edit"}
+                      <Layers className={`w-4 h-4 ${isArabic ? 'ml-2' : 'mr-2'}`} />
+                      {bulkEditMode ? staffScheduleT(locale, 'exit_bulk_edit') : staffScheduleT(locale, 'bulk_edit')}
                     </Button>
                     <Button
                       variant="outline"
@@ -414,7 +426,7 @@ export default function StaffSchedulePage() {
                       size="sm"
                       onClick={() => setCurrentDate(new Date())}
                     >
-                      Today
+                      {staffScheduleT(locale, 'today')}
                     </Button>
                     <Button
                       variant="outline"
@@ -433,7 +445,7 @@ export default function StaffSchedulePage() {
                     <div className="flex items-center justify-between flex-wrap gap-3">
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium text-gray-700">
-                          {selectedDates.size} date{selectedDates.size !== 1 ? 's' : ''} selected
+                          {staffScheduleT(locale, 'selected_dates_count', { count: selectedDates.size })}
                         </span>
                         {selectedDates.size > 0 && (
                           <Button
@@ -442,7 +454,7 @@ export default function StaffSchedulePage() {
                             onClick={clearSelection}
                             className="text-xs"
                           >
-                            Clear
+                            {staffScheduleT(locale, 'clear')}
                           </Button>
                         )}
                       </div>
@@ -452,7 +464,7 @@ export default function StaffSchedulePage() {
                           size="sm"
                           onClick={selectAllVisibleDates}
                         >
-                          Select All
+                          {staffScheduleT(locale, 'select_all')}
                         </Button>
                         {selectedDates.size > 0 && (
                           <>
@@ -464,7 +476,7 @@ export default function StaffSchedulePage() {
                               }}
                               className="bg-staff hover:bg-staff-dark text-white"
                             >
-                              Change Status
+                              {staffScheduleT(locale, 'change_status')}
                             </Button>
                             <Button
                               size="sm"
@@ -474,7 +486,7 @@ export default function StaffSchedulePage() {
                               }}
                               className="bg-staff hover:bg-staff-dark text-white"
                             >
-                              Change Times
+                              {staffScheduleT(locale, 'change_times')}
                             </Button>
                           </>
                         )}
@@ -484,7 +496,7 @@ export default function StaffSchedulePage() {
                 )}
 
                 {/* Calendar Grid */}
-                <div className="grid grid-cols-7 gap-2">
+                <div dir={isArabic ? 'rtl' : 'ltr'} className="grid grid-cols-7 gap-2">
                   {/* Week day headers */}
                   {weekDays.map(day => (
                     <div key={day} className="text-center font-semibold text-gray-600 py-2">
@@ -493,9 +505,9 @@ export default function StaffSchedulePage() {
                   ))}
 
                   {/* Calendar days */}
-                  {getDaysInMonth().map((date, index) => {
-                    if (!date) {
-                      return <div key={`empty-cell-${Math.random()}-${index}`} className="p-2"></div>;
+                  {getDaysInMonth().map((date) => {
+                    if (typeof date === 'string') {
+                      return <div key={date} className="p-2"></div>;
                     }
 
                     const dayAvailabilities = getAvailabilitiesForDate(date);
@@ -519,16 +531,18 @@ export default function StaffSchedulePage() {
                       >
                         {/* Bulk edit checkbox */}
                         {bulkEditMode && !isPast && (
-                          <div
-                            className="absolute top-1 right-1 cursor-pointer"
+                          <button
+                            type="button"
+                            className={`absolute top-1 cursor-pointer ${isArabic ? 'left-1' : 'right-1'}`}
                             onClick={() => toggleDateSelection(dateStr)}
+                            aria-label={`Toggle ${dateStr}`}
                           >
                             {isSelected ? (
                               <CheckSquare className="w-5 h-5 text-staff" />
                             ) : (
                               <Square className="w-5 h-5 text-gray-400 hover:text-staff" />
                             )}
-                          </div>
+                          </button>
                         )}
                         
                         <div className="text-sm font-semibold mb-1 dark:text-black">
@@ -539,7 +553,7 @@ export default function StaffSchedulePage() {
                             <button
                               key={avail.id}
                               onClick={() => !isPast && !bulkEditMode && handleEditAvailability(avail)}
-                              className={`w-full text-xs p-1 rounded ${getStatusColor(avail.status)} hover:opacity-80 transition-opacity text-left ${
+                              className={`w-full text-xs p-1 rounded ${getStatusColor(avail.status)} hover:opacity-80 transition-opacity ${isArabic ? 'text-right' : 'text-left'} ${
                                 bulkEditMode ? 'cursor-default' : ''
                               }`}
                               disabled={isPast || bulkEditMode}
@@ -565,35 +579,35 @@ export default function StaffSchedulePage() {
                 <div className="mt-6 flex flex-wrap gap-3 justify-center">
                   <div className="flex items-center gap-2">
                     <div className="w-4 h-4 rounded bg-green-100"></div>
-                    <span className="text-xs text-gray-600">Available</span>
+                    <span className="text-xs text-gray-600">{staffScheduleT(locale, 'legend_available')}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-4 h-4 rounded bg-orange-100"></div>
-                    <span className="text-xs text-gray-600">Full</span>
+                    <span className="text-xs text-gray-600">{staffScheduleT(locale, 'legend_full')}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-4 h-4 rounded bg-gray-100"></div>
-                    <span className="text-xs text-gray-600">Closed</span>
+                    <span className="text-xs text-gray-600">{staffScheduleT(locale, 'legend_closed')}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-4 h-4 rounded bg-pink-100"></div>
-                    <span className="text-xs text-gray-600">Sick</span>
+                    <span className="text-xs text-gray-600">{staffScheduleT(locale, 'legend_sick')}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-4 h-4 rounded bg-blue-100"></div>
-                    <span className="text-xs text-gray-600">Vacation</span>
+                    <span className="text-xs text-gray-600">{staffScheduleT(locale, 'legend_vacation')}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-4 h-4 rounded bg-purple-100"></div>
-                    <span className="text-xs text-gray-600">Day Off</span>
+                    <span className="text-xs text-gray-600">{staffScheduleT(locale, 'legend_day_off')}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-4 h-4 rounded bg-red-100"></div>
-                    <span className="text-xs text-gray-600">Unavailable</span>
+                    <span className="text-xs text-gray-600">{staffScheduleT(locale, 'legend_unavailable')}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Edit className="w-4 h-4 text-gray-600" />
-                    <span className="text-xs text-gray-600">User Edited</span>
+                    <span className="text-xs text-gray-600">{staffScheduleT(locale, 'legend_user_edited')}</span>
                   </div>
                 </div>
               </CardContent>
@@ -603,12 +617,12 @@ export default function StaffSchedulePage() {
           {/* Settings Tab */}
           <TabsContent value="settings" className="space-y-4">
             <Card>
-              <CardHeader>
-                <CardTitle>Default Work Hours</CardTitle>
+              <CardHeader className={isArabic ? 'text-right' : ''}>
+                <CardTitle>{staffScheduleT(locale, 'default_work_hours_title')}</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className={`space-y-4 ${isArabic ? 'text-right' : ''}`}>
                 <p className="text-sm text-gray-600">
-                  Set your default working hours. These will be used to generate your availability schedule.
+                  {staffScheduleT(locale, 'default_work_hours_desc')}
                 </p>
 
                 {loadingWorkHours ? (
@@ -617,8 +631,8 @@ export default function StaffSchedulePage() {
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="startTime">Start Time</Label>
+                    <div className={`space-y-2 ${isArabic ? 'md:order-2' : ''}`}>
+                      <Label htmlFor="startTime">{staffScheduleT(locale, 'start_time')}</Label>
                       <div className="flex gap-2">
                         <Input
                           id="startTime"
@@ -631,8 +645,8 @@ export default function StaffSchedulePage() {
                       </div>
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="endTime">End Time</Label>
+                    <div className={`space-y-2 ${isArabic ? 'md:order-1' : ''}`}>
+                      <Label htmlFor="endTime">{staffScheduleT(locale, 'end_time')}</Label>
                       <div className="flex gap-2">
                         <Input
                           id="endTime"
@@ -647,15 +661,15 @@ export default function StaffSchedulePage() {
                   </div>
                 )}
 
-                <div className="flex gap-2">
+                <div className={`flex gap-2 ${isArabic ? 'justify-end' : ''}`}>
                   {editingWorkHours ? (
                     <>
                       <Button
                         className="bg-staff hover:bg-staff-dark text-white"
                         onClick={handleSaveWorkHours}
                       >
-                        <Save className="w-4 h-4 mr-2" />
-                        Save Changes
+                        <Save className={`w-4 h-4 ${isArabic ? 'ml-2' : 'mr-2'}`} />
+                        {staffScheduleT(locale, 'save_changes')}
                       </Button>
                       <Button
                         variant="outline"
@@ -664,8 +678,8 @@ export default function StaffSchedulePage() {
                           setEditingWorkHours(false);
                         }}
                       >
-                        <X className="w-4 h-4 mr-2" />
-                        Cancel
+                        <X className={`w-4 h-4 ${isArabic ? 'ml-2' : 'mr-2'}`} />
+                        {staffScheduleT(locale, 'cancel')}
                       </Button>
                     </>
                   ) : (
@@ -673,8 +687,8 @@ export default function StaffSchedulePage() {
                       className="bg-staff hover:bg-staff-dark text-white"
                       onClick={() => setEditingWorkHours(true)}
                     >
-                      <Clock className="w-4 h-4 mr-2" />
-                      Edit Work Hours
+                      <Clock className={`w-4 h-4 ${isArabic ? 'ml-2' : 'mr-2'}`} />
+                      {staffScheduleT(locale, 'edit_work_hours')}
                     </Button>
                   )}
                 </div>
@@ -682,15 +696,15 @@ export default function StaffSchedulePage() {
             </Card>
 
             <Card>
-              <CardHeader>
-                <CardTitle>Schedule Information</CardTitle>
+              <CardHeader className={isArabic ? 'text-right' : ''}>
+                <CardTitle>{staffScheduleT(locale, 'schedule_information')}</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
+              <CardContent className={`space-y-3 ${isArabic ? 'text-right' : ''}`}>
                 <div className="text-sm text-gray-600">
-                  <p className="mb-2">• Your availability schedule is automatically generated based on your default work hours</p>
-                  <p className="mb-2">• Click on any future availability slot in the calendar to edit it</p>
-                  <p className="mb-2">• You can change the status (Available, Busy, Unavailable) or adjust the time</p>
-                  <p>• Changes are marked with an edit icon and override the auto-generated schedule</p>
+                  <p className="mb-2">• {staffScheduleT(locale, 'schedule_info_bullet_1')}</p>
+                  <p className="mb-2">• {staffScheduleT(locale, 'schedule_info_bullet_2')}</p>
+                  <p className="mb-2">• {staffScheduleT(locale, 'schedule_info_bullet_3')}</p>
+                  <p>• {staffScheduleT(locale, 'schedule_info_bullet_4')}</p>
                 </div>
               </CardContent>
             </Card>
@@ -701,15 +715,15 @@ export default function StaffSchedulePage() {
         <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Edit Availability</DialogTitle>
+              <DialogTitle>{staffScheduleT(locale, 'edit_availability_title')}</DialogTitle>
               <DialogDescription>
-                Update your availability for {selectedAvailability?.date}
+                {staffScheduleT(locale, 'edit_availability_desc', { date: selectedAvailability?.date ?? '' })}
               </DialogDescription>
             </DialogHeader>
 
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="edit-startTime">Start Time</Label>
+                <Label htmlFor="edit-startTime">{staffScheduleT(locale, 'start_time')}</Label>
                 <Input
                   id="edit-startTime"
                   type="time"
@@ -719,7 +733,7 @@ export default function StaffSchedulePage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="edit-endTime">End Time</Label>
+                <Label htmlFor="edit-endTime">{staffScheduleT(locale, 'end_time')}</Label>
                 <Input
                   id="edit-endTime"
                   type="time"
@@ -729,7 +743,7 @@ export default function StaffSchedulePage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="edit-status">Status</Label>
+                <Label htmlFor="edit-status">{staffScheduleT(locale, 'status')}</Label>
                 <Select
                   value={editForm.status}
                   onValueChange={(value) => setEditForm({ ...editForm, status: value })}
@@ -738,13 +752,13 @@ export default function StaffSchedulePage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="AVAILABLE">Available</SelectItem>
-                    <SelectItem value="FULL">Full (All Booked)</SelectItem>
-                    <SelectItem value="CLOSED">Closed</SelectItem>
-                    <SelectItem value="SICK">Sick Leave</SelectItem>
-                    <SelectItem value="VACATION">Vacation</SelectItem>
-                    <SelectItem value="DAY_OFF">Day Off</SelectItem>
-                    <SelectItem value="UNAVAILABLE">Unavailable</SelectItem>
+                    <SelectItem value="AVAILABLE">{staffScheduleT(locale, 'status_available')}</SelectItem>
+                    <SelectItem value="FULL">{staffScheduleT(locale, 'status_full_long')}</SelectItem>
+                    <SelectItem value="CLOSED">{staffScheduleT(locale, 'status_closed')}</SelectItem>
+                    <SelectItem value="SICK">{staffScheduleT(locale, 'status_sick_leave')}</SelectItem>
+                    <SelectItem value="VACATION">{staffScheduleT(locale, 'status_vacation')}</SelectItem>
+                    <SelectItem value="DAY_OFF">{staffScheduleT(locale, 'status_day_off')}</SelectItem>
+                    <SelectItem value="UNAVAILABLE">{staffScheduleT(locale, 'status_unavailable')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -752,10 +766,10 @@ export default function StaffSchedulePage() {
 
             <DialogFooter>
               <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
-                Cancel
+                {staffScheduleT(locale, 'cancel')}
               </Button>
               <Button className="bg-staff hover:bg-staff-dark text-white" onClick={handleSaveAvailability}>
-                Save Changes
+                {staffScheduleT(locale, 'save_changes')}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -765,15 +779,15 @@ export default function StaffSchedulePage() {
         <Dialog open={bulkStatusDialogOpen} onOpenChange={setBulkStatusDialogOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Change Status for Multiple Dates</DialogTitle>
+              <DialogTitle>{staffScheduleT(locale, 'change_status_multiple_title')}</DialogTitle>
               <DialogDescription>
-                Update status for {selectedDates.size} selected date{selectedDates.size !== 1 ? 's' : ''}
+                {staffScheduleT(locale, 'change_status_multiple_desc', { count: selectedDates.size })}
               </DialogDescription>
             </DialogHeader>
 
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="bulk-status">New Status</Label>
+                <Label htmlFor="bulk-status">{staffScheduleT(locale, 'new_status')}</Label>
                 <Select
                   value={bulkForm.status}
                   onValueChange={(value) => setBulkForm({ ...bulkForm, status: value })}
@@ -782,28 +796,28 @@ export default function StaffSchedulePage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="AVAILABLE">Available</SelectItem>
-                    <SelectItem value="FULL">Full (All Booked)</SelectItem>
-                    <SelectItem value="CLOSED">Closed</SelectItem>
-                    <SelectItem value="SICK">Sick Leave</SelectItem>
-                    <SelectItem value="VACATION">Vacation</SelectItem>
-                    <SelectItem value="DAY_OFF">Day Off</SelectItem>
-                    <SelectItem value="UNAVAILABLE">Unavailable</SelectItem>
+                    <SelectItem value="AVAILABLE">{staffScheduleT(locale, 'status_available')}</SelectItem>
+                    <SelectItem value="FULL">{staffScheduleT(locale, 'status_full_long')}</SelectItem>
+                    <SelectItem value="CLOSED">{staffScheduleT(locale, 'status_closed')}</SelectItem>
+                    <SelectItem value="SICK">{staffScheduleT(locale, 'status_sick_leave')}</SelectItem>
+                    <SelectItem value="VACATION">{staffScheduleT(locale, 'status_vacation')}</SelectItem>
+                    <SelectItem value="DAY_OFF">{staffScheduleT(locale, 'status_day_off')}</SelectItem>
+                    <SelectItem value="UNAVAILABLE">{staffScheduleT(locale, 'status_unavailable')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               
               <div className="text-sm text-gray-500">
-                This will update the status for all {selectedDates.size} selected dates.
+                {staffScheduleT(locale, 'update_selected_status', { count: selectedDates.size })}
               </div>
             </div>
 
             <DialogFooter>
               <Button variant="outline" onClick={() => setBulkStatusDialogOpen(false)}>
-                Cancel
+                {staffScheduleT(locale, 'cancel')}
               </Button>
               <Button className="bg-staff hover:bg-staff-dark text-white" onClick={handleBulkStatusChange}>
-                Update All
+                {staffScheduleT(locale, 'update_all')}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -813,15 +827,15 @@ export default function StaffSchedulePage() {
         <Dialog open={bulkTimeDialogOpen} onOpenChange={setBulkTimeDialogOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Change Times for Multiple Dates</DialogTitle>
+              <DialogTitle>{staffScheduleT(locale, 'change_times_multiple_title')}</DialogTitle>
               <DialogDescription>
-                Update working times for {selectedDates.size} selected date{selectedDates.size !== 1 ? 's' : ''}
+                {staffScheduleT(locale, 'change_times_multiple_desc', { count: selectedDates.size })}
               </DialogDescription>
             </DialogHeader>
 
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="bulk-startTime">Start Time</Label>
+                <Label htmlFor="bulk-startTime">{staffScheduleT(locale, 'start_time')}</Label>
                 <Input
                   id="bulk-startTime"
                   type="time"
@@ -831,7 +845,7 @@ export default function StaffSchedulePage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="bulk-endTime">End Time</Label>
+                <Label htmlFor="bulk-endTime">{staffScheduleT(locale, 'end_time')}</Label>
                 <Input
                   id="bulk-endTime"
                   type="time"
@@ -841,16 +855,16 @@ export default function StaffSchedulePage() {
               </div>
               
               <div className="text-sm text-gray-500">
-                This will update the working times for all {selectedDates.size} selected dates.
+                {staffScheduleT(locale, 'update_selected_times', { count: selectedDates.size })}
               </div>
             </div>
 
             <DialogFooter>
               <Button variant="outline" onClick={() => setBulkTimeDialogOpen(false)}>
-                Cancel
+                {staffScheduleT(locale, 'cancel')}
               </Button>
               <Button className="bg-staff hover:bg-staff-dark text-white" onClick={handleBulkTimeChange}>
-                Update All
+                {staffScheduleT(locale, 'update_all')}
               </Button>
             </DialogFooter>
           </DialogContent>

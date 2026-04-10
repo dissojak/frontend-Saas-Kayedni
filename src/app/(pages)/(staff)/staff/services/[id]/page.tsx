@@ -45,11 +45,13 @@ import {
   ShieldAlert
 } from "lucide-react";
 import { useAuth } from "@/(pages)/(auth)/context/AuthContext";
+import { useLocale } from '@global/hooks/useLocale';
 import { useRouter, useParams } from "next/navigation";
 import { 
   fetchCurrentStaffInfo,
   updateService
 } from "../../../../(business)/actions/backend";
+import { staffServicesLocaleTag, staffServicesT } from '../i18n';
 
 interface StaffInfo {
   id: number;
@@ -77,6 +79,7 @@ export default function StaffServiceDetailPage() {
   const { user, token } = useAuth();
   const router = useRouter();
   const params = useParams();
+  const { locale } = useLocale();
   const serviceId = params.id as string;
   
   const [loading, setLoading] = useState(true);
@@ -137,7 +140,7 @@ export default function StaffServiceDetailPage() {
       setBusinessId(String(bizId));
     } else {
       setLoading(false);
-      setError('No business linked');
+      setError(staffServicesT(locale, 'error_no_business_linked'));
     }
   };
 
@@ -156,7 +159,7 @@ export default function StaffServiceDetailPage() {
       );
 
       if (!response.ok) {
-        throw new Error('Service not found');
+        throw new Error(staffServicesT(locale, 'error_service_not_found'));
       }
 
       const data = await response.json();
@@ -181,7 +184,7 @@ export default function StaffServiceDetailPage() {
       }
     } catch (error) {
       console.error('Failed to load service:', error);
-      setError('Failed to load service');
+      setError(staffServicesT(locale, 'error_failed_load_service'));
     } finally {
       setLoading(false);
     }
@@ -197,7 +200,7 @@ export default function StaffServiceDetailPage() {
       setIsEditMode(false);
     } catch (error) {
       console.error('Failed to update service:', error);
-      setError('Failed to update service');
+      setError(staffServicesT(locale, 'error_failed_update_service'));
     } finally {
       setSaving(false);
     }
@@ -222,11 +225,11 @@ export default function StaffServiceDetailPage() {
       if (response.ok) {
         await loadService();
       } else {
-        setError('Failed to link to service');
+        setError(staffServicesT(locale, 'error_failed_link_service'));
       }
     } catch (error) {
       console.error('Error linking to service:', error);
-      setError('Error linking to service');
+      setError(staffServicesT(locale, 'error_error_link_service'));
     } finally {
       setLinking(false);
     }
@@ -251,11 +254,11 @@ export default function StaffServiceDetailPage() {
       if (response.ok) {
         await loadService();
       } else {
-        setError('Failed to unlink from service');
+        setError(staffServicesT(locale, 'error_failed_unlink_service'));
       }
     } catch (error) {
       console.error('Error unlinking from service:', error);
-      setError('Error unlinking from service');
+      setError(staffServicesT(locale, 'error_error_unlink_service'));
     } finally {
       setLinking(false);
     }
@@ -285,7 +288,7 @@ export default function StaffServiceDetailPage() {
           totalBookings: -1,
           activeBookings: -1,
           safeToDelete: false,
-          message: 'Failed to check delete safety'
+          message: staffServicesT(locale, 'error_failed_check_delete_safety')
         });
       }
     } catch (error) {
@@ -294,7 +297,7 @@ export default function StaffServiceDetailPage() {
         totalBookings: -1,
         activeBookings: -1,
         safeToDelete: false,
-        message: 'Error checking delete safety'
+        message: staffServicesT(locale, 'error_error_check_delete_safety')
       });
     } finally {
       setCheckingDelete(false);
@@ -326,11 +329,11 @@ export default function StaffServiceDetailPage() {
         router.push('/staff/services/my-services');
       } else {
         const errorText = await response.text();
-        setError(errorText || 'Failed to delete service');
+        setError(errorText || staffServicesT(locale, 'error_failed_delete_service'));
       }
     } catch (error) {
       console.error('Error deleting service:', error);
-      setError('Error deleting service');
+      setError(staffServicesT(locale, 'error_error_delete_service'));
     } finally {
       setDeleting(false);
     }
@@ -357,11 +360,11 @@ export default function StaffServiceDetailPage() {
         await loadService();
       } else {
         const errorText = await response.text();
-        setError(errorText || 'Failed to deactivate service');
+        setError(errorText || staffServicesT(locale, 'error_failed_deactivate_service'));
       }
     } catch (error) {
       console.error('Error deactivating service:', error);
-      setError('Error deactivating service');
+      setError(staffServicesT(locale, 'error_error_deactivate_service'));
     } finally {
       setDeactivating(false);
     }
@@ -387,11 +390,11 @@ export default function StaffServiceDetailPage() {
         await loadService();
       } else {
         const errorText = await response.text();
-        setError(errorText || 'Failed to reactivate service');
+        setError(errorText || staffServicesT(locale, 'error_failed_reactivate_service'));
       }
     } catch (error) {
       console.error('Error reactivating service:', error);
-      setError('Error reactivating service');
+      setError(staffServicesT(locale, 'error_error_reactivate_service'));
     } finally {
       setReactivating(false);
     }
@@ -412,22 +415,32 @@ export default function StaffServiceDetailPage() {
   };
 
   const formatDuration = (minutes: number) => {
-    if (minutes < 60) return `${minutes} minutes`;
+    if (minutes < 60) {
+      return staffServicesT(locale, 'duration_minutes_long', { count: minutes });
+    }
+
     const hours = Math.floor(minutes / 60);
     const remainingMinutes = minutes % 60;
-    return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours} hour${hours > 1 ? 's' : ''}`;
+    if (remainingMinutes > 0) {
+      return staffServicesT(locale, 'duration_hours_short', { hours, minutes: remainingMinutes });
+    }
+
+    return staffServicesT(locale, hours > 1 ? 'duration_hours_long' : 'duration_hour_long', { count: hours });
   };
 
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat(staffServicesLocaleTag(locale), {
       style: 'currency',
       currency: 'TND',
     }).format(price);
   };
 
   const formatDate = (dateStr?: string) => {
-    if (!dateStr) return 'N/A';
-    return new Date(dateStr).toLocaleDateString('en-US', {
+    if (!dateStr) {
+      return staffServicesT(locale, 'na');
+    }
+
+    return new Date(dateStr).toLocaleDateString(staffServicesLocaleTag(locale), {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -451,16 +464,16 @@ export default function StaffServiceDetailPage() {
           <Card className="border-red-200 bg-red-50 dark:bg-red-900/20 dark:border-red-800">
             <CardContent className="py-8 text-center">
               <Package className="h-12 w-12 mx-auto text-red-500 mb-4" />
-              <h3 className="text-lg font-semibold mb-2">{error || 'Service not found'}</h3>
+              <h3 className="text-lg font-semibold mb-2">{error || staffServicesT(locale, 'error_service_not_found')}</h3>
               <p className="text-gray-600 dark:text-gray-400 mb-4">
-                The service you are looking for could not be found.
+                {staffServicesT(locale, 'service_not_found_desc')}
               </p>
               <Button 
                 variant="outline"
                 onClick={() => router.push('/staff/services')}
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Services
+                {staffServicesT(locale, 'back_to_services')}
               </Button>
             </CardContent>
           </Card>
@@ -485,17 +498,17 @@ export default function StaffServiceDetailPage() {
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {isEditMode ? 'Edit Service' : 'Service Details'}
+                  {isEditMode ? staffServicesT(locale, 'edit_service') : staffServicesT(locale, 'service_details')}
                 </h1>
                 {!service.active && (
                   <Badge variant="outline" className="border-red-500 text-red-600 bg-red-50 dark:bg-red-900/20">
                     <XCircle className="h-3 w-3 mr-1" />
-                    Inactive
+                    {staffServicesT(locale, 'status_inactive')}
                   </Badge>
                 )}
               </div>
               <p className="text-gray-500 dark:text-gray-400">
-                {isEditMode ? 'Update service information' : 'View service information'}
+                {isEditMode ? staffServicesT(locale, 'update_service_information') : staffServicesT(locale, 'view_service_information')}
               </p>
             </div>
           </div>
@@ -513,7 +526,7 @@ export default function StaffServiceDetailPage() {
                 ) : (
                   <LinkIcon className="h-4 w-4 mr-2" />
                 )}
-                Link Me to Service
+                {staffServicesT(locale, 'link_me_to_service')}
               </Button>
             )}
 
@@ -529,7 +542,7 @@ export default function StaffServiceDetailPage() {
                 ) : (
                   <Unlink className="h-4 w-4 mr-2" />
                 )}
-                Unlink Me
+                {staffServicesT(locale, 'unlink_me')}
               </Button>
             )}
             
@@ -540,7 +553,7 @@ export default function StaffServiceDetailPage() {
                   className="bg-amber-500 hover:bg-amber-600"
                 >
                   <Edit className="h-4 w-4 mr-2" />
-                  Edit Service
+                  {staffServicesT(locale, 'edit_service')}
                 </Button>
                 {!service.active && (
                   <Button 
@@ -554,7 +567,7 @@ export default function StaffServiceDetailPage() {
                     ) : (
                       <CheckCircle className="h-4 w-4 mr-2" />
                     )}
-                    Reactivate
+                    {staffServicesT(locale, 'reactivate')}
                   </Button>
                 )}
                 <Button 
@@ -568,7 +581,7 @@ export default function StaffServiceDetailPage() {
                   ) : (
                     <Trash2 className="h-4 w-4 mr-2" />
                   )}
-                  Delete
+                  {staffServicesT(locale, 'delete')}
                 </Button>
               </>
             )}
@@ -580,7 +593,7 @@ export default function StaffServiceDetailPage() {
                   onClick={cancelEdit}
                 >
                   <X className="h-4 w-4 mr-2" />
-                  Cancel
+                  {staffServicesT(locale, 'cancel')}
                 </Button>
                 <Button 
                   onClick={handleSave}
@@ -592,7 +605,7 @@ export default function StaffServiceDetailPage() {
                   ) : (
                     <Save className="h-4 w-4 mr-2" />
                   )}
-                  Save Changes
+                  {staffServicesT(locale, 'save_changes')}
                 </Button>
               </>
             )}
@@ -604,7 +617,7 @@ export default function StaffServiceDetailPage() {
           <div className="mb-4 p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg border border-emerald-200 dark:border-emerald-800 flex items-center gap-2">
             <CheckCircle className="h-5 w-5 text-emerald-600" />
             <span className="text-emerald-700 dark:text-emerald-300 font-medium">
-              You are linked to this service - clients can book you for it
+              {staffServicesT(locale, 'linked_to_service_notice')}
             </span>
           </div>
         )}
@@ -620,7 +633,7 @@ export default function StaffServiceDetailPage() {
                     <div className="p-6 space-y-4">
                       <Label htmlFor="imageUrl" className="flex items-center gap-2">
                         <ImageIcon className="h-4 w-4" />
-                        Image URL
+                        {staffServicesT(locale, 'image_url_label')}
                       </Label>
                       <Input
                         id="imageUrl"
@@ -633,7 +646,7 @@ export default function StaffServiceDetailPage() {
                         <div className="rounded-lg overflow-hidden border">
                           <img 
                             src={formData.imageUrl} 
-                            alt="Preview" 
+                            alt={staffServicesT(locale, 'preview_alt')} 
                             className="w-full h-48 object-cover"
                             onError={(e) => {
                               (e.target as HTMLImageElement).style.display = 'none';
@@ -660,7 +673,7 @@ export default function StaffServiceDetailPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Package className="h-5 w-5 text-emerald-600" />
-                  Service Information
+                  {staffServicesT(locale, 'service_information')}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -668,22 +681,22 @@ export default function StaffServiceDetailPage() {
                   <>
                     {/* Edit Mode Form */}
                     <div className="space-y-2">
-                      <Label htmlFor="name">Service Name *</Label>
+                      <Label htmlFor="name">{staffServicesT(locale, 'service_name_label')}</Label>
                       <Input
                         id="name"
                         value={formData.name}
                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        placeholder="e.g., Haircut, Massage"
+                        placeholder={staffServicesT(locale, 'service_name_placeholder')}
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="description">Description</Label>
+                      <Label htmlFor="description">{staffServicesT(locale, 'description_label')}</Label>
                       <Textarea
                         id="description"
                         value={formData.description}
                         onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                        placeholder="Describe what this service includes..."
+                        placeholder={staffServicesT(locale, 'description_placeholder')}
                         rows={4}
                       />
                     </div>
@@ -692,7 +705,7 @@ export default function StaffServiceDetailPage() {
                       <div className="space-y-2">
                         <Label htmlFor="duration" className="flex items-center gap-2">
                           <Clock className="h-4 w-4" />
-                          Duration (minutes) *
+                          {staffServicesT(locale, 'duration_minutes_label')}
                         </Label>
                         <Input
                           id="duration"
@@ -700,14 +713,14 @@ export default function StaffServiceDetailPage() {
                           min="5"
                           step="5"
                           value={formData.durationMinutes}
-                          onChange={(e) => setFormData({ ...formData, durationMinutes: parseInt(e.target.value) || 30 })}
+                          onChange={(e) => setFormData({ ...formData, durationMinutes: Number.parseInt(e.target.value, 10) || 30 })}
                         />
                       </div>
 
                       <div className="space-y-2">
                         <Label htmlFor="price" className="flex items-center gap-2">
                           <DollarSign className="h-4 w-4" />
-                          Price ($) *
+                          {staffServicesT(locale, 'price_label')}
                         </Label>
                         <Input
                           id="price"
@@ -715,16 +728,16 @@ export default function StaffServiceDetailPage() {
                           min="0"
                           step="0.01"
                           value={formData.price}
-                          onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
+                          onChange={(e) => setFormData({ ...formData, price: Number.parseFloat(e.target.value) || 0 })}
                         />
                       </div>
                     </div>
 
                     <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
                       <div>
-                        <Label htmlFor="active" className="font-medium">Active Status</Label>
+                        <Label htmlFor="active" className="font-medium">{staffServicesT(locale, 'active_status_label')}</Label>
                         <p className="text-sm text-gray-500 dark:text-gray-400">
-                          When active, this service is available for booking
+                          {staffServicesT(locale, 'active_status_desc')}
                         </p>
                       </div>
                       <Switch
@@ -748,9 +761,9 @@ export default function StaffServiceDetailPage() {
                             : "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200"}`}
                         >
                           {service.active ? (
-                            <><CheckCircle className="h-3 w-3 mr-1" /> Active</>
+                            <><CheckCircle className="h-3 w-3 mr-1" /> {staffServicesT(locale, 'status_active')}</>
                           ) : (
-                            <><XCircle className="h-3 w-3 mr-1" /> Inactive</>
+                            <><XCircle className="h-3 w-3 mr-1" /> {staffServicesT(locale, 'status_inactive')}</>
                           )}
                         </Badge>
                       </div>
@@ -766,10 +779,10 @@ export default function StaffServiceDetailPage() {
                     <div>
                       <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2 flex items-center gap-2">
                         <FileText className="h-4 w-4" />
-                        Description
+                        {staffServicesT(locale, 'description_label')}
                       </h3>
                       <p className="text-gray-700 dark:text-gray-300">
-                        {service.description || 'No description available'}
+                        {service.description || staffServicesT(locale, 'no_description_available')}
                       </p>
                     </div>
 
@@ -777,7 +790,7 @@ export default function StaffServiceDetailPage() {
                       <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
                         <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 mb-1">
                           <Clock className="h-4 w-4" />
-                          <span className="text-sm">Duration</span>
+                          <span className="text-sm">{staffServicesT(locale, 'duration_label')}</span>
                         </div>
                         <p className="text-lg font-semibold text-gray-900 dark:text-white">
                           {formatDuration(service.durationMinutes)}
@@ -786,10 +799,10 @@ export default function StaffServiceDetailPage() {
                       <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
                         <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 mb-1">
                           <Users className="h-4 w-4" />
-                          <span className="text-sm">Staff Providers</span>
+                          <span className="text-sm">{staffServicesT(locale, 'staff_providers_label')}</span>
                         </div>
                         <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                          {service.staffIds?.length || 0} staff
+                          {staffServicesT(locale, 'staff_count', { count: service.staffIds?.length || 0 })}
                         </p>
                       </div>
                     </div>
@@ -806,7 +819,7 @@ export default function StaffServiceDetailPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base">
                   <Users className="h-5 w-5 text-blue-600" />
-                  Staff Providers
+                  {staffServicesT(locale, 'staff_providers_label')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -832,7 +845,7 @@ export default function StaffServiceDetailPage() {
                           <p className="font-medium text-gray-900 dark:text-white">
                             {staff.name}
                             {staff.id === Number(user?.id) && (
-                              <span className="text-emerald-600 text-xs ml-2">(You)</span>
+                              <span className="text-emerald-600 text-xs ml-2">{staffServicesT(locale, 'you_suffix')}</span>
                             )}
                           </p>
                         </div>
@@ -841,7 +854,7 @@ export default function StaffServiceDetailPage() {
                   </div>
                 ) : (
                   <p className="text-center text-gray-500 dark:text-gray-400 py-4">
-                    No staff assigned yet
+                    {staffServicesT(locale, 'no_staff_assigned')}
                   </p>
                 )}
                 
@@ -856,7 +869,7 @@ export default function StaffServiceDetailPage() {
                     ) : (
                       <LinkIcon className="h-4 w-4 mr-2" />
                     )}
-                    Join as Provider
+                    {staffServicesT(locale, 'join_as_provider')}
                   </Button>
                 )}
               </CardContent>
@@ -867,24 +880,24 @@ export default function StaffServiceDetailPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base">
                   <Calendar className="h-5 w-5 text-purple-600" />
-                  Service Info
+                  {staffServicesT(locale, 'service_info')}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4 text-sm">
                 {service.createdByName && (
                   <div>
-                    <p className="text-gray-500 dark:text-gray-400">Created by</p>
+                    <p className="text-gray-500 dark:text-gray-400">{staffServicesT(locale, 'created_by')}</p>
                     <p className="font-medium text-gray-900 dark:text-white">
                       {service.createdByName}
                       {service.createdById === Number(user?.id) && (
-                        <span className="text-emerald-600 text-xs ml-2">(You)</span>
+                        <span className="text-emerald-600 text-xs ml-2">{staffServicesT(locale, 'you_suffix')}</span>
                       )}
                     </p>
                   </div>
                 )}
                 {service.createdAt && (
                   <div>
-                    <p className="text-gray-500 dark:text-gray-400">Created</p>
+                    <p className="text-gray-500 dark:text-gray-400">{staffServicesT(locale, 'created')}</p>
                     <p className="font-medium text-gray-900 dark:text-white">
                       {formatDate(service.createdAt)}
                     </p>
@@ -892,7 +905,7 @@ export default function StaffServiceDetailPage() {
                 )}
                 {service.updatedAt && (
                   <div>
-                    <p className="text-gray-500 dark:text-gray-400">Last updated</p>
+                    <p className="text-gray-500 dark:text-gray-400">{staffServicesT(locale, 'last_updated')}</p>
                     <p className="font-medium text-gray-900 dark:text-white">
                       {formatDate(service.updatedAt)}
                     </p>
@@ -907,7 +920,7 @@ export default function StaffServiceDetailPage() {
                 <CardContent className="py-4 text-center">
                   <Edit className="h-8 w-8 mx-auto text-amber-500 mb-2" />
                   <p className="text-sm text-amber-700 dark:text-amber-300">
-                    You created this service and can edit it
+                    {staffServicesT(locale, 'can_edit_notice')}
                   </p>
                 </CardContent>
               </Card>
@@ -922,19 +935,23 @@ export default function StaffServiceDetailPage() {
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2 text-red-600">
               <Trash2 className="h-5 w-5" />
-              Delete Service
+              {staffServicesT(locale, 'delete_service_title')}
             </AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="space-y-3">
-                <p>Are you sure you want to delete <strong className="text-foreground">{service?.name}</strong>?</p>
-                <p className="text-red-600 font-medium">⚠️ This action cannot be undone.</p>
+                <p>
+                  {staffServicesT(locale, 'delete_confirm_question', {
+                    name: service?.name ?? '',
+                  })}
+                </p>
+                <p className="text-red-600 font-medium">{staffServicesT(locale, 'delete_cannot_undo')}</p>
                 
                 {/* Check for bookings button */}
                 <div className="p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg">
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2 text-sm">
                       <Search className="h-4 w-4 text-slate-500" />
-                      <span className="text-slate-600 dark:text-slate-300">Check for related bookings</span>
+                      <span className="text-slate-600 dark:text-slate-300">{staffServicesT(locale, 'check_related_bookings')}</span>
                     </div>
                     <Button
                       type="button"
@@ -947,10 +964,10 @@ export default function StaffServiceDetailPage() {
                       {checkingDelete ? (
                         <>
                           <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                          Checking...
+                          {staffServicesT(locale, 'checking')}
                         </>
                       ) : (
-                        'Check Now'
+                        staffServicesT(locale, 'check_now')
                       )}
                     </Button>
                   </div>
@@ -980,8 +997,11 @@ export default function StaffServiceDetailPage() {
                                 ? 'text-red-700 dark:text-red-300'
                                 : 'text-amber-700 dark:text-amber-300'
                           }`}>
-                            {deleteCheckResult.safeToDelete ? 'Safe to delete' : 
-                             deleteCheckResult.activeBookings > 0 ? 'Not recommended' : 'Proceed with caution'}
+                            {deleteCheckResult.safeToDelete
+                              ? staffServicesT(locale, 'delete_safe')
+                              : deleteCheckResult.activeBookings > 0
+                                ? staffServicesT(locale, 'delete_not_recommended')
+                                : staffServicesT(locale, 'delete_caution')}
                           </p>
                           <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
                             {deleteCheckResult.message}
@@ -989,11 +1009,11 @@ export default function StaffServiceDetailPage() {
                           {deleteCheckResult.totalBookings > 0 && (
                             <div className="flex gap-3 mt-2 text-xs">
                               <span className="text-gray-500">
-                                Total: <strong>{deleteCheckResult.totalBookings}</strong>
+                                {staffServicesT(locale, 'total_label')}: <strong>{deleteCheckResult.totalBookings}</strong>
                               </span>
                               {deleteCheckResult.activeBookings > 0 && (
                                 <span className="text-red-600">
-                                  Active: <strong>{deleteCheckResult.activeBookings}</strong>
+                                  {staffServicesT(locale, 'active_label')}: <strong>{deleteCheckResult.activeBookings}</strong>
                                 </span>
                               )}
                             </div>
@@ -1009,24 +1029,24 @@ export default function StaffServiceDetailPage() {
                   <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
                     <p className="font-medium text-amber-700 dark:text-amber-300 flex items-center gap-2">
                       <XCircle className="h-4 w-4" />
-                      Deactivate (Recommended if bookings exist)
+                      {staffServicesT(locale, 'deactivate_recommended_title')}
                     </p>
                     <ul className="list-disc list-inside text-amber-600 dark:text-amber-400 text-xs mt-1 space-y-0.5">
-                      <li>Service hidden from new bookings</li>
-                      <li>All data and history preserved</li>
-                      <li>Can be reactivated later</li>
+                      <li>{staffServicesT(locale, 'deactivate_bullet_hidden')}</li>
+                      <li>{staffServicesT(locale, 'deactivate_bullet_preserved')}</li>
+                      <li>{staffServicesT(locale, 'deactivate_bullet_reactivate')}</li>
                     </ul>
                   </div>
                   
                   <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
                     <p className="font-medium text-red-700 dark:text-red-300 flex items-center gap-2">
                       <Trash2 className="h-4 w-4" />
-                      Delete Permanently
+                      {staffServicesT(locale, 'delete_permanently_title')}
                     </p>
                     <ul className="list-disc list-inside text-red-600 dark:text-red-400 text-xs mt-1 space-y-0.5">
-                      <li>All staff links removed</li>
-                      <li>Service statistics lost</li>
-                      <li>Cannot be undone</li>
+                      <li>{staffServicesT(locale, 'delete_bullet_links_removed')}</li>
+                      <li>{staffServicesT(locale, 'delete_bullet_stats_lost')}</li>
+                      <li>{staffServicesT(locale, 'delete_bullet_cannot_undo')}</li>
                     </ul>
                   </div>
                 </div>
@@ -1034,7 +1054,7 @@ export default function StaffServiceDetailPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-col sm:flex-row gap-2">
-            <AlertDialogCancel disabled={deleting || deactivating}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={deleting || deactivating}>{staffServicesT(locale, 'cancel')}</AlertDialogCancel>
             <Button
               type="button"
               variant="outline"
@@ -1045,12 +1065,12 @@ export default function StaffServiceDetailPage() {
               {deactivating ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Deactivating...
+                  {staffServicesT(locale, 'deactivating')}
                 </>
               ) : (
                 <>
                   <XCircle className="h-4 w-4 mr-2" />
-                  Deactivate
+                  {staffServicesT(locale, 'deactivate')}
                 </>
               )}
             </Button>
@@ -1062,12 +1082,12 @@ export default function StaffServiceDetailPage() {
               {deleting ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Deleting...
+                  {staffServicesT(locale, 'deleting')}
                 </>
               ) : (
                 <>
                   <Trash2 className="h-4 w-4 mr-2" />
-                  Delete
+                  {staffServicesT(locale, 'delete')}
                 </>
               )}
             </AlertDialogAction>

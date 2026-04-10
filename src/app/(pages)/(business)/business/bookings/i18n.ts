@@ -42,6 +42,7 @@ export type BusinessBookingsKey =
   | 'banner_in_session_now'
   | 'banner_up_next'
   | 'banner_starting_soon'
+  | 'time_booking_from_to'
   | 'time_to'
   | 'staff_label'
   | 'note_label'
@@ -124,6 +125,7 @@ const BUSINESS_BOOKINGS_DICTIONARY: Record<LocaleCode, Record<BusinessBookingsKe
     banner_in_session_now: 'In Session Now',
     banner_up_next: 'Up Next',
     banner_starting_soon: 'Starting Soon',
+    time_booking_from_to: 'from {from} to {to}',
     time_to: 'to',
     staff_label: 'Staff',
     note_label: 'Note',
@@ -205,6 +207,7 @@ const BUSINESS_BOOKINGS_DICTIONARY: Record<LocaleCode, Record<BusinessBookingsKe
     banner_in_session_now: 'Session en cours',
     banner_up_next: 'Prochaine',
     banner_starting_soon: 'Demarre bientot',
+    time_booking_from_to: 'de {from} a {to}',
     time_to: 'a',
     staff_label: 'Staff',
     note_label: 'Note',
@@ -286,6 +289,7 @@ const BUSINESS_BOOKINGS_DICTIONARY: Record<LocaleCode, Record<BusinessBookingsKe
     banner_in_session_now: 'جلسة جارية الان',
     banner_up_next: 'التالي',
     banner_starting_soon: 'سيبدأ قريبا',
+    time_booking_from_to: 'من {from} الى {to}',
     time_to: 'الى',
     staff_label: 'الموظف',
     note_label: 'ملاحظة',
