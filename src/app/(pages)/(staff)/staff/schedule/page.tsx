@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Layout from "@components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@components/ui/card";
 import { Button } from "@components/ui/button";
@@ -69,7 +69,7 @@ export default function StaffSchedulePage() {
   });
 
   // Get first and last day of current month
-  const getMonthRange = (date: Date) => {
+  const getMonthRange = useCallback((date: Date) => {
     const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
     const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0);
     
@@ -85,16 +85,9 @@ export default function StaffSchedulePage() {
       from: formatLocalDate(firstDay),
       to: formatLocalDate(lastDay)
     };
-  };
+  }, []);
 
-  useEffect(() => {
-    if (user?.id) {
-      loadWorkHours();
-      loadAvailabilities();
-    }
-  }, [user?.id, currentDate]);
-
-  const loadWorkHours = async () => {
+  const loadWorkHours = useCallback(async () => {
     if (!user?.id) return;
     setLoadingWorkHours(true);
     try {
@@ -117,9 +110,9 @@ export default function StaffSchedulePage() {
     } finally {
       setLoadingWorkHours(false);
     }
-  };
+  }, [user?.id, token]);
 
-  const loadAvailabilities = async () => {
+  const loadAvailabilities = useCallback(async () => {
     if (!user?.id) return;
     setLoading(true);
     try {
@@ -133,7 +126,14 @@ export default function StaffSchedulePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.id, currentDate, token, getMonthRange]);
+
+  useEffect(() => {
+    if (user?.id) {
+      loadWorkHours();
+      loadAvailabilities();
+    }
+  }, [user?.id, loadWorkHours, loadAvailabilities]);
 
   const handleSaveWorkHours = async () => {
     if (!user?.id) return;

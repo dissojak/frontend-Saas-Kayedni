@@ -92,7 +92,6 @@ function getTimeClass(
   return 'text-foreground';
 }
 
-// eslint-disable-next-line sonarjs/cognitive-complexity
 export const BookingCard: React.FC<BookingCardProps> = ({
   booking,
   variant = 'default',

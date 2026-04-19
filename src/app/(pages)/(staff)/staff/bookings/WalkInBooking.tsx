@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@components/ui/alert-dialog";
 import { Button } from "@components/ui/button";
@@ -75,15 +75,7 @@ export default function WalkInBooking({ staffId, businessId, token, onBookingCre
   const [creatingBooking, setCreatingBooking] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Load clients and services when dialog opens
-  useEffect(() => {
-    if (dialogOpen) {
-      loadClients();
-      loadServices();
-    }
-  }, [dialogOpen]);
-
-  const loadClients = async () => {
+  const loadClients = useCallback(async () => {
     setLoadingClients(true);
     setError(null);
     try {
@@ -99,7 +91,7 @@ export default function WalkInBooking({ staffId, businessId, token, onBookingCre
     } finally {
       setLoadingClients(false);
     }
-  };
+  }, [businessId, token, locale]);
 
   const handleDeleteClient = async (clientId: number, clientName: string) => {
     try {
@@ -141,7 +133,7 @@ export default function WalkInBooking({ staffId, businessId, token, onBookingCre
     }
   };
 
-  const loadServices = async () => {
+  const loadServices = useCallback(async () => {
     setLoadingServices(true);
     try {
       console.log('Loading services for staffId:', staffId);
@@ -155,7 +147,15 @@ export default function WalkInBooking({ staffId, businessId, token, onBookingCre
     } finally {
       setLoadingServices(false);
     }
-  };
+  }, [staffId]);
+
+  // Load clients and services when dialog opens
+  useEffect(() => {
+    if (dialogOpen) {
+      loadClients();
+      loadServices();
+    }
+  }, [dialogOpen, loadClients, loadServices]);
 
   const handleCreateClient = async () => {
     if (!newClient.name || !newClient.phone) {

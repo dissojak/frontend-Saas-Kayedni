@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useLocale } from '@global/hooks/useLocale';
 import {
   AlertDialog,
@@ -40,7 +40,6 @@ function getCancelActionLabel(locale: LocaleCode, isReject: boolean): string {
   return businessBookingsT(locale, 'action_cancel').toLowerCase();
 }
 
-// eslint-disable-next-line sonarjs/cognitive-complexity
 export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
   dialogState,
   onClose,
@@ -61,7 +60,7 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
   const [manageSelectedId, setManageSelectedId] = useState('');
   const [manageText, setManageText] = useState('');
 
-  const loadPresets = async () => {
+  const loadPresets = useCallback(async () => {
     if (!isCancelAction || !businessId) return;
     try {
       const result = await getCancellationReasons(businessId, authToken);
@@ -69,7 +68,7 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
     } catch {
       setPresets([]);
     }
-  };
+  }, [isCancelAction, businessId, authToken]);
 
   useEffect(() => {
     if (dialogState.open) {
@@ -83,7 +82,7 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
       setManageSelectedId('');
       setManageText('');
     }
-  }, [dialogState.open, isCancelAction, businessId, authToken]);
+  }, [dialogState.open, loadPresets]);
 
   const openManageView = () => {
     setIsManageView(true);
