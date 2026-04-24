@@ -7,12 +7,14 @@ import localFont from "next/font/local";
 import Layout from "@components/layout/Layout";
 import { Button } from "@components/ui/button";
 import { useTracking } from "@global/hooks/useTracking";
+import { useLocale } from "@global/hooks/useLocale";
 import {
   Play,
   MoveRight,
   Scissors,
   CheckCircle,
 } from "lucide-react";
+import { getBarberLandingContent } from "./i18n";
 
 // For headings, if you want it to look exactly like the image (serif),
 // you could use a serif font. But assuming Anton is what the user 
@@ -29,6 +31,9 @@ const bodyFont = localFont({
 
 export default function BarberPage() {
   const { trackEvent } = useTracking();
+  const { locale } = useLocale();
+  const isArabic = locale === "ar";
+  const content = getBarberLandingContent(locale);
   const [activeCard, setActiveCard] = useState(1); // Middle card active by default
 
   useEffect(() => {
@@ -39,13 +44,13 @@ export default function BarberPage() {
     <Layout>
 
         {/* HERO SECTION */}
-        <main className="mx-auto max-w-[1300px] px-6 pb-24 pt-8 md:px-12">
+        <main className="mx-auto max-w-[1300px] px-6 pb-24 pt-8 md:px-12" dir={isArabic ? "rtl" : "ltr"}>
           <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
             
             {/* Left Content */}
             <div className="flex flex-col pr-4">
               <h1 className="font-[var(--font-barber-display)] text-[3.8rem] leading-[1.05] uppercase tracking-wide md:text-[4.5rem] lg:text-[5.5rem]">
-                RUN YOUR BARBERSHOP <br /> EFFORTLESSLY!
+                {content.heroTitleTop} <br /> {content.heroTitleBottom}
               </h1>
               
               <div className="mt-8 flex flex-wrap items-center gap-6 sm:gap-10">
@@ -53,7 +58,7 @@ export default function BarberPage() {
                   <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#f1d086] text-[#1a1a1a]">
                     <Play className="h-4 w-4 ml-1" fill="currentColor" />
                   </div>
-                  Watch Demo
+                  {content.watchDemo}
                 </button>
                 
                 <div className="flex items-center gap-4">
@@ -65,7 +70,7 @@ export default function BarberPage() {
                     </div>
                   </div>
                   <div className="text-[11px] font-bold uppercase leading-[1.3] text-[#4a4a4a]">
-                    Trusted by 50+<br />Barbershops
+                    {content.trustedBy}
                   </div>
                 </div>
 
@@ -100,19 +105,19 @@ export default function BarberPage() {
           <div className="mt-12 grid grid-cols-2 md:grid-cols-4 gap-6 px-8 py-10 rounded-[24px] bg-[#1a1a1a] text-[#f1d086] text-center shadow-xl">
             <div>
               <p className="font-[var(--font-barber-display)] text-4xl mb-1">32%</p>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-[#a0a0a0]">Revenue Increase</p>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-[#a0a0a0]">{content.statsRevenueIncrease}</p>
             </div>
             <div>
               <p className="font-[var(--font-barber-display)] text-4xl mb-1">90%</p>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-[#a0a0a0]">Less No-Shows</p>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-[#a0a0a0]">{content.statsLessNoShows}</p>
             </div>
             <div>
               <p className="font-[var(--font-barber-display)] text-4xl mb-1">24/7</p>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-[#a0a0a0]">Automated Booking</p>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-[#a0a0a0]">{content.statsAutomatedBooking}</p>
             </div>
             <div>
-              <p className="font-[var(--font-barber-display)] text-4xl mb-1">Unlimited</p>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-[#a0a0a0]">Staff & Locations</p>
+              <p className="font-[var(--font-barber-display)] text-4xl mb-1">{content.statsUnlimitedValue}</p>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-[#a0a0a0]">{content.statsStaffAndLocations}</p>
             </div>
           </div>
 
@@ -123,7 +128,7 @@ export default function BarberPage() {
               {/* Left Square-ish Image */}
               <div className="relative h-[450px] w-full overflow-hidden rounded-[32px] lg:w-[90%]">
                 <div className="absolute left-6 top-6 z-10 rounded-full bg-[#f1d086] px-5 py-2.5 text-[11px] font-bold uppercase tracking-wide text-[#1a1a1a]">
-                  9AM - 9PM, Mon-Sat
+                  {content.hoursBadge}
                 </div>
                 <Image
                   src="/assets/barber/le7ya.webp"
@@ -136,10 +141,10 @@ export default function BarberPage() {
               {/* Right Text Content */}
               <div className="flex flex-col justify-center pb-24 lg:pb-0 lg:pl-10">
                 <h2 className="font-[var(--font-barber-display)] text-[2.8rem] leading-[1.05] tracking-wide md:text-[3.5rem]">
-                  Built Specifically <br className="hidden md:block" /> For Barbershops
+                  {content.builtTitleTop} <br className="hidden md:block" /> {content.builtTitleBottom}
                 </h2>
                 <p className="mt-6 max-w-[500px] text-[13px] leading-relaxed text-[#666]">
-                  Kayedni provides the ultimate software for your barbershop. Manage appointments seamlessly, process payments effortlessly, and keep your chairs full with our automated marketing tools. Focus on what you do best: giving great haircuts.
+                  {content.builtDescription}
                 </p>
               </div>
             </div>
@@ -154,9 +159,9 @@ export default function BarberPage() {
                     <Image src="/Icons/shaving_Icon.svg" alt="Scissors Icon" width={20} height={20} />
                   </div>
                   <div>
-                    <h3 className="font-bold text-[15px] mb-2">Smart Booking</h3>
+                    <h3 className="font-bold text-[15px] mb-2">{content.smartBookingTitle}</h3>
                     <p className="text-[12px] leading-relaxed text-[#d4dfae]">
-                      Let clients book 24/7 online without interrupting your cuts.
+                      {content.smartBookingDescription}
                     </p>
                   </div>
                 </div>
@@ -166,9 +171,9 @@ export default function BarberPage() {
                     <Image src="/Icons/shavingMachine.svg" alt="Beard Trimming Icon" width={20} height={20} />
                   </div>
                   <div>
-                    <h3 className="font-bold text-[15px] mb-2">Staff & Payroll</h3>
+                    <h3 className="font-bold text-[15px] mb-2">{content.staffPayrollTitle}</h3>
                     <p className="text-[12px] leading-relaxed text-[#d4dfae]">
-                      Calculate commissions automatically, manage tips, and organize shift schedules.
+                      {content.staffPayrollDescription}
                     </p>
                   </div>
                 </div>
@@ -178,9 +183,9 @@ export default function BarberPage() {
                     <Scissors className="h-5 w-5" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-[15px] mb-2">Client Retention</h3>
+                    <h3 className="font-bold text-[15px] mb-2">{content.clientRetentionTitle}</h3>
                     <p className="text-[12px] leading-relaxed text-[#d4dfae]">
-                      Automated SMS reminders and marketing campaigns to bring clients back.
+                      {content.clientRetentionDescription}
                     </p>
                   </div>
                 </div>
@@ -196,10 +201,10 @@ export default function BarberPage() {
           <div className="mt-20">
             <div className="flex flex-col md:flex-row md:items-end justify-between mb-10">
               <h2 className="font-[var(--font-barber-display)] text-[2.8rem] leading-[1.05] tracking-wide md:text-[3.5rem] max-w-[600px]">
-                Everything You Need To Scale Your Business
+                {content.scaleTitle}
               </h2>
               <p className="max-w-[350px] text-[13px] text-[#666] leading-relaxed mt-4 md:mt-0 pb-2">
-                Replace 5 different tools with one seamless barbershop operating system. From chair rentals to commission splits, we handle the heavy lifting.
+                {content.scaleDescription}
               </p>
             </div>
             
@@ -207,9 +212,9 @@ export default function BarberPage() {
               
               <div className="flex flex-col justify-between rounded-[20px] bg-[#f1d086] p-6 text-[#1a1a1a] hover:-translate-y-1 transition-transform">
                 <div>
-                  <h3 className="text-xl font-bold leading-[1.2]">Client Retention & Marketing</h3>
+                  <h3 className="text-xl font-bold leading-[1.2]">{content.features[0].title}</h3>
                   <p className="text-[12px] font-medium leading-relaxed opacity-80 mt-3">
-                    Automated SMS reminders and Telegram campaigns to fill your slow days and bring back lost clients effortlessly.
+                    {content.features[0].description}
                   </p>
                 </div>
                 <div className="mt-6 flex justify-end"><Image src="/Icons/shaving.png" alt="Marketing Icon" width={48} height={48} className="opacity-90" /></div>
@@ -217,9 +222,9 @@ export default function BarberPage() {
 
               <div className="flex flex-col justify-between rounded-[20px] bg-[#f1d086] p-6 text-[#1a1a1a] hover:-translate-y-1 transition-transform">
                 <div>
-                  <h3 className="text-xl font-bold leading-[1.2]">Business <br /> Analytics</h3>
+                  <h3 className="text-xl font-bold leading-[1.2]">{content.features[1].title}</h3>
                   <p className="text-[12px] font-medium leading-relaxed opacity-80 mt-3">
-                    Track your highest earning days, most requested barbers, and overall revenue growth directly from your dashboard.
+                    {content.features[1].description}
                   </p>
                 </div>
                 <div className="mt-6 flex justify-end"><Image src="/Icons/Scissors.png" alt="Analytics Icon" width={48} height={48} className="opacity-90" /></div>
@@ -227,9 +232,9 @@ export default function BarberPage() {
 
               <div className="flex flex-col justify-between rounded-[20px] bg-[#f1d086] p-6 text-[#1a1a1a] hover:-translate-y-1 transition-transform">
                 <div>
-                  <h3 className="text-xl font-bold leading-[1.2]">Team <br /> Management</h3>
+                  <h3 className="text-xl font-bold leading-[1.2]">{content.features[2].title}</h3>
                   <p className="text-[12px] font-medium leading-relaxed opacity-80 mt-3">
-                    Handle payroll logic, manage tiered commissions, tracking tips, and organize staff schedules in one single place.
+                    {content.features[2].description}
                   </p>
                 </div>
                 <div className="mt-6 flex justify-end"><Image src="/Icons/razor.png" alt="Team Icon" width={48} height={48} className="opacity-90" /></div>
@@ -237,9 +242,9 @@ export default function BarberPage() {
 
               <div className="flex flex-col justify-between rounded-[20px] bg-[#f1d086] p-6 text-[#1a1a1a] hover:-translate-y-1 transition-transform">
                 <div>
-                  <h3 className="text-xl font-bold leading-[1.2]">Smart <br /> Waitlist</h3>
+                  <h3 className="text-xl font-bold leading-[1.2]">{content.features[3].title}</h3>
                   <p className="text-[12px] font-medium leading-relaxed opacity-80 mt-3">
-                    Maximize your schedule by automatically filling last-minute cancellations and keeping chairs occupied 100% of the time.
+                    {content.features[3].description}
                   </p>
                 </div>
                 <div className="mt-6 flex justify-end"><Image src="/Icons/razor_Classic.png" alt="Waitlist Icon" width={48} height={48} className="opacity-90" /></div>
@@ -253,31 +258,31 @@ export default function BarberPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
               <div>
                 <div className="inline-flex items-center gap-2 rounded-full bg-[#f1d086]/30 px-3 py-1 mb-6 text-[12px] font-bold text-[#b49040]">
-                  <CheckCircle className="h-3.5 w-3.5" /> Made for Owners & Staff
+                  <CheckCircle className="h-3.5 w-3.5" /> {content.madeForOwnersAndStaff}
                 </div>
                 <h2 className="font-[var(--font-barber-display)] text-[2.8rem] leading-[1.05] tracking-wide md:text-[3.5rem] text-[#1a1a1a]">
-                  Total Control Over Your Shop
+                  {content.controlTitle}
                 </h2>
                 <ul className="mt-8 space-y-5">
                   <li className="flex items-start gap-4">
                     <div className="mt-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-[#5f720f] text-[#f1d086]">✓</div>
                     <div>
-                      <h4 className="font-bold text-[#1a1a1a] text-sm">Online Brand Presence</h4>
-                      <p className="text-xs text-[#666] mt-1">Stand out with a beautifully branded booking page that showcases your shop's portfolio and services.</p>
+                      <h4 className="font-bold text-[#1a1a1a] text-sm">{content.checklist[0].title}</h4>
+                      <p className="text-xs text-[#666] mt-1">{content.checklist[0].description}</p>
                     </div>
                   </li>
                   <li className="flex items-start gap-4">
                     <div className="mt-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-[#5f720f] text-[#f1d086]">✓</div>
                     <div>
-                      <h4 className="font-bold text-[#1a1a1a] text-sm">Flexible Commissions</h4>
-                      <p className="text-xs text-[#666] mt-1">Automate logic for booth renters or commissioned staff effortlessly.</p>
+                      <h4 className="font-bold text-[#1a1a1a] text-sm">{content.checklist[1].title}</h4>
+                      <p className="text-xs text-[#666] mt-1">{content.checklist[1].description}</p>
                     </div>
                   </li>
                   <li className="flex items-start gap-4">
                     <div className="mt-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-[#5f720f] text-[#f1d086]">✓</div>
                     <div>
-                      <h4 className="font-bold text-[#1a1a1a] text-sm">Instant Sync</h4>
-                      <p className="text-xs text-[#666] mt-1">Your calendar syncs across all platforms instantly, eliminating double bookings entirely.</p>
+                      <h4 className="font-bold text-[#1a1a1a] text-sm">{content.checklist[2].title}</h4>
+                      <p className="text-xs text-[#666] mt-1">{content.checklist[2].description}</p>
                     </div>
                   </li>
                 </ul>
@@ -292,15 +297,15 @@ export default function BarberPage() {
           <div className="mt-20">
             <div className="flex flex-col md:flex-row md:items-end justify-between mb-8">
               <h2 className="font-[var(--font-barber-display)] text-[2.8rem] leading-[1.05] tracking-wide md:text-[3.5rem] max-w-[600px]">
-                Run Your Shop From Your Pocket
+                {content.pocketTitle}
               </h2>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {[
-                { title: 'Live Schedule', desc: 'Check your daily bookings at a glance between cuts.', img: '/assets/barber/7asra.webp' },
-                { title: 'Instant Updates', desc: 'Get notified instantly when a client books or cancels.', img: '/assets/barber/matriel.webp' },
-                { title: 'Earnings Tracking', desc: 'Review your daily, weekly, and monthly revenue on the go.', img: '/assets/barber/ghasla.webp' }
+                { title: content.showcase[0].title, desc: content.showcase[0].description, img: '/assets/barber/7asra.webp' },
+                { title: content.showcase[1].title, desc: content.showcase[1].description, img: '/assets/barber/matriel.webp' },
+                { title: content.showcase[2].title, desc: content.showcase[2].description, img: '/assets/barber/ghasla.webp' }
               ].map((card, idx) => (
                 <button
                   type="button"
@@ -335,11 +340,11 @@ export default function BarberPage() {
             />
             <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-8 z-10">
               <h2 className="font-[var(--font-barber-display)] text-[4rem] md:text-[6rem] leading-[1] text-white tracking-wide uppercase mb-4 drop-shadow-2xl">
-                Your Craft. <br /> <span className="text-[#f1d086]">Our System.</span>
+                {content.craftTitleTop} <br /> <span className="text-[#f1d086]">{content.craftTitleAccent}</span>
               </h2>
               <div className="flex gap-4 mt-6">
-                <span className="px-5 py-2.5 rounded-full bg-[#f1d086] text-[#1a1a1a] font-bold text-sm">Zero Setup Fees</span>
-                <span className="px-5 py-2.5 rounded-full bg-white/10 text-white backdrop-blur border border-white/20 font-bold text-sm">Start in 5 Mins</span>
+                <span className="px-5 py-2.5 rounded-full bg-[#f1d086] text-[#1a1a1a] font-bold text-sm">{content.zeroSetupFees}</span>
+                <span className="px-5 py-2.5 rounded-full bg-white/10 text-white backdrop-blur border border-white/20 font-bold text-sm">{content.startInFiveMinutes}</span>
               </div>
             </div>
           </div>
@@ -351,14 +356,14 @@ export default function BarberPage() {
             
             <div className="relative z-10 max-w-3xl mx-auto">
               <h2 className="font-[var(--font-barber-display)] text-[3rem] md:text-[4rem] leading-[1] uppercase tracking-wide mb-6">
-                Upgrade Your Shop Today
+                {content.ctaTitle}
               </h2>
               <p className="text-[#a0a0a0] mb-10 text-sm max-w-xl mx-auto leading-relaxed">
-                Join the next generation of barbershop owners taking back their time and increasing their margins. Set up your workspace in minutes.
+                {content.ctaDescription}
               </p>
               <Button asChild className="h-14 px-10 rounded-full bg-[#f1d086] text-[#1a1a1a] font-bold text-sm hover:bg-[#e0bc68] transition-all hover:scale-105">
                 <Link href="/register?type=business&category=barber">
-                  Create Your Free Account
+                  {content.ctaButton}
                 </Link>
               </Button>
             </div>

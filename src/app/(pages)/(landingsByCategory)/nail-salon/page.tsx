@@ -1,18 +1,26 @@
 
+"use client";
+
 import Link from 'next/link';
 import Layout from '@components/layout/Layout';
+import { useLocale } from '@global/hooks/useLocale';
 import { t } from '@global/lib/dictionaryService';
+import { getNailLandingContent } from './i18n';
 
 const SLICE_KEY = 'nails-salon';
 
 export default function NailsSalonPage() {
-  const servicesLabel = t(SLICE_KEY, 'nav_services');
-  const bookingsLabel = t(SLICE_KEY, 'nav_bookings');
+  const { locale } = useLocale();
+  const isArabic = locale === 'ar';
+  const content = getNailLandingContent(locale);
+  const servicesLabel = t(SLICE_KEY, 'nav_services', locale);
+  const bookingsLabel = t(SLICE_KEY, 'nav_bookings', locale);
 
   return (
     <Layout>
       <section
         className="relative overflow-hidden px-6 py-16 md:px-10 md:py-24"
+        dir={isArabic ? 'rtl' : 'ltr'}
         style={{
           background:
             'radial-gradient(circle at 15% 20%, color-mix(in srgb, var(--brand-accent) 32%, white) 0%, transparent 45%), radial-gradient(circle at 80% 10%, color-mix(in srgb, var(--brand-primary) 22%, white) 0%, transparent 40%), linear-gradient(180deg, #fff7fb 0%, #fff 100%)',
@@ -27,18 +35,18 @@ export default function NailsSalonPage() {
                 backgroundColor: 'color-mix(in srgb, var(--brand-primary) 12%, white)',
               }}
             >
-              Nails Salon
+              {content.badge}
             </span>
 
             <h1
               className="max-w-2xl text-4xl font-black uppercase leading-[0.95] md:text-6xl"
               style={{ color: 'var(--brand-primary-dark)' }}
             >
-              Grow your nails business with elegant, fast booking flows
+              {content.title}
             </h1>
 
             <p className="max-w-xl text-base text-[#5c4758] md:text-lg">
-              Launch your branded page, take appointments 24/7, and keep your calendar full with a setup tailored for nails studios.
+              {content.description}
             </p>
 
             <div className="flex flex-wrap gap-3">
@@ -50,7 +58,7 @@ export default function NailsSalonPage() {
                   color: 'var(--brand-primary-foreground)',
                 }}
               >
-                Start with {servicesLabel}
+                {content.ctaStartWith} {servicesLabel}
               </Link>
 
               <Link
@@ -62,7 +70,7 @@ export default function NailsSalonPage() {
                   backgroundColor: '#ffffff',
                 }}
               >
-                View {bookingsLabel}
+                {content.ctaView} {bookingsLabel}
               </Link>
             </div>
           </div>
@@ -70,7 +78,7 @@ export default function NailsSalonPage() {
           <div className="rounded-[2rem] border border-white/80 bg-white/70 p-6 shadow-xl backdrop-blur">
             <div className="mb-5 flex items-center justify-between">
               <p className="text-sm font-semibold" style={{ color: 'var(--brand-primary-dark)' }}>
-                Quick Preview
+                {content.quickPreview}
               </p>
               <span
                 className="rounded-full px-3 py-1 text-xs font-semibold"
@@ -79,18 +87,18 @@ export default function NailsSalonPage() {
                   color: 'var(--brand-primary-dark)',
                 }}
               >
-                Live
+                {content.live}
               </span>
             </div>
 
             <div className="space-y-3">
               <div className="rounded-2xl border bg-white p-4" style={{ borderColor: 'rgba(0,0,0,0.06)' }}>
                 <p className="text-xs uppercase tracking-wide text-[#7a6975]">{servicesLabel}</p>
-                <p className="mt-2 text-sm font-semibold text-[#312330]">Gel Set, Nail Art, Manicure</p>
+                <p className="mt-2 text-sm font-semibold text-[#312330]">{content.sampleServices}</p>
               </div>
               <div className="rounded-2xl border bg-white p-4" style={{ borderColor: 'rgba(0,0,0,0.06)' }}>
                 <p className="text-xs uppercase tracking-wide text-[#7a6975]">{bookingsLabel}</p>
-                <p className="mt-2 text-sm font-semibold text-[#312330]">Today: 14 confirmed</p>
+                <p className="mt-2 text-sm font-semibold text-[#312330]">{content.sampleBookings}</p>
               </div>
             </div>
           </div>

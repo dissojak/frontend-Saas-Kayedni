@@ -77,8 +77,8 @@ const DEFAULT_DICTIONARY: Record<LocaleCode, Record<DictionaryKey, string>> = {
     nav_toggle_theme: 'Toggle theme',
     nav_language: 'Language',
     locale_english: 'English',
-    locale_french: 'French',
-    locale_arabic: 'Arabic',
+    locale_french: 'Français',
+    locale_arabic: 'العربية',
     footer_brand_tagline:
       'Simplifying bookings for everyone. The all-in-one platform for modern businesses and clients.',
     footer_product: 'Product',
@@ -126,9 +126,9 @@ const DEFAULT_DICTIONARY: Record<LocaleCode, Record<DictionaryKey, string>> = {
     nav_user: 'Utilisateur',
     nav_toggle_theme: 'Basculer le theme',
     nav_language: 'Langue',
-    locale_english: 'Anglais',
-    locale_french: 'Francais',
-    locale_arabic: 'Arabe',
+    locale_english: 'English',
+    locale_french: 'Français',
+    locale_arabic: 'العربية',
     footer_brand_tagline:
       'Kayedni simplifie la reservation de services pour les clients et les businesses.',
     footer_product: 'Produit',
@@ -176,8 +176,8 @@ const DEFAULT_DICTIONARY: Record<LocaleCode, Record<DictionaryKey, string>> = {
     nav_user: 'مستخدم',
     nav_toggle_theme: 'تغيير المظهر',
     nav_language: 'اللغة',
-    locale_english: 'الانجليزية',
-    locale_french: 'الفرنسية',
+    locale_english: 'English',
+    locale_french: 'Français',
     locale_arabic: 'العربية',
     footer_brand_tagline: 'قيدني منصة ذكية تساعد العملاء والشركات على ادارة الحجوزات بسهولة.',
     footer_product: 'المنتج',
@@ -245,7 +245,7 @@ const SLICE_DICTIONARY: Record<string, Partial<Record<LocaleCode, Partial<Record
       nav_bookings: 'المواعيد',
     },
   },
-  'health&care': {
+  'health-care': {
     en: {
       nav_services: 'Treatments',
       nav_bookings: 'Consultations',
