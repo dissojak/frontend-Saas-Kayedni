@@ -5,6 +5,8 @@ import { useAuth } from '@/(pages)/(auth)/context/AuthContext';
 import { getAllBusinesses, type BusinessSearchResult } from '@global/lib/api/business.api';
 import { fetchMyBookings, type BookingResponse } from '@/(pages)/(business)/actions/backend';
 import type { ClientBooking, RecommendedBusiness } from '../types';
+import { clientDashboardT } from '../i18n';
+import type { LocaleCode } from '@global/lib/locales';
 
 function toClientBooking(b: BookingResponse): ClientBooking {
   const status = (b.status || '').toLowerCase() as ClientBooking['status'];
@@ -88,7 +90,7 @@ function getSmartRecommendations(
   }));
 }
 
-export default function useClientDashboard() {
+export default function useClientDashboard(locale: LocaleCode = 'en') {
   const { user, token } = useAuth();
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -138,7 +140,7 @@ export default function useClientDashboard() {
             setBookingsRaw([]);
             // Only set error if it's not a "no bookings" situation
             if (bookingError.message && !bookingError.message.includes('401')) {
-              setError(`Could not load your bookings: ${bookingError.message}`);
+              setError(`${clientDashboardT(locale, 'error_load_bookings_prefix')}: ${bookingError.message}`);
             }
           }
         }
@@ -151,7 +153,7 @@ export default function useClientDashboard() {
       } catch (e: any) {
         if (!mounted) return;
         console.error('Dashboard load error:', e);
-        setError(e?.message || 'Failed to load dashboard');
+        setError(e?.message || clientDashboardT(locale, 'error_dashboard_load_failed'));
       } finally {
         if (mounted) setLoading(false);
       }
@@ -161,7 +163,7 @@ export default function useClientDashboard() {
     return () => {
       mounted = false;
     };
-  }, [token]);
+  }, [token, locale]);
 
   const upcomingBookings: ClientBooking[] = useMemo(
     () => bookingsRaw

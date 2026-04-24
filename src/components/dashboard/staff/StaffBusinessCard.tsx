@@ -4,6 +4,8 @@ import React from 'react';
 import { Badge } from "@components/ui/badge";
 import { Building2, Star, MapPin, Phone, Mail, Briefcase, Users } from "lucide-react";
 import { BusinessInfo } from "../../../app/(pages)/shared/dashboard/types";
+import { useLocale } from '@global/hooks/useLocale';
+import { staffT } from '@/(pages)/(staff)/staff/i18n';
 
 interface StaffBusinessCardProps {
   business: BusinessInfo;
@@ -12,8 +14,14 @@ interface StaffBusinessCardProps {
 }
 
 export function StaffBusinessCard({ business, servicesCount, staffCount }: StaffBusinessCardProps) {
+  const { locale } = useLocale();
+  const isArabic = locale === 'ar';
+
   return (
-    <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950 text-white shadow-2xl">
+    <div
+      dir={isArabic ? 'rtl' : 'ltr'}
+      className={`relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950 text-white shadow-2xl ${isArabic ? 'text-right' : ''}`}
+    >
       {/* Decorative gradient blurs */}
       <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-bl from-teal-500/30 via-cyan-500/20 to-transparent rounded-full blur-3xl"></div>
       <div className="absolute bottom-0 left-0 w-64 h-64 bg-gradient-to-tr from-violet-500/20 via-purple-500/10 to-transparent rounded-full blur-3xl"></div>
@@ -50,7 +58,7 @@ export function StaffBusinessCard({ business, servicesCount, staffCount }: Staff
           {/* Business Info */}
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-2">
-              <span className="text-teal-400 text-sm font-medium uppercase tracking-wider">You work at</span>
+              <span className="text-teal-400 text-sm font-medium uppercase tracking-wider">{staffT(locale, 'business_card_you_work_at')}</span>
             </div>
             <h2 className="text-3xl sm:text-4xl font-bold mb-3 bg-gradient-to-r from-white via-slate-100 to-slate-200 bg-clip-text text-transparent">
               {business.name}
@@ -77,7 +85,7 @@ export function StaffBusinessCard({ business, servicesCount, staffCount }: Staff
                     <MapPin className="w-4 h-4 text-white" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs text-slate-500 uppercase tracking-wider">Location</p>
+                    <p className="text-xs text-slate-500 uppercase tracking-wider">{staffT(locale, 'business_card_location')}</p>
                     <p className="text-sm text-white truncate">{business.location}</p>
                   </div>
                 </div>
@@ -91,7 +99,7 @@ export function StaffBusinessCard({ business, servicesCount, staffCount }: Staff
                     <Phone className="w-4 h-4 text-white" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs text-slate-500 uppercase tracking-wider">Phone</p>
+                    <p className="text-xs text-slate-500 uppercase tracking-wider">{staffT(locale, 'business_card_phone')}</p>
                     <p className="text-sm text-white group-hover:text-teal-400 transition-colors">{business.phone}</p>
                   </div>
                 </a>
@@ -105,7 +113,7 @@ export function StaffBusinessCard({ business, servicesCount, staffCount }: Staff
                     <Mail className="w-4 h-4 text-white" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs text-slate-500 uppercase tracking-wider">Email</p>
+                    <p className="text-xs text-slate-500 uppercase tracking-wider">{staffT(locale, 'business_card_email')}</p>
                     <p className="text-sm text-white group-hover:text-violet-400 transition-colors truncate">{business.email}</p>
                   </div>
                 </a>
@@ -120,7 +128,7 @@ export function StaffBusinessCard({ business, servicesCount, staffCount }: Staff
                 </div>
                 <div>
                   <p className="text-lg font-bold text-white">{servicesCount}</p>
-                  <p className="text-xs text-slate-400">Services</p>
+                  <p className="text-xs text-slate-400">{staffT(locale, 'business_card_services')}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -129,7 +137,7 @@ export function StaffBusinessCard({ business, servicesCount, staffCount }: Staff
                 </div>
                 <div>
                   <p className="text-lg font-bold text-white">{staffCount}</p>
-                  <p className="text-xs text-slate-400">Team Members</p>
+                  <p className="text-xs text-slate-400">{staffT(locale, 'business_card_team_members')}</p>
                 </div>
               </div>
             </div>

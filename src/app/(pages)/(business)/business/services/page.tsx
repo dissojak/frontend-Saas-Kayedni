@@ -10,7 +10,7 @@ import { Textarea } from "@components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@components/ui/dialog";
 import { Label } from "@components/ui/label";
 import { Search, Plus, Clock, DollarSign, Edit, Trash2, Package } from "lucide-react";
-import { fetchServicesByBusinessId, createService, updateService, deleteService, fetchStaffByBusinessId } from "../../actions/backend";
+import { fetchServicesByBusinessId, createService, updateService, deleteService, fetchStaffByBusinessId, fetchOwnerBusiness } from "../../actions/backend";
 import { useLocale } from '@global/hooks/useLocale';
 import { businessServicesT } from './i18n';
 
@@ -42,6 +42,8 @@ export default function BusinessServicesPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
 
+  const getAuthToken = () => localStorage.getItem('accessToken') || localStorage.getItem('token');
+
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -59,13 +61,32 @@ export default function BusinessServicesPage() {
   }
 
   useEffect(() => {
-    const userData = localStorage.getItem('user');
-    if (userData) {
-      const user = JSON.parse(userData);
-      if (user.businessId) {
-        setBusinessId(user.businessId);
+    const loadBusinessId = async () => {
+      const token = getAuthToken();
+
+      // Prefer the authenticated owner endpoint to avoid stale localStorage business IDs.
+      if (token) {
+        try {
+          const ownerBusiness = await fetchOwnerBusiness(token);
+          if (ownerBusiness?.id) {
+            setBusinessId(String(ownerBusiness.id));
+            return;
+          }
+        } catch (error) {
+          console.warn('Failed to resolve owner business from API, falling back to local storage:', error);
+        }
       }
-    }
+
+      const userData = localStorage.getItem('user');
+      if (userData) {
+        const user = JSON.parse(userData);
+        if (user.businessId) {
+          setBusinessId(String(user.businessId));
+        }
+      }
+    };
+
+    void loadBusinessId();
   }, []);
 
   useEffect(() => {
@@ -84,7 +105,7 @@ export default function BusinessServicesPage() {
     
     setLoading(true);
     try {
-      const token = localStorage.getItem('token') || undefined;
+      const token = getAuthToken() || undefined;
       const data = await fetchServicesByBusinessId(businessId, token);
       setServices(data);
     } catch (error) {
@@ -98,7 +119,7 @@ export default function BusinessServicesPage() {
     if (!businessId) return;
     
     try {
-      const token = localStorage.getItem('token') || undefined;
+      const token = getAuthToken() || undefined;
       const data = await fetchStaffByBusinessId(businessId, token);
       setStaff(data);
     } catch (error) {
@@ -149,7 +170,7 @@ export default function BusinessServicesPage() {
     
     setIsSubmitting(true);
     try {
-      const token = localStorage.getItem('token') || undefined;
+      const token = getAuthToken() || undefined;
       
       if (editingService) {
         await updateService(businessId, editingService.id, formData, token);
@@ -171,7 +192,7 @@ export default function BusinessServicesPage() {
     if (!confirm(businessServicesT(locale, 'confirm_delete'))) return;
     
     try {
-      const token = localStorage.getItem('token') || undefined;
+      const token = getAuthToken() || undefined;
       await deleteService(businessId, serviceId, token);
       await loadServices();
     } catch (error) {

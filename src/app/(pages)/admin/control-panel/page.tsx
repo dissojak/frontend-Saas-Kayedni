@@ -5,9 +5,13 @@ import { useRouter } from 'next/navigation';
 import { Shield, Users, Calendar, Settings, BarChart3, Bell } from 'lucide-react';
 import { Button } from '@components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@components/ui/card';
+import { useLocale } from '@global/hooks/useLocale';
+import { adminT } from '@components/dashboard/admin/i18n';
 
 export default function AdminControlPanel() {
   const router = useRouter();
+  const { locale } = useLocale();
+  const isArabic = locale === 'ar';
   const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
@@ -44,31 +48,74 @@ export default function AdminControlPanel() {
 
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" dir={isArabic ? 'rtl' : 'ltr'}>
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+          <p className="mt-4 text-gray-600">{adminT(locale, 'loading')}</p>
         </div>
       </div>
     );
   }
 
   const stats = [
-    { title: 'Total Users', value: '1,234', icon: Users, color: 'text-blue-600' },
-    { title: 'Total Bookings', value: '5,678', icon: Calendar, color: 'text-green-600' },
-    { title: 'Active Businesses', value: '89', icon: BarChart3, color: 'text-purple-600' },
-    { title: 'Pending Reviews', value: '23', icon: Bell, color: 'text-orange-600' },
+    { title: adminT(locale, 'total_users'), value: '1,234', icon: Users, color: 'text-blue-600' },
+    { title: adminT(locale, 'total_bookings'), value: '5,678', icon: Calendar, color: 'text-green-600' },
+    { title: adminT(locale, 'active_businesses'), value: '89', icon: BarChart3, color: 'text-purple-600' },
+    { title: adminT(locale, 'pending_reviews'), value: '23', icon: Bell, color: 'text-orange-600' },
   ];
 
   const quickActions = [
-    { title: 'Manage Users', href: '/admin/users', icon: Users, description: 'View and manage user accounts' },
-    { title: 'View Analytics', href: '/admin/analytics', icon: BarChart3, description: 'System analytics and reports' },
-    { title: 'Business Overview', href: '/admin/businesses', icon: Shield, description: 'Manage registered businesses' },
-    { title: 'System Settings', href: '/admin/settings', icon: Settings, description: 'Configure system settings' },
+    {
+      title: adminT(locale, 'manage_users_title'),
+      href: '/admin/users',
+      icon: Users,
+      description: adminT(locale, 'manage_users_desc'),
+    },
+    {
+      title: adminT(locale, 'view_analytics_title'),
+      href: '/admin/analytics',
+      icon: BarChart3,
+      description: adminT(locale, 'view_analytics_desc'),
+    },
+    {
+      title: adminT(locale, 'business_overview_title'),
+      href: '/admin/businesses',
+      icon: Shield,
+      description: adminT(locale, 'business_overview_desc'),
+    },
+    {
+      title: adminT(locale, 'system_settings_title'),
+      href: '/admin/settings',
+      icon: Settings,
+      description: adminT(locale, 'system_settings_desc'),
+    },
+  ];
+
+  const recentActivities = [
+    {
+      action: adminT(locale, 'activity_new_user_registered'),
+      user: 'john.doe@example.com',
+      time: adminT(locale, 'activity_time_5_minutes'),
+    },
+    {
+      action: adminT(locale, 'activity_business_verified'),
+      user: 'ABC Salon',
+      time: adminT(locale, 'activity_time_1_hour'),
+    },
+    {
+      action: adminT(locale, 'activity_booking_created'),
+      user: 'jane.smith@example.com',
+      time: adminT(locale, 'activity_time_2_hours'),
+    },
+    {
+      action: adminT(locale, 'activity_payment_processed'),
+      user: 'XYZ Spa',
+      time: adminT(locale, 'activity_time_3_hours'),
+    },
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50" dir={isArabic ? 'rtl' : 'ltr'}>
       {/* Header */}
       <header className="bg-white border-b border-gray-200">
         <div className="container mx-auto px-4 py-4">
@@ -78,8 +125,8 @@ export default function AdminControlPanel() {
                 <Shield className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-gray-900">Admin Control Panel</h1>
-                <p className="text-sm text-gray-500">kayedni Management System</p>
+                <h1 className="text-xl font-bold text-gray-900">{adminT(locale, 'admin_control_panel')}</h1>
+                <p className="text-sm text-gray-500">{adminT(locale, 'management_system_name')}</p>
               </div>
             </div>
             <div className="flex items-center gap-4">
@@ -88,7 +135,7 @@ export default function AdminControlPanel() {
                 <p className="text-xs text-gray-500">{user.email}</p>
               </div>
               <Button variant="outline" onClick={handleLogout}>
-                Logout
+                {adminT(locale, 'logout')}
               </Button>
             </div>
           </div>
@@ -100,10 +147,10 @@ export default function AdminControlPanel() {
         {/* Welcome Message */}
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            Welcome back, {user.name}!
+            {adminT(locale, 'welcome_back_name', { name: user.name })}
           </h2>
           <p className="text-gray-600">
-            Here's what's happening with your platform today.
+            {adminT(locale, 'control_panel_subtitle')}
           </p>
         </div>
 
@@ -128,7 +175,7 @@ export default function AdminControlPanel() {
 
         {/* Quick Actions */}
         <div className="mb-8">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">{adminT(locale, 'quick_actions')}</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {quickActions.map((action, index) => (
               <Card 
@@ -155,17 +202,12 @@ export default function AdminControlPanel() {
         {/* Recent Activity */}
         <Card>
           <CardHeader>
-            <CardTitle>Recent Activity</CardTitle>
-            <CardDescription>Latest system activities and updates</CardDescription>
+            <CardTitle>{adminT(locale, 'recent_activity')}</CardTitle>
+            <CardDescription>{adminT(locale, 'recent_activity_desc')}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {[
-                { action: 'New user registered', user: 'john.doe@example.com', time: '5 minutes ago' },
-                { action: 'Business verified', user: 'ABC Salon', time: '1 hour ago' },
-                { action: 'Booking created', user: 'jane.smith@example.com', time: '2 hours ago' },
-                { action: 'Payment processed', user: 'XYZ Spa', time: '3 hours ago' },
-              ].map((activity, index) => (
+              {recentActivities.map((activity, index) => (
                 <div key={index} className="flex items-center justify-between py-3 border-b last:border-0">
                   <div>
                     <p className="font-medium text-gray-900">{activity.action}</p>

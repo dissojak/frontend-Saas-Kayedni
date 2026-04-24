@@ -1,9 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Layout from "@components/layout/Layout";
 import { Button } from "@components/ui/button";
-import { Badge } from "@components/ui/badge";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,15 +15,24 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
-  Image as ImageIcon,
-  Sparkles
+  MapPin,
+  Phone,
+  Scissors,
+  Users,
+  ClipboardList,
+  CalendarDays,
+  ArrowRight,
+  Activity,
+  Settings
 } from "lucide-react";
 import { useAuth } from "@/(pages)/(auth)/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { useToast } from "@global/hooks/use-toast";
+import { useLocale } from '@global/hooks/useLocale';
 import { fetchStaffStats, staffResignFromBusiness, fetchBusinessById, fetchBusinessImages, fetchServicesByBusinessId, fetchStaffByBusinessId, fetchCurrentStaffInfo, fetchBookingsForStaff } from "../../../(business)/actions/backend";
 import { Booking, BusinessImage, BusinessInfo } from "../../../shared/dashboard/types";
 import { useDashboardStats } from "../../../shared/dashboard/hooks";
+import { formatLastUpdatedLabel } from "../../../shared/dashboard/utils";
 import { 
   StatsCards, 
   MonthlyBarChart, 
@@ -33,18 +41,15 @@ import {
   PerformanceInsight 
 } from "../../../shared/dashboard/components";
 import { StaffStats } from "./types";
-import { 
-  StaffBusinessCard,
-  StaffQuickStats,
-  StaffQuickActions,
-  StaffServicesSection,
-  LeaveBusinessSection
-} from "@components/dashboard/staff";
+import { staffT } from '../i18n';
+import { createBusinessSlug } from '@global/lib/businessSlug';
 
 export default function StaffWorkspacePage() {
   const { user, token, logout } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
+  const { locale } = useLocale();
+  const isArabic = locale === 'ar';
   const [stats, setStats] = useState<StaffStats | null>(null);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [business, setBusiness] = useState<BusinessInfo | null>(null);
@@ -56,33 +61,27 @@ export default function StaffWorkspacePage() {
   const [resignDialogOpen, setResignDialogOpen] = useState(false);
   const [resigning, setResigning] = useState(false);
   const [showCharts, setShowCharts] = useState(false);
+  const userId = user?.id;
+  const userBusinessId = user?.businessId;
 
   // Use shared dashboard hook for analytics
   const { stats: dashboardStats, monthlyData, serviceBreakdown, maxMonthlyTotal, maxServiceCount } = useDashboardStats(bookings);
 
-  useEffect(() => {
-    if (user?.id && token) {
-      loadData();
-    } else {
-      setLoading(false);
-    }
-  }, [user?.id, token]);
-
-  const loadData = async () => {
-    if (!user?.id || !token) return;
+  const loadData = useCallback(async () => {
+    if (!userId || !token) return;
 
     try {
       setLoading(true);
       
       // Load stats
-      const statsData = await fetchStaffStats(user.id, token);
+      const statsData = await fetchStaffStats(userId, token);
       setStats(statsData);
 
-      console.log('Staff Dashboard - User:', user);
-      console.log('Staff Dashboard - BusinessId from user:', user.businessId);
+      console.log('Staff Dashboard - User ID:', userId);
+      console.log('Staff Dashboard - BusinessId from user:', userBusinessId);
 
       // Try to get businessId from user object first, then fallback to API
-      let businessId = user.businessId;
+      let businessId = userBusinessId;
       
       if (!businessId) {
         console.log('No businessId on user, fetching from /staff/me endpoint...');
@@ -103,7 +102,7 @@ export default function StaffWorkspacePage() {
           fetchBusinessImages(businessId),
           fetchServicesByBusinessId(businessId, token),
           fetchStaffByBusinessId(businessId, token),
-          fetchBookingsForStaff(user.id, undefined, undefined, token)
+          fetchBookingsForStaff(userId, undefined, undefined, token)
         ]);
         
         console.log('Business data received:', businessData);
@@ -135,14 +134,22 @@ export default function StaffWorkspacePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId, userBusinessId, token]);
+
+  useEffect(() => {
+    if (userId && token) {
+      loadData();
+    } else {
+      setLoading(false);
+    }
+  }, [userId, token, loadData]);
 
   const handleResign = async () => {
     if (!user?.id) {
       toast({
         variant: "error",
-        title: "Error",
-        description: "User information not found. Please try logging in again.",
+        title: staffT(locale, 'toast_error_title'),
+        description: staffT(locale, 'toast_error_user_not_found'),
       });
       return;
     }
@@ -154,8 +161,8 @@ export default function StaffWorkspacePage() {
     if (!authToken) {
       toast({
         variant: "error",
-        title: "Authentication required",
-        description: "Please log in again to continue.",
+        title: staffT(locale, 'toast_auth_required_title'),
+        description: staffT(locale, 'toast_auth_required_desc'),
       });
       return;
     }
@@ -163,8 +170,8 @@ export default function StaffWorkspacePage() {
     if (!businessId) {
       toast({
         variant: "error",
-        title: "No business found",
-        description: "You are not currently linked to any business.",
+        title: staffT(locale, 'toast_no_business_title'),
+        description: staffT(locale, 'toast_no_business_desc'),
       });
       return;
     }
@@ -176,8 +183,8 @@ export default function StaffWorkspacePage() {
       // Show success toast
       toast({
         variant: "success",
-        title: "Successfully resigned",
-        description: response.message || "You have left the business. You will now be logged out.",
+        title: staffT(locale, 'toast_success_resigned_title'),
+        description: response.message || staffT(locale, 'toast_success_resigned_desc'),
       });
       
       // Wait a moment for the toast to show, then log out and redirect
@@ -189,8 +196,8 @@ export default function StaffWorkspacePage() {
       console.error('Error resigning from business:', error);
       toast({
         variant: "error",
-        title: "Failed to resign",
-        description: error.message || "Unable to leave the business. Please try again.",
+        title: staffT(locale, 'toast_failed_resign_title'),
+        description: error.message || staffT(locale, 'toast_failed_resign_desc'),
       });
       setResigning(false);
     } finally {
@@ -201,6 +208,11 @@ export default function StaffWorkspacePage() {
   const completionRate = stats && stats.totalBookings > 0 
     ? Math.round((stats.completedBookings / stats.totalBookings) * 100) 
     : 0;
+  const totalBookings = stats?.totalBookings ?? 0;
+  const completedBookings = stats?.completedBookings ?? 0;
+  const upcomingBookings = (stats?.pendingBookings ?? 0) + (stats?.confirmedBookings ?? 0);
+  const previewImages = businessImages.slice(0, 3);
+  const lastUpdatedLabel = formatLastUpdatedLabel(business?.updatedAt ?? business?.createdAt) || 'Last updated recently';
 
   if (loading) {
     return (
@@ -208,7 +220,7 @@ export default function StaffWorkspacePage() {
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-background to-slate-100/50 dark:from-slate-950 dark:via-background dark:to-slate-900/50 flex items-center justify-center">
           <div className="text-center">
             <div className="w-14 h-14 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-slate-500 dark:text-slate-400">Loading your workspace...</p>
+            <p className="text-slate-500 dark:text-slate-400">{staffT(locale, 'dashboard_loading_workspace')}</p>
           </div>
         </div>
       </Layout>
@@ -217,23 +229,12 @@ export default function StaffWorkspacePage() {
 
   return (
     <Layout>
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-background to-slate-100/50 dark:from-slate-950 dark:via-background dark:to-slate-900/50">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8">
+      <div
+        dir={isArabic ? 'rtl' : 'ltr'}
+        className={`min-h-screen bg-[#f8f9fa] ${isArabic ? 'text-right' : ''}`}
+      >
+        <div className="mx-auto w-full max-w-[1280px] px-4 py-6 sm:px-6 sm:py-8 lg:px-8 space-y-6">
           
-          {/* Header Section */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-slate-900 via-slate-700 to-slate-800 dark:from-white dark:via-slate-200 dark:to-slate-300 bg-clip-text text-transparent">
-                My Workspace
-              </h1>
-              <p className="text-slate-500 dark:text-slate-400 mt-1">Welcome back, {user?.name?.split(' ')[0] || 'Staff'}!</p>
-            </div>
-            <Badge className="bg-gradient-to-r from-teal-500/10 to-cyan-500/10 text-teal-500 dark:text-teal-400 border border-teal-200/50 dark:border-teal-800/50 px-4 py-1.5 w-fit">
-              <Sparkles className="w-3.5 h-3.5 mr-1.5" />
-              Staff Member
-            </Badge>
-          </div>
-
           {/* Debug: No business linked message */}
           {!business && !loading && (
             <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 rounded-2xl p-6">
@@ -242,13 +243,13 @@ export default function StaffWorkspacePage() {
                   <Building2 className="w-6 h-6 text-amber-600 dark:text-amber-400" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-amber-800 dark:text-amber-300 mb-1">No Business Linked</h3>
+                  <h3 className="font-semibold text-amber-800 dark:text-amber-300 mb-1">{staffT(locale, 'dashboard_no_business_title')}</h3>
                   <p className="text-sm text-amber-700 dark:text-amber-400">
-                    Your account is not currently linked to a business. Please contact your employer or log out and log back in to refresh your account data.
+                    {staffT(locale, 'dashboard_no_business_desc')}
                   </p>
                   {user?.businessId && (
                     <p className="text-xs text-amber-600 dark:text-amber-500 mt-2">
-                      Business ID found: {user.businessId} (loading may have failed)
+                      {staffT(locale, 'dashboard_business_id_found', { id: user.businessId })}
                     </p>
                   )}
                 </div>
@@ -256,104 +257,263 @@ export default function StaffWorkspacePage() {
             </div>
           )}
 
-          {/* Business Card */}
           {business && (
-            <StaffBusinessCard 
-              business={business}
-              servicesCount={servicesCount}
-              staffCount={staffCount}
-            />
-          )}
-
-          {/* Business Image Gallery */}
-          {businessImages.length > 0 && (
-            <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border border-slate-200/60 dark:border-slate-700/60 rounded-2xl p-6 shadow-lg">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center">
-                  <ImageIcon className="w-4 h-4 text-white" />
+            <>
+              <div className="flex justify-center">
+                <div className="w-full max-w-[660px] rounded-full border border-white/10 bg-[#191c1de6] px-7 py-3 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)] backdrop-blur-xl">
+                  <div className="flex flex-wrap items-center gap-4 text-xs font-semibold tracking-[0.12em] uppercase">
+                    <div className="flex items-center gap-2 text-white/95">
+                      <span className="h-2 w-2 rounded-full bg-lime-400" />
+                      <span>{`My Workspace : ${business.name}`}</span>
+                    </div>
+                    <span className="h-5 w-px bg-white/20" />
+                    <button
+                      type="button"
+                      onClick={() => setResignDialogOpen(true)}
+                      className="text-red-500 hover:text-red-400 transition-colors"
+                    >
+                      Leave Business
+                    </button>
+                    <span className="h-5 w-px bg-white/20" />
+                    <div className="flex items-center gap-2 text-lime-400">
+                      <Users className="h-3.5 w-3.5" />
+                      <span>{`${staffCount} Team Members`}</span>
+                    </div>
+                    <span className="ml-auto h-2.5 w-2.5 rounded-full bg-zinc-200/70" />
+                  </div>
                 </div>
-                <h3 className="font-semibold text-slate-800 dark:text-white">Business Gallery</h3>
-                <span className="text-xs text-slate-500 dark:text-slate-400 ml-auto">
-                  {activeImageIndex + 1} / {businessImages.length}
-                </span>
               </div>
-              
-              {/* Main Image */}
-              <div className="relative aspect-video rounded-xl overflow-hidden mb-4 bg-slate-100 dark:bg-slate-800">
-                <img 
-                  src={businessImages[activeImageIndex]?.imageUrl} 
-                  alt={`${business?.name} - ${activeImageIndex + 1}`}
-                  className="w-full h-full object-cover"
-                />
-                
-                {/* Navigation Arrows */}
-                {businessImages.length > 1 && (
-                  <>
-                    <button
-                      onClick={() => setActiveImageIndex(prev => prev === 0 ? businessImages.length - 1 : prev - 1)}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/50 hover:bg-black/70 flex items-center justify-center text-white transition-colors"
-                    >
-                      <ChevronLeft className="w-5 h-5" />
-                    </button>
-                    <button
-                      onClick={() => setActiveImageIndex(prev => prev === businessImages.length - 1 ? 0 : prev + 1)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/50 hover:bg-black/70 flex items-center justify-center text-white transition-colors"
-                    >
-                      <ChevronRight className="w-5 h-5" />
-                    </button>
-                  </>
-                )}
-              </div>
-              
-              {/* Thumbnail Strip */}
-              {businessImages.length > 1 && (
-                <div className="flex gap-2 overflow-x-auto pb-2">
-                  {businessImages.map((img, index) => (
-                    <button
-                      key={img.id}
-                      onClick={() => setActiveImageIndex(index)}
-                      className={`shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${
-                        index === activeImageIndex 
-                          ? 'border-teal-500 ring-2 ring-teal-500/30' 
-                          : 'border-transparent hover:border-slate-300 dark:hover:border-slate-600'
-                      }`}
-                    >
-                      <img 
-                        src={img.imageUrl} 
-                        alt={`Thumbnail ${index + 1}`}
-                        className="w-full h-full object-cover"
+
+              <section className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+                <div className="space-y-4 lg:col-span-4">
+                  <div className="rounded-2xl border border-white/50 bg-white/80 p-5 shadow-[0_20px_30px_rgba(0,0,0,0.05)] backdrop-blur-md">
+                    <div className="flex items-center gap-4">
+                      <img
+                        src={business.logo || businessImages[0]?.imageUrl || '/favicon.ico'}
+                        alt={business.name}
+                        className="h-20 w-20 rounded-2xl border-2 border-white object-cover shadow-lg"
                       />
-                    </button>
-                  ))}
+                      <div>
+                        <span className="rounded-full bg-[#caf082] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-[#344b00]">
+                          Workspace
+                        </span>
+                        <h2 className="mt-1 text-[38px] leading-[1.05] font-bold text-[#191C1D]">{business.name}</h2>
+                        <p className="text-sm text-[#44493A]">{business.email || staffT(locale, 'business_card_email')}</p>
+                      </div>
+                    </div>
+                    <div className="mt-5 flex items-center justify-between rounded-xl border border-white/40 bg-[#f3f4f5] p-4">
+                      <div className="flex items-center gap-2 text-[#191C1D]">
+                        <Building2 className="h-4 w-4 text-[#344B00]" />
+                        <span>{staffT(locale, 'dashboard_badge_staff_member')}</span>
+                      </div>
+                      <span className="rounded-full bg-[#ecfccb] px-2 py-0.5 text-xs font-bold text-[#3f6212]">Active</span>
+                    </div>
+                  </div>
                 </div>
-              )}
-            </div>
+
+                <div className="lg:col-span-8">
+                  <div className="relative overflow-hidden rounded-3xl border border-black/5 bg-white p-8 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)]">
+                    <div className="absolute -right-24 -top-24 h-64 w-64 rounded-full bg-[#344b00]/10 blur-3xl" />
+                    <div className="relative flex flex-col justify-between gap-6 sm:flex-row sm:items-center">
+                      <div className="flex items-center gap-6">
+                        <div className="flex h-24 w-24 items-center justify-center rounded-2xl bg-[#476500] shadow-[0_0_20px_rgba(71,101,0,0.15)]">
+                          <Scissors className="h-10 w-10 text-[#BCE276]" />
+                        </div>
+                        <div>
+                          <div className="mb-1 flex items-center gap-3">
+                            <h3 className="text-4xl font-bold tracking-tight text-[#344B00]">{business.name}</h3>
+                            <span className="rounded-full border border-white/30 bg-white/20 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.06em] text-[#344B00]">
+                              Premium Lounge
+                            </span>
+                          </div>
+                          <p className="max-w-lg text-sm leading-6 text-[#44493A]">{business.description || staffT(locale, 'business_card_you_work_at')}</p>
+                          <div className="mt-3 flex flex-wrap items-center gap-5 text-sm font-semibold text-[#44493A]">
+                            <span className="flex items-center gap-2"><MapPin className="h-4 w-4 text-[#344B00]" />{business.location || staffT(locale, 'business_card_location')}</span>
+                            <span className="flex items-center gap-2"><Phone className="h-4 w-4 text-[#344B00]" />{business.phone || staffT(locale, 'business_card_phone')}</span>
+                          </div>
+                        </div>
+                      </div>
+                        <Button
+                          onClick={() => router.push('/staff/bookings')}
+                          className="h-11 rounded-xl bg-[#476500] px-6 text-white hover:bg-[#3d5700]"
+                        >
+                          Start Working
+                        </Button>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <section className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+                <div className="space-y-4 lg:col-span-8">
+                  <div className="relative overflow-hidden rounded-3xl border-4 border-white shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)]">
+                    <img
+                      src={businessImages[activeImageIndex]?.imageUrl || businessImages[0]?.imageUrl || business.logo || '/favicon.ico'}
+                      alt={`${business.name} cover`}
+                      className="h-[420px] w-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/15 to-transparent" />
+                    {businessImages.length > 1 && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => setActiveImageIndex((prev) => (prev === 0 ? businessImages.length - 1 : prev - 1))}
+                          className="absolute left-5 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border-2 border-[#476500] bg-white/10 text-[#476500] backdrop-blur-sm"
+                        >
+                          {isArabic ? <ChevronRight className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setActiveImageIndex((prev) => (prev === businessImages.length - 1 ? 0 : prev + 1))}
+                          className="absolute right-5 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border-2 border-[#476500] bg-white/10 text-[#476500] backdrop-blur-sm"
+                        >
+                          {isArabic ? <ChevronLeft className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
+                        </button>
+                      </>
+                    )}
+                    <div className="absolute inset-x-0 bottom-0 flex items-end justify-between p-6">
+                      <div>
+                        <h4 className="text-4xl font-medium text-white">Visual Identity</h4>
+                        <p className="text-sm text-white/80">{lastUpdatedLabel}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => router.push(`/business/${createBusinessSlug(business.name, business.id)}`)}
+                        className="rounded-full border border-white/30 bg-white/20 px-5 py-2 text-base text-white backdrop-blur-md"
+                      >
+                        view Public Page
+                      </button>
+                    </div>
+                  </div>
+
+                  {previewImages.length > 1 && (
+                    <div className="grid grid-cols-3 gap-4">
+                      {previewImages.map((img, index) => (
+                        <button
+                          key={img.id}
+                          type="button"
+                          onClick={() => setActiveImageIndex(index)}
+                          className="overflow-hidden rounded-2xl border-2 border-white shadow-sm"
+                        >
+                          <img
+                            src={img.imageUrl}
+                            alt={staffT(locale, 'dashboard_thumbnail_alt', { index: index + 1 })}
+                            className="h-36 w-full object-cover"
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <aside className="space-y-4 lg:col-span-4">
+                  <div className="space-y-3">
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between rounded-2xl border border-black/5 bg-white p-5 shadow-[0_10px_20px_rgba(0,0,0,0.04)]">
+                        <div className="flex items-center gap-3">
+                          <div className="rounded-xl bg-violet-100 p-3"><ClipboardList className="h-5 w-5 text-violet-600" /></div>
+                          <div>
+                            <p className="text-sm text-[#44493A]">{staffT(locale, 'quick_stats_total_bookings')}</p>
+                            <p className="text-3xl font-bold text-[#191C1D]">{totalBookings}</p>
+                          </div>
+                        </div>
+                        <span className="rounded-lg bg-green-100 px-2 py-1 text-xs font-bold text-green-600">+{completionRate}%</span>
+                      </div>
+
+                      <div className="flex items-center justify-between rounded-2xl border border-black/5 bg-white p-5 shadow-[0_10px_20px_rgba(0,0,0,0.04)]">
+                        <div className="flex items-center gap-3">
+                          <div className="rounded-xl bg-lime-100 p-3"><Activity className="h-5 w-5 text-lime-700" /></div>
+                          <div>
+                            <p className="text-sm text-[#44493A]">{staffT(locale, 'quick_stats_completed')}</p>
+                            <p className="text-3xl font-bold text-[#191C1D]">{completedBookings}</p>
+                          </div>
+                        </div>
+                        <span className="rounded-lg bg-zinc-100 px-2 py-1 text-xs font-bold text-zinc-600">{completionRate}% rate</span>
+                      </div>
+
+                      <div className="flex items-center justify-between rounded-2xl border border-black/5 bg-white p-5 shadow-[0_10px_20px_rgba(0,0,0,0.04)]">
+                        <div className="flex items-center gap-3">
+                          <div className="rounded-xl bg-amber-100 p-3"><CalendarDays className="h-5 w-5 text-amber-700" /></div>
+                          <div>
+                            <p className="text-sm text-[#44493A]">{staffT(locale, 'quick_stats_upcoming')}</p>
+                            <p className="text-3xl font-bold text-[#191C1D]">{upcomingBookings}</p>
+                          </div>
+                        </div>
+                        <ArrowRight className="h-5 w-5 text-amber-700" />
+                      </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-black/5 bg-white p-5 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)]">
+                    <h3 className="mb-4 flex items-center gap-2 text-2xl font-semibold text-[#191C1D]">
+                      <Settings className="h-5 w-5 text-[#344B00]" />
+                      Management
+                    </h3>
+                    <div className="space-y-3">
+                      <button
+                        type="button"
+                        onClick={() => router.push('/staff/services')}
+                        className="flex w-full items-center justify-between rounded-2xl border border-white/50 bg-white/80 px-4 py-4 shadow-[0_20px_30px_rgba(0,0,0,0.05)]"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="rounded-xl bg-[#caf082] p-3"><Scissors className="h-5 w-5 text-[#344B00]" /></div>
+                          <div className={`${isArabic ? 'text-right' : 'text-left'}`}>
+                            <p className="text-sm font-medium text-[#191C1D]">{staffT(locale, 'services_section_my_services')}</p>
+                            <p className="text-xs text-zinc-500">{`${servicesCount} Active options`}</p>
+                          </div>
+                        </div>
+                        <ArrowRight className="h-4 w-4 text-zinc-400" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => router.push('/staff/schedule')}
+                        className="flex w-full items-center justify-between rounded-2xl border border-white/50 bg-white/80 px-4 py-4 shadow-[0_20px_30px_rgba(0,0,0,0.05)]"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="rounded-xl bg-violet-100 p-3"><CalendarDays className="h-5 w-5 text-violet-600" /></div>
+                          <div className={`${isArabic ? 'text-right' : 'text-left'}`}>
+                            <p className="text-sm font-medium text-[#191C1D]">{staffT(locale, 'quick_actions_schedule_title')}</p>
+                            <p className="text-xs text-zinc-500">Mon - Sat Available</p>
+                          </div>
+                        </div>
+                        <ArrowRight className="h-4 w-4 text-zinc-400" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => router.push('/staff/bookings')}
+                        className="flex w-full items-center justify-between rounded-2xl border border-white/50 bg-white/80 px-4 py-4 shadow-[0_20px_30px_rgba(0,0,0,0.05)]"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="rounded-xl bg-amber-100 p-3"><ClipboardList className="h-5 w-5 text-amber-700" /></div>
+                          <div className={`${isArabic ? 'text-right' : 'text-left'}`}>
+                            <p className="text-sm font-medium text-[#191C1D]">{staffT(locale, 'quick_actions_bookings_title')}</p>
+                            <p className="text-xs text-zinc-500">Manage appointments</p>
+                          </div>
+                        </div>
+                        <ArrowRight className="h-4 w-4 text-zinc-400" />
+                      </button>
+                    </div>
+                  </div>
+                  </div>
+                </aside>
+              </section>
+            </>
           )}
-
-          {/* Quick Stats */}
-          {stats && <StaffQuickStats stats={stats} completionRate={completionRate} />}
-
-          {/* Quick Actions */}
-          <StaffQuickActions 
-            completionRate={completionRate}
-            totalBookings={stats?.totalBookings || 0}
-            showingCharts={showCharts}
-            onToggleCharts={() => setShowCharts(!showCharts)}
-          />
 
           {/* Analytics Section - Using Shared Dashboard Components */}
           {showCharts && bookings.length > 0 && (
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <h2 className="text-2xl font-bold bg-gradient-to-r from-slate-900 via-slate-700 to-slate-800 dark:from-white dark:via-slate-200 dark:to-slate-300 bg-clip-text text-transparent">
-                  Analytics Dashboard
+                  {staffT(locale, 'dashboard_analytics_title')}
                 </h2>
                 <Button
                   variant="outline"
                   onClick={() => setShowCharts(false)}
                   className="rounded-xl"
                 >
-                  Hide Charts
+                  {staffT(locale, 'dashboard_hide_charts')}
                 </Button>
               </div>
 
@@ -376,15 +536,6 @@ export default function StaffWorkspacePage() {
               </div>
             </div>
           )}
-
-          {/* Services Management */}
-          <StaffServicesSection servicesCount={servicesCount} />
-
-          {/* Leave Business */}
-          <LeaveBusinessSection
-            businessName={business?.name}
-            onLeaveClick={() => setResignDialogOpen(true)}
-          />
 
         </div>
       </div>
@@ -409,7 +560,9 @@ export default function StaffWorkspacePage() {
             
             {/* Title in Header */}
             <h2 className="text-white text-xl sm:text-2xl font-bold text-center mt-4">
-              Leave {business?.name || 'Business'}?
+              {staffT(locale, 'resign_dialog_title', {
+                business: business?.name || staffT(locale, 'resign_dialog_default_business'),
+              })}
             </h2>
           </div>
           
@@ -419,23 +572,23 @@ export default function StaffWorkspacePage() {
             <div className="flex items-start gap-3 p-3 rounded-lg mb-6 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50">
               <AlertTriangle className="w-5 h-5 mt-0.5 shrink-0 text-red-500" />
               <div className="text-sm text-red-700 dark:text-red-300">
-                <p className="font-medium mb-1">This action will:</p>
+                <p className="font-medium mb-1">{staffT(locale, 'resign_dialog_warning_title')}</p>
                 <ul className="list-disc list-inside space-y-1 text-red-600 dark:text-red-400">
-                  <li>Remove your staff access to this business</li>
-                  <li>Convert your account to a regular client</li>
-                  <li>Log you out of your current session</li>
+                  <li>{staffT(locale, 'resign_dialog_warning_remove_access')}</li>
+                  <li>{staffT(locale, 'resign_dialog_warning_convert_client')}</li>
+                  <li>{staffT(locale, 'resign_dialog_warning_logout')}</li>
                 </ul>
               </div>
             </div>
             
             <p className="text-sm text-muted-foreground text-center mb-6">
-              You can still book services as a client after leaving.
+              {staffT(locale, 'resign_dialog_hint')}
             </p>
             
             {/* Action Buttons */}
             <div className="flex flex-col-reverse sm:flex-row gap-3">
               <AlertDialogCancel className="flex-1 h-12 px-6 rounded-xl font-semibold bg-muted hover:bg-muted/80 border-0">
-                No, Stay
+                {staffT(locale, 'resign_dialog_stay')}
               </AlertDialogCancel>
               <AlertDialogAction
                 onClick={handleResign}
@@ -444,13 +597,13 @@ export default function StaffWorkspacePage() {
               >
                 {resigning ? (
                   <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                    Leaving...
+                    <div className={`w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin ${isArabic ? 'ml-2' : 'mr-2'}`}></div>
+                    {staffT(locale, 'resign_dialog_leaving')}
                   </>
                 ) : (
                   <>
-                    <LogOut className="w-4 h-4 mr-2" />
-                    Yes, Leave
+                    <LogOut className={`w-4 h-4 ${isArabic ? 'ml-2' : 'mr-2'}`} />
+                    {staffT(locale, 'resign_dialog_confirm_leave')}
                   </>
                 )}
               </AlertDialogAction>

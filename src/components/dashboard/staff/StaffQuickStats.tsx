@@ -3,6 +3,8 @@
 import React from 'react';
 import { Calendar, CheckCircle, Clock, XCircle, TrendingUp } from "lucide-react";
 import { StaffStats } from "../../../app/(pages)/(staff)/staff/dashboard/types";
+import { useLocale } from '@global/hooks/useLocale';
+import { staffT } from '@/(pages)/(staff)/staff/i18n';
 
 interface StaffQuickStatsProps {
   stats: StaffStats;
@@ -10,8 +12,11 @@ interface StaffQuickStatsProps {
 }
 
 export function StaffQuickStats({ stats, completionRate }: StaffQuickStatsProps) {
+  const { locale } = useLocale();
+  const isArabic = locale === 'ar';
+
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div dir={isArabic ? 'rtl' : 'ltr'} className={`grid grid-cols-2 lg:grid-cols-4 gap-4 ${isArabic ? 'text-right' : ''}`}>
       {/* Total Bookings */}
       <div className="relative overflow-hidden bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm border border-slate-200/60 dark:border-slate-700/60 rounded-2xl p-5 shadow-lg shadow-slate-200/40 dark:shadow-slate-900/40">
         <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-cyan-400/20 to-transparent rounded-bl-full"></div>
@@ -22,7 +27,7 @@ export function StaffQuickStats({ stats, completionRate }: StaffQuickStatsProps)
           <TrendingUp className="w-4 h-4 text-teal-500" />
         </div>
         <p className="text-3xl font-bold text-slate-800 dark:text-white">{stats.totalBookings || 0}</p>
-        <p className="text-sm text-slate-500 dark:text-slate-400">Total Bookings</p>
+        <p className="text-sm text-slate-500 dark:text-slate-400">{staffT(locale, 'quick_stats_total_bookings')}</p>
       </div>
 
       {/* Completed */}
@@ -37,7 +42,7 @@ export function StaffQuickStats({ stats, completionRate }: StaffQuickStatsProps)
           </span>
         </div>
         <p className="text-3xl font-bold text-slate-800 dark:text-white">{stats.completedBookings || 0}</p>
-        <p className="text-sm text-slate-500 dark:text-slate-400">Completed</p>
+        <p className="text-sm text-slate-500 dark:text-slate-400">{staffT(locale, 'quick_stats_completed')}</p>
       </div>
 
       {/* Upcoming (Pending + Confirmed) */}
@@ -51,7 +56,7 @@ export function StaffQuickStats({ stats, completionRate }: StaffQuickStatsProps)
         <p className="text-3xl font-bold text-slate-800 dark:text-white">
           {(stats.pendingBookings || 0) + (stats.confirmedBookings || 0)}
         </p>
-        <p className="text-sm text-slate-500 dark:text-slate-400">Upcoming</p>
+        <p className="text-sm text-slate-500 dark:text-slate-400">{staffT(locale, 'quick_stats_upcoming')}</p>
       </div>
 
       {/* No Shows / Cancelled */}
@@ -65,7 +70,7 @@ export function StaffQuickStats({ stats, completionRate }: StaffQuickStatsProps)
         <p className="text-3xl font-bold text-slate-800 dark:text-white">
           {(stats.noShowBookings || 0) + (stats.cancelledBookings || 0)}
         </p>
-        <p className="text-sm text-slate-500 dark:text-slate-400">No Show / Cancelled</p>
+        <p className="text-sm text-slate-500 dark:text-slate-400">{staffT(locale, 'quick_stats_no_show_cancelled')}</p>
       </div>
     </div>
   );

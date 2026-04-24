@@ -10,6 +10,8 @@ export interface Business {
   phone?: string;
   email?: string;
   reviewCount?: number;
+  createdAt?: string;
+  updatedAt?: string | null;
 }
 
 export type Category = string;

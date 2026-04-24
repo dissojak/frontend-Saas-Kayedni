@@ -510,6 +510,8 @@ export async function fetchBusinessById(id: string): Promise<Business | null> {
       location: data.location,
       phone: data.phone,
       email: data.email,
+      createdAt: data.createdAt,
+      updatedAt: data.updatedAt,
     } as Business;
   } catch (error) {
     console.error('fetchBusinessById error:', error);
