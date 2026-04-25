@@ -260,13 +260,13 @@ export default function StaffWorkspacePage() {
           {business && (
             <>
               <div className="flex justify-center">
-                <div className="w-full max-w-[660px] rounded-full border border-white/10 bg-[#191c1de6] px-7 py-3 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)] backdrop-blur-xl">
-                  <div className="flex flex-wrap items-center gap-4 text-xs font-semibold tracking-[0.12em] uppercase">
-                    <div className="flex items-center gap-2 text-white/95">
+                <div className="w-full max-w-[550px] rounded-2xl border border-white/10 bg-[#191c1de6] px-4 py-3 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)] backdrop-blur-xl sm:rounded-full sm:px-7">
+                  <div className="flex flex-col items-start gap-3 text-[10px] font-semibold uppercase tracking-[0.08em] sm:flex-row sm:flex-wrap sm:items-center sm:gap-4 sm:text-xs sm:tracking-[0.12em]">
+                    <div className="flex min-w-0 items-center gap-2 text-white/95">
                       <span className="h-2 w-2 rounded-full bg-lime-400" />
-                      <span>{`My Workspace : ${business.name}`}</span>
+                      <span className="truncate">{`My Workspace : ${business.name}`}</span>
                     </div>
-                    <span className="h-5 w-px bg-white/20" />
+                    <span className="hidden h-5 w-px bg-white/20 sm:block" />
                     <button
                       type="button"
                       onClick={() => setResignDialogOpen(true)}
@@ -274,12 +274,12 @@ export default function StaffWorkspacePage() {
                     >
                       Leave Business
                     </button>
-                    <span className="h-5 w-px bg-white/20" />
+                    <span className="hidden h-5 w-px bg-white/20 sm:block" />
                     <div className="flex items-center gap-2 text-lime-400">
-                      <Users className="h-3.5 w-3.5" />
+                      <Users className="h-3.5 w-3.5" /> 
                       <span>{`${staffCount} Team Members`}</span>
                     </div>
-                    <span className="ml-auto h-2.5 w-2.5 rounded-full bg-zinc-200/70" />
+                    <span className="hidden h-2.5 w-2.5 rounded-full bg-zinc-200/70 sm:block" />
                   </div>
                 </div>
               </div>
@@ -297,7 +297,7 @@ export default function StaffWorkspacePage() {
                         <span className="rounded-full bg-[#caf082] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-[#344b00]">
                           Workspace
                         </span>
-                        <h2 className="mt-1 text-[38px] leading-[1.05] font-bold text-[#191C1D]">{business.name}</h2>
+                        <h2 className="mt-1 text-2xl leading-[1.05] font-bold text-[#191C1D] sm:text-[38px]">{business.name}</h2>
                         <p className="text-sm text-[#44493A]">{business.email || staffT(locale, 'business_card_email')}</p>
                       </div>
                     </div>
@@ -321,7 +321,7 @@ export default function StaffWorkspacePage() {
                         </div>
                         <div>
                           <div className="mb-1 flex items-center gap-3">
-                            <h3 className="text-4xl font-bold tracking-tight text-[#344B00]">{business.name}</h3>
+                            <h3 className="text-2xl font-bold tracking-tight text-[#344B00] sm:text-4xl">{business.name}</h3>
                             <span className="rounded-full border border-white/30 bg-white/20 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.06em] text-[#344B00]">
                               Premium Lounge
                             </span>
@@ -350,7 +350,7 @@ export default function StaffWorkspacePage() {
                     <img
                       src={businessImages[activeImageIndex]?.imageUrl || businessImages[0]?.imageUrl || business.logo || '/favicon.ico'}
                       alt={`${business.name} cover`}
-                      className="h-[420px] w-full object-cover"
+                      className="h-[260px] w-full object-cover sm:h-[340px] lg:h-[420px]"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/15 to-transparent" />
                     {businessImages.length > 1 && (
@@ -398,7 +398,7 @@ export default function StaffWorkspacePage() {
                           <img
                             src={img.imageUrl}
                             alt={staffT(locale, 'dashboard_thumbnail_alt', { index: index + 1 })}
-                            className="h-36 w-full object-cover"
+                            className="h-24 w-full object-cover sm:h-36"
                           />
                         </button>
                       ))}
