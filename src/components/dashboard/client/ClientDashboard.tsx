@@ -34,10 +34,13 @@ import {
 } from '@components/ui/select';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/(pages)/(auth)/context/AuthContext';
+import { useLocale } from '@global/hooks/useLocale';
 import { cancelBooking, rescheduleBooking, fetchAvailableTimeSlotsForStaffDate } from '@/(pages)/(business)/actions/backend';
 import { createBusinessSlug } from '@global/lib/businessSlug';
 import { ReviewDialog, type ReviewBookingInfo } from '@components/reviews';
 import type { ClientBooking } from './types';
+import type { LocaleCode } from '@global/lib/locales';
+import { clientDashboardLocaleTag, clientDashboardT } from './i18n';
 import { 
   Calendar, 
   Clock, 
@@ -58,7 +61,7 @@ import {
 } from 'lucide-react';
 
 // Status badge styling
-const getStatusBadge = (status: ClientBooking['status']) => {
+const getStatusBadge = (status: ClientBooking['status'], locale: LocaleCode) => {
   const styles = {
     pending: 'bg-yellow-100/50 text-yellow-800 border-yellow-200/50',
     confirmed: 'bg-green-100/50 text-green-800 border-green-200/50',
@@ -67,11 +70,11 @@ const getStatusBadge = (status: ClientBooking['status']) => {
     no_show: 'bg-gray-100/50 text-gray-800 border-gray-200/50',
   };
   const labels = {
-    pending: 'Pending',
-    confirmed: 'Confirmed',
-    completed: 'Completed',
-    cancelled: 'Cancelled',
-    no_show: 'No Show',
+    pending: clientDashboardT(locale, 'status_pending'),
+    confirmed: clientDashboardT(locale, 'status_confirmed'),
+    completed: clientDashboardT(locale, 'status_completed'),
+    cancelled: clientDashboardT(locale, 'status_cancelled'),
+    no_show: clientDashboardT(locale, 'status_no_show'),
   };
   return (
     <Badge variant="outline" className={`${styles[status]} font-bold rounded-lg px-3 py-1`}>
@@ -83,6 +86,7 @@ const getStatusBadge = (status: ClientBooking['status']) => {
 // Booking Card Component
 interface BookingCardProps {
   readonly booking: ClientBooking;
+  readonly locale: LocaleCode;
   readonly type: 'upcoming' | 'past';
   readonly onReschedule: (booking: ClientBooking) => void;
   readonly onCancel: (booking: ClientBooking) => void;
@@ -92,16 +96,19 @@ interface BookingCardProps {
 
 function BookingCard({ 
   booking, 
+  locale,
   type,
   onReschedule,
   onCancel,
   onReview,
   onBookAgain,
 }: BookingCardProps) {
+  const isArabic = locale === 'ar';
+
   const formatDate = (dateStr: string) => {
     try {
       const date = new Date(dateStr);
-      return date.toLocaleDateString('en-US', { 
+      return date.toLocaleDateString(clientDashboardLocaleTag(locale), {
         weekday: 'short', 
         month: 'short', 
         day: 'numeric',
@@ -119,14 +126,21 @@ function BookingCard({
     if (parts.length >= 2) {
       const hours = Number.parseInt(parts[0], 10);
       const minutes = parts[1];
-      const ampm = hours >= 12 ? 'PM' : 'AM';
-      return `${hours % 12 || 12}:${minutes} ${ampm}`;
+      const date = new Date();
+      date.setHours(hours, Number.parseInt(minutes, 10), 0, 0);
+      return date.toLocaleTimeString(clientDashboardLocaleTag(locale), {
+        hour: '2-digit',
+        minute: '2-digit',
+      });
     }
     return timeStr;
   };
 
   return (
-    <Card className="group border-none shadow-skeuo hover:shadow-skeuo-inner transition-all duration-300 rounded-2xl overflow-hidden bg-white/50 dark:bg-zinc-900/50 backdrop-blur-sm">
+    <Card
+      dir={isArabic ? 'rtl' : 'ltr'}
+      className={`group border-none shadow-skeuo hover:shadow-skeuo-inner transition-all duration-300 rounded-2xl overflow-hidden bg-white/50 dark:bg-zinc-900/50 backdrop-blur-sm ${isArabic ? 'text-right' : ''}`}
+    >
       <CardContent className="p-0">
         <div className="p-6">
           {/* Header with Business Name and Status */}
@@ -135,34 +149,34 @@ function BookingCard({
               <h3 className="font-bold text-xl text-foreground group-hover:text-primary transition-colors">{booking.businessName}</h3>
               <p className="text-sm font-medium text-muted-foreground">{booking.serviceName}</p>
             </div>
-            {getStatusBadge(booking.status)}
+            {getStatusBadge(booking.status, locale)}
           </div>
           
           {/* Booking Details Grid */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
             <div className="flex flex-col gap-1">
-               <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Date</span>
+               <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{clientDashboardT(locale, 'card_label_date')}</span>
                <div className="flex items-center gap-2 font-medium text-foreground">
                    <Calendar className="h-4 w-4 text-primary" />
                    {formatDate(booking.date)}
                </div>
             </div>
              <div className="flex flex-col gap-1">
-               <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Time</span>
+               <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{clientDashboardT(locale, 'card_label_time')}</span>
                <div className="flex items-center gap-2 font-medium text-foreground">
                    <Clock className="h-4 w-4 text-primary" />
                    {formatTime(booking.startTime)}
                </div>
             </div>
              <div className="flex flex-col gap-1">
-               <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Staff</span>
+               <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{clientDashboardT(locale, 'card_label_staff')}</span>
                <div className="flex items-center gap-2 font-medium text-foreground">
                    <User className="h-4 w-4 text-primary" />
                    {booking.staffName}
                </div>
             </div>
              <div className="flex flex-col gap-1">
-               <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Price</span>
+               <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{clientDashboardT(locale, 'card_label_price')}</span>
                <div className="flex items-center gap-2 font-medium text-foreground">
                    <DollarSign className="h-4 w-4 text-primary" />
                    ${booking.servicePrice.toFixed(2)}
@@ -176,12 +190,12 @@ function BookingCard({
                      {booking.serviceDuration && (
                         <div className="flex items-center gap-2 text-sm text-foreground/80">
                         <Scissors className="h-4 w-4 text-muted-foreground" />
-                        <span>{booking.serviceDuration} min service</span>
+                        <span>{clientDashboardT(locale, 'card_duration_min', { count: booking.serviceDuration })}</span>
                         </div>
                     )}
                      {booking.notes && (
                         <div className="flex items-start gap-2 text-sm text-muted-foreground italic">
-                            <span className="font-semibold not-italic">Note:</span> {booking.notes}
+                            <span className="font-semibold not-italic">{clientDashboardT(locale, 'card_note')}</span> {booking.notes}
                         </div>
                     )}
                 </div>
@@ -189,7 +203,7 @@ function BookingCard({
         </div>
 
         {/* Action Buttons */}
-        <div className="bg-muted/20 px-6 py-4 flex flex-wrap gap-3 justify-end border-t border-border/50">
+        <div className={`bg-muted/20 px-6 py-4 flex flex-wrap gap-3 ${isArabic ? 'justify-start' : 'justify-end'} border-t border-border/50`}>
           {type === 'upcoming' ? (
             <>
               <Button 
@@ -199,7 +213,7 @@ function BookingCard({
                 onClick={() => onReschedule(booking)}
               >
                 <Calendar className="h-4 w-4" />
-                Reschedule
+                {clientDashboardT(locale, 'card_action_reschedule')}
               </Button>
               <Button 
                 variant="destructive" 
@@ -208,7 +222,7 @@ function BookingCard({
                 onClick={() => onCancel(booking)}
               >
                 <X className="h-4 w-4" />
-                Cancel
+                {clientDashboardT(locale, 'card_action_cancel')}
               </Button>
             </>
           ) : (
@@ -221,7 +235,7 @@ function BookingCard({
                   onClick={() => onReview(booking)}
                 >
                   <Star className={`h-4 w-4 ${booking.reviewed ? 'fill-yellow-400 text-yellow-400' : ''}`} />
-                  {booking.reviewed ? 'Edit Review' : 'Leave Review'}
+                  {booking.reviewed ? clientDashboardT(locale, 'card_action_edit_review') : clientDashboardT(locale, 'card_action_leave_review')}
                 </Button>
               )}
               <Button 
@@ -231,7 +245,7 @@ function BookingCard({
                 onClick={() => onBookAgain(booking)}
               >
                 <CalendarCheck className="h-4 w-4" />
-                Book Again
+                {clientDashboardT(locale, 'card_action_book_again')}
               </Button>
             </>
           )}
@@ -245,6 +259,7 @@ function BookingCard({
 interface QuickLinkItemProps {
   readonly icon: React.ElementType;
   readonly label: string;
+  readonly locale: LocaleCode;
   readonly onClick: () => void;
   readonly comingSoon?: boolean;
 }
@@ -252,9 +267,12 @@ interface QuickLinkItemProps {
 function QuickLinkItem({ 
   icon: Icon, 
   label, 
+  locale,
   onClick,
   comingSoon = false 
 }: QuickLinkItemProps) {
+  const isArabic = locale === 'ar';
+
   return (
     <button
       onClick={onClick}
@@ -268,11 +286,11 @@ function QuickLinkItem({
       <div className={`p-2 rounded-full ${comingSoon ? 'bg-gray-100' : 'bg-client/10'}`}>
         <Icon className={`h-4 w-4 ${comingSoon ? 'text-gray-400' : 'text-client'}`} />
       </div>
-      <span className="flex-1 text-left font-medium">{label}</span>
+      <span className={`flex-1 font-medium ${isArabic ? 'text-right' : 'text-left'}`}>{label}</span>
       {comingSoon ? (
-        <Badge variant="secondary" className="text-xs">Soon</Badge>
+        <Badge variant="secondary" className="text-xs">{clientDashboardT(locale, 'quick_link_soon')}</Badge>
       ) : (
-        <ChevronRight className="h-4 w-4" />
+        <ChevronRight className={`h-4 w-4 ${isArabic ? 'rotate-180' : ''}`} />
       )}
     </button>
   );
@@ -281,6 +299,8 @@ function QuickLinkItem({
 export default function ClientDashboard() {
   const router = useRouter();
   const { token } = useAuth();
+  const { locale } = useLocale();
+  const isArabic = locale === 'ar';
   const { 
     user, 
     upcomingBookings, 
@@ -290,7 +310,7 @@ export default function ClientDashboard() {
     loading, 
     error,
     refreshBookings 
-  } = useClientDashboard();
+  } = useClientDashboard(locale);
 
   // Modal states
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
@@ -319,10 +339,9 @@ export default function ClientDashboard() {
       setAvailableSlots(slots.map((s: any) => ({
         startTime: new Date(s.startTime),
         endTime: new Date(s.endTime),
-        display: new Date(s.startTime).toLocaleTimeString('en-US', { 
+        display: new Date(s.startTime).toLocaleTimeString(clientDashboardLocaleTag(locale), {
           hour: '2-digit', 
           minute: '2-digit',
-          hour12: true 
         })
       })));
     } catch (err) {
@@ -331,7 +350,7 @@ export default function ClientDashboard() {
     } finally {
       setLoadingSlots(false);
     }
-  }, []);
+  }, [locale]);
 
   // Effect to load slots when reschedule date changes
   useEffect(() => {
@@ -389,7 +408,7 @@ export default function ClientDashboard() {
       setCancelDialogOpen(false);
       setSelectedBooking(null);
     } catch (err: any) {
-      setSubmitError(err.message || 'Failed to cancel booking');
+      setSubmitError(err.message || clientDashboardT(locale, 'error_failed_cancel'));
     } finally {
       setIsSubmitting(false);
     }
@@ -427,7 +446,7 @@ export default function ClientDashboard() {
       setRescheduleDate('');
       setRescheduleTime('');
     } catch (err: any) {
-      setSubmitError(err.message || 'Failed to reschedule booking');
+      setSubmitError(err.message || clientDashboardT(locale, 'error_failed_reschedule'));
     } finally {
       setIsSubmitting(false);
     }
@@ -440,30 +459,35 @@ export default function ClientDashboard() {
     return tomorrow.toISOString().split('T')[0];
   };
 
+  const firstName = user?.name?.split(' ')[0] || clientDashboardT(locale, 'header_fallback_name');
+  const upcomingSummary =
+    upcomingBookings.length > 0
+      ? clientDashboardT(
+          locale,
+          upcomingBookings.length > 1 ? 'header_upcoming_summary_plural' : 'header_upcoming_summary',
+          { count: upcomingBookings.length },
+        )
+      : clientDashboardT(locale, 'header_ready_to_book');
+
   return (
-    <div className="min-h-screen bg-gray-50/50">
+    <div dir={isArabic ? 'rtl' : 'ltr'} className={`min-h-screen bg-gray-50/50 ${isArabic ? 'text-right' : ''}`}>
       <div className="max-w-7xl mx-auto p-6 space-y-6">
         {/* Header Section */}
         <div className="bg-gradient-to-r from-client to-client-dark rounded-2xl p-6 md:p-8 text-white shadow-lg">
           <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
             <div>
               <h1 className="text-2xl md:text-3xl font-bold">
-                Welcome back, {user?.name?.split(' ')[0] || 'there'}! 👋
+                {clientDashboardT(locale, 'header_welcome_back', { name: firstName })}
               </h1>
-              <p className="text-white/80 mt-1">
-                {upcomingBookings.length > 0 
-                  ? `You have ${upcomingBookings.length} upcoming appointment${upcomingBookings.length > 1 ? 's' : ''}`
-                  : 'Ready to book your next appointment?'
-                }
-              </p>
+              <p className="text-white/80 mt-1">{upcomingSummary}</p>
             </div>
             <Button 
               size="lg"
               className="bg-white text-client hover:bg-white/90 font-semibold shadow-md"
               onClick={() => router.push('/businesses')}
             >
-              <Sparkles className="h-4 w-4 mr-2" />
-              Book New Appointment
+              <Sparkles className={`h-4 w-4 ${isArabic ? 'ml-2' : 'mr-2'}`} />
+              {clientDashboardT(locale, 'header_book_new')}
             </Button>
           </div>
         </div>
@@ -484,7 +508,7 @@ export default function ClientDashboard() {
               <CardHeader className="pb-3">
                 <div className="flex items-center gap-2">
                   <CalendarCheck className="h-5 w-5 text-client" />
-                  <CardTitle>Upcoming Appointments</CardTitle>
+                  <CardTitle>{clientDashboardT(locale, 'section_upcoming_title')}</CardTitle>
                 </div>
               </CardHeader>
               <CardContent>
@@ -498,6 +522,7 @@ export default function ClientDashboard() {
                       <BookingCard
                         key={booking.id}
                         booking={booking}
+                        locale={locale}
                         type="upcoming"
                         onReschedule={handleReschedule}
                         onCancel={handleCancel}
@@ -509,12 +534,12 @@ export default function ClientDashboard() {
                 ) : (
                   <div className="text-center py-12">
                     <CalendarCheck className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-                    <p className="text-gray-500 mb-4">No upcoming appointments</p>
+                    <p className="text-gray-500 mb-4">{clientDashboardT(locale, 'section_upcoming_empty')}</p>
                     <Button 
                       variant="outline"
                       onClick={() => router.push('/businesses')}
                     >
-                      Browse Services
+                      {clientDashboardT(locale, 'section_browse_services')}
                     </Button>
                   </div>
                 )}
@@ -523,7 +548,7 @@ export default function ClientDashboard() {
                   className="w-full mt-4" 
                   onClick={() => router.push('/bookings')}
                 >
-                  View All Bookings
+                  {clientDashboardT(locale, 'section_view_all_bookings')}
                 </Button>
               </CardContent>
             </Card>
@@ -533,7 +558,7 @@ export default function ClientDashboard() {
               <CardHeader className="pb-3">
                 <div className="flex items-center gap-2">
                   <History className="h-5 w-5 text-gray-500" />
-                  <CardTitle>Past Appointments</CardTitle>
+                  <CardTitle>{clientDashboardT(locale, 'section_past_title')}</CardTitle>
                 </div>
               </CardHeader>
               <CardContent>
@@ -547,6 +572,7 @@ export default function ClientDashboard() {
                       <BookingCard
                         key={booking.id}
                         booking={booking}
+                        locale={locale}
                         type="past"
                         onReschedule={handleReschedule}
                         onCancel={handleCancel}
@@ -556,14 +582,14 @@ export default function ClientDashboard() {
                     ))}
                     {pastBookings.length > 3 && (
                       <p className="text-center text-sm text-gray-500">
-                        +{pastBookings.length - 3} more past appointments
+                        {clientDashboardT(locale, 'section_past_more_count', { count: pastBookings.length - 3 })}
                       </p>
                     )}
                   </div>
                 ) : (
                   <div className="text-center py-8">
                     <History className="h-10 w-10 text-gray-300 mx-auto mb-2" />
-                    <p className="text-gray-500">No past appointments yet</p>
+                    <p className="text-gray-500">{clientDashboardT(locale, 'section_past_empty')}</p>
                   </div>
                 )}
               </CardContent>
@@ -578,7 +604,7 @@ export default function ClientDashboard() {
                 <CardHeader className="pb-3">
                   <div className="flex items-center gap-2">
                     <Heart className="h-5 w-5 text-client" />
-                    <CardTitle className="text-base">Your Favorites</CardTitle>
+                    <CardTitle className="text-base">{clientDashboardT(locale, 'section_favorites_title')}</CardTitle>
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -603,12 +629,12 @@ export default function ClientDashboard() {
               <CardHeader className="pb-3">
                 <div className="flex items-center gap-2">
                   <Sparkles className="h-5 w-5 text-client" />
-                  <CardTitle className="text-base">Recommended for You</CardTitle>
+                  <CardTitle className="text-base">{clientDashboardT(locale, 'section_recommended_title')}</CardTitle>
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
                   {userCategories.length > 0 
-                    ? 'Based on your booking history'
-                    : 'Top-rated businesses'
+                    ? clientDashboardT(locale, 'section_recommended_from_history')
+                    : clientDashboardT(locale, 'section_recommended_top_rated')
                   }
                 </p>
               </CardHeader>
@@ -619,7 +645,7 @@ export default function ClientDashboard() {
                       <button
                         type="button"
                         key={business.id} 
-                        className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors text-left"
+                        className={`w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors ${isArabic ? 'text-right' : 'text-left'}`}
                         onClick={() => {
                           const slug = createBusinessSlug(business.name, business.id);
                           router.push(`/business/${slug}`);
@@ -648,21 +674,21 @@ export default function ClientDashboard() {
                             <span className="text-xs text-gray-500">{business.category}</span>
                           </div>
                         </div>
-                        <ChevronRight className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                        <ChevronRight className={`h-4 w-4 text-gray-400 flex-shrink-0 ${isArabic ? 'rotate-180' : ''}`} />
                       </button>
                     ))}
                   </div>
                 ) : (
                   <div className="text-center py-4">
                     <Sparkles className="h-8 w-8 text-gray-300 mx-auto mb-2" />
-                    <p className="text-sm text-gray-500">No recommendations yet</p>
+                    <p className="text-sm text-gray-500">{clientDashboardT(locale, 'section_recommended_empty')}</p>
                   </div>
                 )}
                 <Button 
                   className="w-full mt-4 bg-client hover:bg-client-dark" 
                   onClick={() => router.push('/businesses')}
                 >
-                  Explore All Services
+                  {clientDashboardT(locale, 'section_explore_all')}
                 </Button>
               </CardContent>
             </Card>
@@ -673,16 +699,16 @@ export default function ClientDashboard() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <MapPin className="h-5 w-5 text-gray-400" />
-                    <CardTitle className="text-base text-gray-500">Near You</CardTitle>
+                    <CardTitle className="text-base text-gray-500">{clientDashboardT(locale, 'section_near_you_title')}</CardTitle>
                   </div>
-                  <Badge variant="secondary" className="text-xs">Coming Soon</Badge>
+                  <Badge variant="secondary" className="text-xs">{clientDashboardT(locale, 'section_coming_soon')}</Badge>
                 </div>
               </CardHeader>
               <CardContent>
                 <div className="text-center py-6 bg-gray-50 rounded-lg">
                   <MapPin className="h-10 w-10 text-gray-300 mx-auto mb-2" />
-                  <p className="text-sm text-gray-500 mb-1">Location-based recommendations</p>
-                  <p className="text-xs text-gray-400">Find great services near your location</p>
+                  <p className="text-sm text-gray-500 mb-1">{clientDashboardT(locale, 'section_near_you_desc')}</p>
+                  <p className="text-xs text-gray-400">{clientDashboardT(locale, 'section_near_you_hint')}</p>
                 </div>
               </CardContent>
             </Card>
@@ -690,23 +716,26 @@ export default function ClientDashboard() {
             {/* Quick Links */}
             <Card className="shadow-sm">
               <CardHeader className="pb-3">
-                <CardTitle className="text-base">Quick Actions</CardTitle>
+                <CardTitle className="text-base">{clientDashboardT(locale, 'section_quick_actions_title')}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
                 <QuickLinkItem
                   icon={Heart}
-                  label="Saved Businesses"
+                  locale={locale}
+                  label={clientDashboardT(locale, 'quick_saved_businesses')}
                   onClick={() => router.push('/profile')}
                 />
                 <QuickLinkItem
                   icon={HelpCircle}
-                  label="Help & Support"
+                  locale={locale}
+                  label={clientDashboardT(locale, 'quick_help_support')}
                   onClick={() => {}}
                   comingSoon
                 />
                 <QuickLinkItem
                   icon={CreditCard}
-                  label="Payment Methods"
+                  locale={locale}
+                  label={clientDashboardT(locale, 'quick_payment_methods')}
                   onClick={() => {}}
                   comingSoon
                 />
@@ -720,12 +749,12 @@ export default function ClientDashboard() {
       <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Cancel Appointment?</AlertDialogTitle>
+            <AlertDialogTitle>{clientDashboardT(locale, 'cancel_dialog_title')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to cancel your appointment at{' '}
-              <span className="font-semibold">{selectedBooking?.businessName}</span> for{' '}
-              <span className="font-semibold">{selectedBooking?.serviceName}</span>?
-              This action cannot be undone.
+              {clientDashboardT(locale, 'cancel_dialog_desc', {
+                business: selectedBooking?.businessName ?? '',
+                service: selectedBooking?.serviceName ?? '',
+              })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           {submitError && (
@@ -734,7 +763,7 @@ export default function ClientDashboard() {
             </div>
           )}
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isSubmitting}>Keep Appointment</AlertDialogCancel>
+            <AlertDialogCancel disabled={isSubmitting}>{clientDashboardT(locale, 'cancel_dialog_keep')}</AlertDialogCancel>
             <AlertDialogAction 
               onClick={confirmCancel}
               disabled={isSubmitting}
@@ -742,11 +771,11 @@ export default function ClientDashboard() {
             >
               {isSubmitting ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Cancelling...
+                  <Loader2 className={`h-4 w-4 animate-spin ${isArabic ? 'ml-2' : 'mr-2'}`} />
+                  {clientDashboardT(locale, 'cancel_dialog_submitting')}
                 </>
               ) : (
-                'Yes, Cancel'
+                clientDashboardT(locale, 'cancel_dialog_confirm')
               )}
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -766,9 +795,9 @@ export default function ClientDashboard() {
       <Dialog open={rescheduleDialogOpen} onOpenChange={setRescheduleDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Reschedule Appointment</DialogTitle>
+            <DialogTitle>{clientDashboardT(locale, 'reschedule_dialog_title')}</DialogTitle>
             <DialogDescription>
-              Select a new date and time for your appointment
+              {clientDashboardT(locale, 'reschedule_dialog_desc')}
             </DialogDescription>
           </DialogHeader>
           
@@ -780,7 +809,7 @@ export default function ClientDashboard() {
               <div className="flex items-center gap-4 text-sm text-gray-500">
                 <span className="flex items-center gap-1">
                   <Calendar className="h-4 w-4" />
-                  Current: {selectedBooking?.date}
+                  {clientDashboardT(locale, 'reschedule_dialog_current', { date: selectedBooking?.date ?? '' })}
                 </span>
                 <span className="flex items-center gap-1">
                   <Clock className="h-4 w-4" />
@@ -791,7 +820,7 @@ export default function ClientDashboard() {
 
             {/* New Date Selection */}
             <div className="space-y-2">
-              <Label htmlFor="reschedule-date">New Date</Label>
+              <Label htmlFor="reschedule-date">{clientDashboardT(locale, 'reschedule_dialog_new_date')}</Label>
               <Input
                 id="reschedule-date"
                 type="date"
@@ -808,11 +837,11 @@ export default function ClientDashboard() {
 
             {/* New Time Selection */}
             <div className="space-y-2">
-              <Label htmlFor="reschedule-time">New Time</Label>
+              <Label htmlFor="reschedule-time">{clientDashboardT(locale, 'reschedule_dialog_new_time')}</Label>
               {loadingSlots ? (
                 <div className="flex items-center justify-center py-4">
                   <Loader2 className="h-5 w-5 animate-spin text-client" />
-                  <span className="ml-2 text-sm text-gray-500">Loading available times...</span>
+                  <span className={`${isArabic ? 'mr-2' : 'ml-2'} text-sm text-gray-500`}>{clientDashboardT(locale, 'reschedule_dialog_loading_slots')}</span>
                 </div>
               ) : rescheduleDate ? (
                 availableSlots.length > 0 ? (
@@ -822,11 +851,11 @@ export default function ClientDashboard() {
                     disabled={isSubmitting}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select a time" />
+                      <SelectValue placeholder={clientDashboardT(locale, 'reschedule_dialog_select_time')} />
                     </SelectTrigger>
                     <SelectContent>
                       {availableSlots.map((slot, idx) => (
-                        <SelectItem key={idx} value={slot.display}>
+                        <SelectItem key={`${slot.startTime.toISOString()}-${slot.endTime.toISOString()}-${idx}`} value={slot.display}>
                           {slot.display}
                         </SelectItem>
                       ))}
@@ -834,12 +863,12 @@ export default function ClientDashboard() {
                   </Select>
                 ) : (
                   <p className="text-sm text-amber-600 bg-amber-50 p-3 rounded-md">
-                    No available time slots for this date. Please select another date.
+                    {clientDashboardT(locale, 'reschedule_dialog_no_slots')}
                   </p>
                 )
               ) : (
                 <p className="text-sm text-gray-500 bg-gray-100 p-3 rounded-md">
-                  Please select a date first to see available times
+                  {clientDashboardT(locale, 'reschedule_dialog_pick_date_first')}
                 </p>
               )}
             </div>
@@ -857,7 +886,7 @@ export default function ClientDashboard() {
               onClick={() => setRescheduleDialogOpen(false)}
               disabled={isSubmitting}
             >
-              Cancel
+              {clientDashboardT(locale, 'reschedule_dialog_cancel')}
             </Button>
             <Button 
               onClick={confirmReschedule}
@@ -866,11 +895,11 @@ export default function ClientDashboard() {
             >
               {isSubmitting ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Rescheduling...
+                  <Loader2 className={`h-4 w-4 animate-spin ${isArabic ? 'ml-2' : 'mr-2'}`} />
+                  {clientDashboardT(locale, 'reschedule_dialog_submitting')}
                 </>
               ) : (
-                'Confirm Reschedule'
+                clientDashboardT(locale, 'reschedule_dialog_confirm')
               )}
             </Button>
           </DialogFooter>

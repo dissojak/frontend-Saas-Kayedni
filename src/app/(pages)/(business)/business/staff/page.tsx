@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Layout from "@components/layout/Layout";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8088/api';
@@ -15,6 +15,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@components/ui/avatar";
 import { User, Mail, Phone, Search, UserPlus, UserMinus, Briefcase, CheckCircle2, Clock } from "lucide-react";
 import { fetchStaffByBusinessId, addStaffToBusinessByEmail, removeStaffFromBusiness } from "../../actions/backend";
 import { useToast } from "@global/hooks/use-toast";
+import { useLocale } from "@global/hooks/useLocale";
+import { businessStaffT, type BusinessStaffKey } from "./i18n";
 
 interface StaffMember {
   id: number;
@@ -27,6 +29,11 @@ interface StaffMember {
 
 export default function BusinessStaffPage() {
   const { toast } = useToast();
+  const { locale } = useLocale();
+  const t = useCallback(
+    (key: BusinessStaffKey, params?: Record<string, string | number>) => businessStaffT(locale, key, params),
+    [locale],
+  );
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [filteredStaff, setFilteredStaff] = useState<StaffMember[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,17 +63,7 @@ export default function BusinessStaffPage() {
     }
   }, []);
 
-  useEffect(() => {
-    if (businessId) {
-      loadStaff();
-    }
-  }, [businessId]);
-
-  useEffect(() => {
-    filterStaff();
-  }, [staff, searchTerm]);
-
-  const loadStaff = async () => {
+  const loadStaff = useCallback(async () => {
     if (!businessId) return;
     
     setLoading(true);
@@ -78,15 +75,15 @@ export default function BusinessStaffPage() {
       console.error('Failed to load staff:', error);
       toast({
         variant: "error",
-        title: "Failed to load staff",
-        description: error.message || "Unable to fetch staff members. Please try again.",
+        title: t('toast_failed_load_title'),
+        description: error.message || t('toast_failed_load_desc'),
       });
     } finally {
       setLoading(false);
     }
-  };
+  }, [businessId, t, toast]);
 
-  const filterStaff = () => {
+  const filterStaff = useCallback(() => {
     let filtered = [...staff];
 
     if (searchTerm) {
@@ -97,7 +94,17 @@ export default function BusinessStaffPage() {
     }
 
     setFilteredStaff(filtered);
-  };
+  }, [staff, searchTerm]);
+
+  useEffect(() => {
+    if (businessId) {
+      void loadStaff();
+    }
+  }, [businessId, loadStaff]);
+
+  useEffect(() => {
+    filterStaff();
+  }, [filterStaff]);
 
   const handleAddStaff = async () => {
     if (!newStaffEmail || !businessId) return;
@@ -106,8 +113,8 @@ export default function BusinessStaffPage() {
     if (!newStaffStartTime || !newStaffEndTime) {
       toast({
         variant: "error",
-        title: "Work hours required",
-        description: "Please set both start and end working times for the staff member.",
+        title: t('toast_work_hours_required_title'),
+        description: t('toast_work_hours_required_desc'),
       });
       return;
     }
@@ -115,8 +122,8 @@ export default function BusinessStaffPage() {
     if (newStaffStartTime >= newStaffEndTime) {
       toast({
         variant: "error",
-        title: "Invalid work hours",
-        description: "Start time must be before end time.",
+        title: t('toast_invalid_hours_title'),
+        description: t('toast_invalid_hours_desc'),
       });
       return;
     }
@@ -133,8 +140,8 @@ export default function BusinessStaffPage() {
       
       toast({
         variant: "success",
-        title: "Staff member added successfully",
-        description: `${newStaffEmail} has been added to your team with their schedule auto-generated.`,
+        title: t('toast_add_success_title'),
+        description: t('toast_add_success_desc', { email: newStaffEmail }),
       });
       
       setIsAddDialogOpen(false);
@@ -146,8 +153,8 @@ export default function BusinessStaffPage() {
       console.error('Error adding staff:', error);
       toast({
         variant: "error",
-        title: "Failed to add staff member",
-        description: error.message || "The user might not exist or is already part of your staff.",
+        title: t('toast_add_failed_title'),
+        description: error.message || t('toast_add_failed_desc'),
       });
     } finally {
       setIsSubmitting(false);
@@ -167,8 +174,8 @@ export default function BusinessStaffPage() {
       
       toast({
         variant: "success",
-        title: "Staff member removed",
-        description: `${confirmRemove.staffName} has been removed from your team.`,
+        title: t('toast_remove_success_title'),
+        description: t('toast_remove_success_desc', { name: confirmRemove.staffName }),
       });
       
       setConfirmRemove({ open: false, staffId: null, staffName: '' });
@@ -177,8 +184,8 @@ export default function BusinessStaffPage() {
       console.error('Failed to remove staff:', error);
       toast({
         variant: "error",
-        title: "Failed to remove staff member",
-        description: error.message || "Unable to remove staff member. Please try again.",
+        title: t('toast_remove_failed_title'),
+        description: error.message || t('toast_remove_failed_desc'),
       });
       setConfirmRemove({ open: false, staffId: null, staffName: '' });
     }
@@ -204,15 +211,15 @@ export default function BusinessStaffPage() {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || 'Failed to add yourself as staff');
+        throw new Error(error.message || t('toast_add_self_failed_title'));
       }
 
       const data = await response.json();
       
       toast({
         variant: "success",
-        title: "Great! You're now working as staff",
-        description: "Your availability has been set and services are waiting to be assigned.",
+        title: t('toast_add_self_success_title'),
+        description: t('toast_add_self_success_desc'),
       });
 
       // Update user state
@@ -223,14 +230,14 @@ export default function BusinessStaffPage() {
       // Close dialog and reload page
       setBoWorkHoursDialogOpen(false);
       setTimeout(() => {
-        window.location.reload();
+        globalThis.location.reload();
       }, 1500);
     } catch (error: any) {
       console.error('Error adding yourself as staff:', error);
       toast({
         variant: "error",
-        title: "Failed to add yourself as staff",
-        description: error.message || "Unable to add yourself as staff. Please try again.",
+        title: t('toast_add_self_failed_title'),
+        description: error.message || t('toast_add_self_failed_desc'),
       });
     } finally {
       setIsAddingSelfAsStaff(false);
@@ -253,13 +260,13 @@ export default function BusinessStaffPage() {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || 'Failed to remove yourself from staff');
+        throw new Error(error.message || t('toast_remove_self_failed_title'));
       }
 
       toast({
         variant: "success",
-        title: "You stopped working as staff",
-        description: "You're now only managing your business.",
+        title: t('toast_remove_self_success_title'),
+        description: t('toast_remove_self_success_desc'),
       });
 
       // Update user state
@@ -269,14 +276,14 @@ export default function BusinessStaffPage() {
 
       // Reload page
       setTimeout(() => {
-        window.location.reload();
+        globalThis.location.reload();
       }, 1500);
     } catch (error: any) {
       console.error('Error removing yourself from staff:', error);
       toast({
         variant: "error",
-        title: "Failed to remove yourself from staff",
-        description: error.message || "Unable to remove yourself from staff. Please try again.",
+        title: t('toast_remove_self_failed_title'),
+        description: error.message || t('toast_remove_self_failed_desc'),
       });
     } finally {
       setIsAddingSelfAsStaff(false);
@@ -298,7 +305,7 @@ export default function BusinessStaffPage() {
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-4 border-business border-t-transparent mx-auto"></div>
-            <p className="mt-4 text-muted-foreground font-medium">Loading staff members...</p>
+            <p className="mt-4 text-muted-foreground font-medium">{t('loading_staff')}</p>
           </div>
         </div>
       </Layout>
@@ -311,18 +318,18 @@ export default function BusinessStaffPage() {
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Staff Management</h1>
-            <p className="text-gray-600 mt-1">Manage your team members and their access</p>
+            <h1 className="text-3xl font-bold text-gray-900">{t('title')}</h1>
+            <p className="text-gray-600 mt-1">{t('subtitle')}</p>
           </div>
           <div className="flex gap-2">
             <Badge variant="outline" className="text-lg px-4 py-2">
-              {staff.length} Staff Members
+              {t('staff_count', { count: staff.length })}
             </Badge>
             <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
               <DialogTrigger asChild>
                 <Button className="bg-business hover:bg-business-dark shadow-lg">
                   <UserPlus className="w-4 h-4 mr-2" />
-                  Add Staff
+                  {t('add_staff')}
                 </Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-md">
@@ -330,15 +337,15 @@ export default function BusinessStaffPage() {
                   <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-business/10">
                     <UserPlus className="h-6 w-6 text-business" />
                   </div>
-                  <DialogTitle className="text-center text-2xl">Add Staff Member</DialogTitle>
+                  <DialogTitle className="text-center text-2xl">{t('add_staff_member_title')}</DialogTitle>
                   <DialogDescription className="text-center">
-                    Enter the email and set the default working hours. Schedule will be auto-generated.
+                    {t('add_staff_member_desc')}
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                   <div className="space-y-2">
                     <Label htmlFor="email" className="text-sm font-medium">
-                      Email Address <span className="text-red-500">*</span>
+                      {t('email_address')} <span className="text-red-500">*</span>
                     </Label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -358,13 +365,13 @@ export default function BusinessStaffPage() {
                     <div className="flex items-center gap-2 mb-3">
                       <Clock className="h-4 w-4 text-business" />
                       <Label className="text-sm font-medium">
-                        Default Working Hours <span className="text-red-500">*</span>
+                        {t('default_working_hours')} <span className="text-red-500">*</span>
                       </Label>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="startTime" className="text-xs text-muted-foreground">
-                          Start Time
+                          {t('start_time')}
                         </Label>
                         <Input
                           id="startTime"
@@ -376,7 +383,7 @@ export default function BusinessStaffPage() {
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="endTime" className="text-xs text-muted-foreground">
-                          End Time
+                          {t('end_time')}
                         </Label>
                         <Input
                           id="endTime"
@@ -388,7 +395,7 @@ export default function BusinessStaffPage() {
                       </div>
                     </div>
                     <p className="text-xs text-muted-foreground mt-2">
-                      Schedule will be automatically generated for the next month.
+                      {t('schedule_hint')}
                     </p>
                   </div>
                 </div>
@@ -404,7 +411,7 @@ export default function BusinessStaffPage() {
                     }}
                     disabled={isSubmitting}
                   >
-                    Cancel
+                    {t('cancel')}
                   </Button>
                   <Button
                     type="button"
@@ -415,12 +422,12 @@ export default function BusinessStaffPage() {
                     {isSubmitting ? (
                       <>
                         <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                        Adding...
+                        {t('adding')}
                       </>
                     ) : (
                       <>
                         <CheckCircle2 className="mr-2 h-4 w-4" />
-                        Add Staff
+                        {t('add_staff')}
                       </>
                     )}
                   </Button>
@@ -437,12 +444,12 @@ export default function BusinessStaffPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900">
-                    {user?.isAlsoStaff ? '✓ You\'re working as staff' : 'Do you also work here?'}
+                    {user?.isAlsoStaff ? `✓ ${t('self_card_title_active')}` : t('self_card_title_inactive')}
                   </h3>
                   <p className="text-gray-600 mt-1">
                     {user?.isAlsoStaff 
-                      ? 'You are registered as a staff member. You can switch between Manager and Staff modes in the navbar.'
-                      : 'Add yourself as a staff member to work alongside your team and manage your own schedule.'}
+                      ? t('self_card_desc_active')
+                      : t('self_card_desc_inactive')}
                   </p>
                 </div>
                 <div>
@@ -456,12 +463,12 @@ export default function BusinessStaffPage() {
                       {isAddingSelfAsStaff ? (
                         <>
                           <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                          Removing...
+                          {t('removing')}
                         </>
                       ) : (
                         <>
                           <UserMinus className="w-4 h-4 mr-2" />
-                          Stop working as staff
+                          {t('remove_self')}
                         </>
                       )}
                     </Button>
@@ -474,12 +481,12 @@ export default function BusinessStaffPage() {
                       {isAddingSelfAsStaff ? (
                         <>
                           <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                          Adding...
+                          {t('adding')}
                         </>
                       ) : (
                         <>
                           <UserPlus className="w-4 h-4 mr-2" />
-                          I also work here
+                          {t('also_work_here')}
                         </>
                       )}
                     </Button>
@@ -496,7 +503,7 @@ export default function BusinessStaffPage() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <Input
-                placeholder="Search staff by name or email..."
+                placeholder={t('search_placeholder')}
                 className="pl-10"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -511,7 +518,7 @@ export default function BusinessStaffPage() {
             <CardContent className="flex flex-col items-center justify-center py-12">
               <User className="w-16 h-16 text-gray-300 mb-4" />
               <p className="text-gray-500 text-lg">
-                {searchTerm ? 'No staff members found matching your search' : 'No staff members yet'}
+                {searchTerm ? t('empty_search') : t('empty_default')}
               </p>
               {!searchTerm && (
                 <Button 
@@ -519,7 +526,7 @@ export default function BusinessStaffPage() {
                   onClick={() => setIsAddDialogOpen(true)}
                 >
                   <UserPlus className="w-4 h-4 mr-2" />
-                  Add Your First Staff Member
+                  {t('add_first_staff')}
                 </Button>
               )}
             </CardContent>
@@ -569,7 +576,7 @@ export default function BusinessStaffPage() {
                         onClick={() => handleRemoveStaff(member.id, member.name)}
                       >
                         <UserMinus className="w-4 h-4 mr-2" />
-                        Remove Staff
+                        {t('remove_staff')}
                       </Button>
                     </div>
                   </div>
@@ -587,12 +594,12 @@ export default function BusinessStaffPage() {
                 <User className="w-6 h-6 text-blue-600" />
               </div>
               <div className="flex-1">
-                <h3 className="font-semibold text-blue-900 mb-2">About Staff Management</h3>
+                <h3 className="font-semibold text-blue-900 mb-2">{t('about_title')}</h3>
                 <ul className="text-sm text-blue-800 space-y-1">
-                  <li>• Staff members can manage services and bookings for your business</li>
-                  <li>• They need to be registered on the platform before you can add them</li>
-                  <li>• Staff members will receive notifications about their assignments</li>
-                  <li>• You can remove staff members at any time</li>
+                  <li>• {t('about_1')}</li>
+                  <li>• {t('about_2')}</li>
+                  <li>• {t('about_3')}</li>
+                  <li>• {t('about_4')}</li>
                 </ul>
               </div>
             </div>
@@ -610,16 +617,14 @@ export default function BusinessStaffPage() {
                   <UserMinus className="w-6 h-6 text-red-600 dark:text-red-400" />
                 </div>
                 <AlertDialogTitle className="text-xl font-bold text-foreground">
-                  Remove Staff Member?
+                  {t('remove_dialog_title')}
                 </AlertDialogTitle>
               </div>
               <AlertDialogDescription className="text-muted-foreground text-base leading-relaxed">
-                Are you sure you want to remove{' '}
-                <span className="font-semibold text-foreground">{confirmRemove.staffName}</span>
-                {' '}from your team?
+                {t('remove_dialog_desc', { name: confirmRemove.staffName })}
                 <br />
                 <span className="text-sm mt-2 block text-amber-600 dark:text-amber-400">
-                  This action cannot be undone. They will lose access to manage your business.
+                  {t('remove_dialog_hint')}
                 </span>
               </AlertDialogDescription>
             </AlertDialogHeader>
@@ -629,14 +634,14 @@ export default function BusinessStaffPage() {
                 onClick={() => setConfirmRemove({ open: false, staffId: null, staffName: '' })}
                 className="w-full sm:w-auto border-2 border-border hover:bg-muted font-semibold h-11 rounded-xl"
               >
-                Go Back
+                {t('go_back')}
               </Button>
               <Button
                 onClick={confirmRemoveStaff}
                 className="w-full sm:w-auto font-bold h-11 rounded-xl bg-red-600 hover:bg-red-700 text-white"
               >
                 <UserMinus className="w-4 h-4 mr-2" />
-                Yes, Remove Staff
+                {t('yes_remove_staff')}
               </Button>
             </AlertDialogFooter>
           </div>
@@ -648,16 +653,16 @@ export default function BusinessStaffPage() {
         <DialogContent className="max-w-sm sm:max-w-md p-0 overflow-hidden border-0 shadow-2xl">
           <div className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20">
             <DialogHeader>
-              <DialogTitle className="text-2xl font-bold text-foreground">Set Your Working Hours</DialogTitle>
+              <DialogTitle className="text-2xl font-bold text-foreground">{t('setup_hours_title')}</DialogTitle>
               <DialogDescription className="text-muted-foreground mt-2">
-                When you work as staff, clients can book services with you during these hours. You can change this later.
+                {t('setup_hours_desc')}
               </DialogDescription>
             </DialogHeader>
 
             <div className="mt-6 space-y-4">
               <div>
                 <Label htmlFor="bo-start-time" className="text-sm font-semibold mb-2 block">
-                  Start Time
+                  {t('start_time')}
                 </Label>
                 <Input
                   id="bo-start-time"
@@ -670,7 +675,7 @@ export default function BusinessStaffPage() {
 
               <div>
                 <Label htmlFor="bo-end-time" className="text-sm font-semibold mb-2 block">
-                  End Time
+                  {t('end_time')}
                 </Label>
                 <Input
                   id="bo-end-time"
@@ -688,7 +693,7 @@ export default function BusinessStaffPage() {
                 onClick={() => setBoWorkHoursDialogOpen(false)}
                 className="w-full sm:w-auto border-2 border-border hover:bg-muted font-semibold h-11 rounded-xl"
               >
-                Cancel
+                {t('cancel')}
               </Button>
               <Button
                 onClick={handleAddSelfAsStaff}
@@ -698,12 +703,12 @@ export default function BusinessStaffPage() {
                 {isAddingSelfAsStaff ? (
                   <>
                     <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                    Setting up...
+                    {t('setting_up')}
                   </>
                 ) : (
                   <>
                     <UserPlus className="w-4 h-4 mr-2" />
-                    Become Staff
+                    {t('become_staff')}
                   </>
                 )}
               </Button>

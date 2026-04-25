@@ -6,6 +6,8 @@ import { Input } from "@components/ui/input";
 import { Label } from "@components/ui/label";
 import Link from "next/link";
 import { Shield, Lock, Mail } from "lucide-react";
+import { useLocale } from '@global/hooks/useLocale';
+import { adminT } from '@components/dashboard/admin/i18n';
 
 interface AdminLoginViewProps {
   email: string;
@@ -26,14 +28,20 @@ export default function AdminLoginView({
   error,
   onSubmit,
 }: Readonly<AdminLoginViewProps>) {
+  const { locale } = useLocale();
+  const isArabic = locale === 'ar';
+
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+    <div
+      className="min-h-screen flex items-center justify-center px-4 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900"
+      dir={isArabic ? 'rtl' : 'ltr'}
+    >
       <div className="max-w-md w-full">
         {/* Admin Badge */}
         <div className="flex justify-center mb-8">
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-purple-500/20 border border-purple-500/30 rounded-full">
             <Shield className="h-5 w-5 text-purple-400" />
-            <span className="text-purple-200 font-semibold">Admin Access</span>
+            <span className="text-purple-200 font-semibold">{adminT(locale, 'admin_access')}</span>
           </div>
         </div>
 
@@ -44,9 +52,9 @@ export default function AdminLoginView({
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-purple-500/20 border border-purple-500/30 mb-4">
               <Lock className="h-8 w-8 text-purple-400" />
             </div>
-            <h2 className="text-2xl font-bold text-white mb-2">Admin Login</h2>
+            <h2 className="text-2xl font-bold text-white mb-2">{adminT(locale, 'admin_login')}</h2>
             <p className="text-gray-300 text-sm">
-              Secure access to the control panel
+              {adminT(locale, 'secure_access_subtitle')}
             </p>
           </div>
 
@@ -77,7 +85,7 @@ export default function AdminLoginView({
             {/* Email Field */}
             <div className="space-y-2">
               <Label htmlFor="admin-email" className="text-sm font-medium text-gray-200">
-                Email Address
+                {adminT(locale, 'email_address')}
               </Label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -88,7 +96,7 @@ export default function AdminLoginView({
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   type="email"
-                  placeholder="admin@kayedni.com"
+                  placeholder={adminT(locale, 'email_address')}
                   required
                   className="pl-10 bg-white/10 border-white/20 text-white placeholder-gray-400 focus:border-purple-500 focus:ring-purple-500"
                 />
@@ -99,13 +107,13 @@ export default function AdminLoginView({
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="admin-password" className="text-sm font-medium text-gray-200">
-                  Password
+                  {adminT(locale, 'password')}
                 </Label>
                 <Link
                   href="/admin/forgot-password"
                   className="text-sm text-purple-400 hover:text-purple-300 hover:underline"
                 >
-                  Forgot password?
+                  {adminT(locale, 'forgot_password')}
                 </Link>
               </div>
               <div className="relative">
@@ -136,10 +144,10 @@ export default function AdminLoginView({
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                   </svg>
-                  Signing in...
+                  {adminT(locale, 'signing_in')}
                 </span>
               ) : (
-                "Sign In"
+                adminT(locale, 'sign_in')
               )}
             </Button>
           </form>
@@ -150,7 +158,7 @@ export default function AdminLoginView({
               href="/"
               className="text-sm text-gray-300 hover:text-white hover:underline"
             >
-              ← Back to home
+              {isArabic ? `${adminT(locale, 'back_to_home')} →` : `← ${adminT(locale, 'back_to_home')}`}
             </Link>
           </div>
         </div>
@@ -159,7 +167,7 @@ export default function AdminLoginView({
         <div className="mt-6 text-center">
           <p className="text-sm text-gray-400">
             <Lock className="inline h-4 w-4 mr-1" />
-            This is a secured admin area. All access is logged.
+            {adminT(locale, 'security_note')}
           </p>
         </div>
       </div>

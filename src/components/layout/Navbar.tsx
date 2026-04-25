@@ -13,7 +13,9 @@ import {
 } from "@components/ui/dropdown-menu";
 import { useAuth, UserRole } from "@/(pages)/(auth)/context/AuthContext";
 import { useTracking } from "@global/hooks/useTracking";
-import { t } from "@global/lib/dictionaryService";
+import { t, type DictionaryKey } from "@global/lib/dictionaryService";
+import { useLocale } from "@global/hooks/useLocale";
+import { type LocaleCode } from "@global/lib/locales";
 import {
   buildBusinessesCategoryUrl,
   categoryNameForSlice,
@@ -21,7 +23,7 @@ import {
   resolveSliceFromCategoryName,
   withCategoryQuery,
 } from "@global/lib/slices";
-import { Menu, Sun, Moon, Briefcase, Users, MessageCircle } from "lucide-react";
+import { Menu, Sun, Moon, Briefcase, Users, MessageCircle, Globe } from "lucide-react";
 import Image from "next/image";
 
 const CLIENT_BOT_LABEL = "KayedniBot";
@@ -29,38 +31,49 @@ const STAFF_BOT_LABEL = "KayedniBuissnessBot";
 const CLIENT_BOT_URL = "https://t.me/KayedniBot";
 const STAFF_BOT_URL = "https://t.me/KayedniBuissnessBot";
 
-// Role-specific navigation links (keys now use uppercase to match backend/user role values)
-const navLinks: Record<Exclude<UserRole, null>, { path: string; label: string }[]> = {
+type NavLink = {
+  path: string;
+  labelKey: DictionaryKey;
+};
+
+const localeLabelMap: Record<LocaleCode, DictionaryKey> = {
+  en: "locale_english",
+  fr: "locale_french",
+  ar: "locale_arabic",
+};
+
+// Role-specific navigation links.
+const navLinks: Record<Exclude<UserRole, null>, NavLink[]> = {
   CLIENT: [
-    { path: "/", label: "Home" },
-    { path: "/businesses", label: "Find Services" },
-    { path: "/client/bookings", label: "My Bookings" },
+    { path: "/", labelKey: "nav_home" },
+    { path: "/businesses", labelKey: "nav_find_services" },
+    { path: "/client/bookings", labelKey: "nav_my_bookings" },
   ],
   BUSINESS_OWNER: [
-    { path: "/business/dashboard", label: "Dashboard" },
-    { path: "/business", label: "My Business" },
-    { path: "/business/staff", label: "Staff" },
-    { path: "/business/services", label: "Services" },
-    { path: "/business/bookings", label: "Bookings" },
+    { path: "/business/dashboard", labelKey: "nav_dashboard" },
+    { path: "/business", labelKey: "nav_my_business" },
+    { path: "/business/staff", labelKey: "nav_staff" },
+    { path: "/business/services", labelKey: "nav_services" },
+    { path: "/business/bookings", labelKey: "nav_bookings" },
   ],
   STAFF: [
-    { path: "/staff/dashboard", label: "My Workspace" },
-    { path: "/staff/schedule", label: "My Schedule" },
-    { path: "/staff/services", label: "Services" },
-    { path: "/staff/bookings", label: "Bookings" },
+    { path: "/staff/dashboard", labelKey: "nav_my_workspace" },
+    { path: "/staff/schedule", labelKey: "nav_my_schedule" },
+    { path: "/staff/services", labelKey: "nav_services" },
+    { path: "/staff/bookings", labelKey: "nav_bookings" },
   ],
   ADMIN: [
-    { path: "/admin/dashboard", label: "Dashboard" },
-    { path: "/admin/businesses", label: "Businesses" },
-    { path: "/admin/users", label: "Users" },
-    { path: "/admin/analytics", label: "Analytics" },
+    { path: "/admin/dashboard", labelKey: "nav_dashboard" },
+    { path: "/admin/businesses", labelKey: "nav_businesses" },
+    { path: "/admin/users", labelKey: "nav_users" },
+    { path: "/admin/analytics", labelKey: "nav_analytics" },
   ],
 };
 
 // Default links for non-authenticated users
-const defaultLinks = [
-  { path: "/", label: "Home" },
-  { path: "/businesses", label: "Find Services" },
+const defaultLinks: NavLink[] = [
+  { path: "/", labelKey: "nav_home" },
+  { path: "/businesses", labelKey: "nav_find_services" },
 ];
 
 const GENERIC_LOGO_SRC = "/assets/KayedniFullLogo-Zain.png";
@@ -77,6 +90,7 @@ const firstWordToken = (value?: string | null) => {
 
 const Navbar = () => {
   const { user, isAuthenticated, logout, activeMode, switchMode } = useAuth();
+  const { locale, setLocale } = useLocale();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -174,18 +188,17 @@ const Navbar = () => {
     setActiveLogoSrc(GENERIC_LOGO_SRC);
   }, [activeSlice, availableLogoFiles, logoCategoryName, user?.businessCategoryName]);
 
-  const translateNavLabel = (label: string) => {
-    if (label === "Services") {
-      return t(activeSlice, "nav_services");
-    }
-    if (label === "Bookings") {
-      return t(activeSlice, "nav_bookings");
-    }
-    return label;
+  const translated = (key: DictionaryKey) => t(activeSlice, key, locale);
+
+  const languageLabel = translated(localeLabelMap[locale]);
+
+  const changeLocale = (nextLocale: LocaleCode) => {
+    setLocale(nextLocale);
+    trackEvent("click", { element: "locale_switch", locale: nextLocale, section: "navbar" });
   };
 
-  const resolveLinkHref = (path: string, label: string) => {
-    if (label === "Find Services") {
+  const resolveLinkHref = (path: string, labelKey: DictionaryKey) => {
+    if (labelKey === "nav_find_services") {
       const categoryName = user?.businessCategoryName ?? guestCategoryName;
       return buildBusinessesCategoryUrl(categoryName);
     }
@@ -293,11 +306,11 @@ const Navbar = () => {
             <div className="hidden md:flex items-center gap-1">
               {links.map((link) => (
                 <Link
-                  key={`${link.path}-${link.label}`}
-                  href={resolveLinkHref(link.path, link.label)}
+                  key={`${link.path}-${link.labelKey}`}
+                  href={resolveLinkHref(link.path, link.labelKey)}
                   className="relative px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary group"
                 >
-                  {translateNavLabel(link.label)}
+                  {translated(link.labelKey)}
                    <span className="absolute inset-x-0 -bottom-[13px] h-[2px] bg-primary scale-x-0 transition-transform duration-300 group-hover:scale-x-100" />
                 </Link>
               ))}
@@ -305,11 +318,37 @@ const Navbar = () => {
           </div>
 
           <div className="flex items-center gap-4">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className="hidden md:flex items-center gap-2 rounded-full text-foreground/70 hover:text-primary hover:bg-primary/10 transition-colors"
+                >
+                  <Globe className="h-4 w-4" />
+                  <span className="text-xs font-semibold">{languageLabel}</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                className="w-40 p-1 rounded-xl border border-border/50 bg-card/90 backdrop-blur-xl shadow-2xl"
+              >
+                {(["en", "fr", "ar"] as LocaleCode[]).map((option) => (
+                  <DropdownMenuItem
+                    key={option}
+                    onClick={() => changeLocale(option)}
+                    className="rounded-lg cursor-pointer focus:bg-primary/10 focus:text-primary"
+                  >
+                    {translated(localeLabelMap[option])}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
              <Button
                 variant="ghost"
                 size="icon"
                 onClick={toggleTheme}
-                aria-label="Toggle theme"
+                aria-label={translated("nav_toggle_theme")}
                 className="rounded-full text-foreground/70 hover:text-primary hover:bg-primary/10 transition-colors"
               >
                 {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
@@ -330,7 +369,7 @@ const Navbar = () => {
                       }`}
                     >
                       <Briefcase className="w-3.5 h-3.5 mr-2" />
-                      Manager
+                      {translated("nav_manager")}
                     </button>
                     <button
                       onClick={() => handleModeSwitch("staff")}
@@ -342,7 +381,7 @@ const Navbar = () => {
                       }`}
                     >
                       <Users className="w-3.5 h-3.5 mr-2" />
-                      Staff
+                      {translated("nav_staff")}
                     </button>
                   </div>
                 )}
@@ -360,7 +399,7 @@ const Navbar = () => {
                             ? `https://ui-avatars.com/api/?name=${user.name}`
                             : "/assets/placeholder.svg")
                         }
-                        alt={user?.name ?? "Profile"}
+                        alt={user?.name ?? translated("nav_profile")}
                         width={40}
                         height={40}
                         className="object-cover h-full w-full"
@@ -372,7 +411,7 @@ const Navbar = () => {
                     className="w-64 p-2 rounded-xl border border-border/50 bg-card/90 backdrop-blur-xl shadow-2xl animate-in slide-in-from-top-2"
                   >
                     <div className="px-3 py-2.5 bg-muted/30 rounded-lg mb-2">
-                       <p className="font-semibold text-foreground">{user?.name ?? "User"}</p>
+                       <p className="font-semibold text-foreground">{user?.name ?? translated("nav_user")}</p>
                        <div className="flex items-center justify-between mt-1">
                           <p className="text-xs text-muted-foreground truncate max-w-[120px]">
                             {user?.email ?? ""}
@@ -384,10 +423,10 @@ const Navbar = () => {
                     </div>
                     
                     <DropdownMenuItem onClick={() => router.push("/profile")} className="rounded-lg cursor-pointer focus:bg-primary/10 focus:text-primary">
-                      Profile
+                      {translated("nav_profile")}
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => router.push("/settings")} className="rounded-lg cursor-pointer focus:bg-primary/10 focus:text-primary">
-                      Settings
+                      {translated("nav_settings")}
                     </DropdownMenuItem>
                     {canEnableClientTelegram && (
                       <DropdownMenuItem
@@ -398,7 +437,7 @@ const Navbar = () => {
                         className="rounded-lg cursor-pointer focus:bg-primary/10 focus:text-primary"
                       >
                         <MessageCircle className="h-4 w-4 mr-2" />
-                        Enable Client Telegram (@{CLIENT_BOT_LABEL})
+                        {translated("nav_enable_client_telegram")} (@{CLIENT_BOT_LABEL})
                       </DropdownMenuItem>
                     )}
                     {canEnableStaffTelegram && (
@@ -410,7 +449,7 @@ const Navbar = () => {
                         className="rounded-lg cursor-pointer focus:bg-primary/10 focus:text-primary"
                       >
                         <MessageCircle className="h-4 w-4 mr-2" />
-                        Enable Staff Telegram (@{STAFF_BOT_LABEL})
+                        {translated("nav_enable_staff_telegram")} (@{STAFF_BOT_LABEL})
                       </DropdownMenuItem>
                     )}
                     <DropdownMenuSeparator className="bg-border/50 my-2" />
@@ -422,7 +461,7 @@ const Navbar = () => {
                         logout();
                       }}
                     >
-                      Logout
+                      {translated("nav_logout")}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -437,7 +476,7 @@ const Navbar = () => {
                     router.push(loginHref);
                   }}
                 >
-                  Log in
+                  {translated("nav_login")}
                 </Button>
                 <Button
                   variant="skeuo-primary"
@@ -447,7 +486,7 @@ const Navbar = () => {
                     router.push(registerHref);
                   }}
                 >
-                  Sign Up
+                  {translated("nav_signup")}
                 </Button>
               </div>
             )}
@@ -483,7 +522,7 @@ const Navbar = () => {
                   }`}
                 >
                   <Briefcase className="w-4 h-4 mr-2" />
-                  Manager
+                  {translated("nav_manager")}
                 </button>
                 <button
                   onClick={() => {
@@ -498,20 +537,37 @@ const Navbar = () => {
                   }`}
                 >
                   <Users className="w-4 h-4 mr-2" />
-                  Staff
+                  {translated("nav_staff")}
                 </button>
               </div>
             )}
+
+            <div className="mx-2 rounded-xl border border-border/40 p-2">
+              <p className="px-2 pb-2 text-xs font-semibold text-muted-foreground">{translated("nav_language")}</p>
+              <div className="grid grid-cols-3 gap-2">
+                {(["en", "fr", "ar"] as LocaleCode[]).map((option) => (
+                  <Button
+                    key={option}
+                    size="sm"
+                    variant={locale === option ? "skeuo-primary" : "ghost"}
+                    className="h-8 rounded-lg text-xs"
+                    onClick={() => changeLocale(option)}
+                  >
+                    {translated(localeLabelMap[option])}
+                  </Button>
+                ))}
+              </div>
+            </div>
             
             <div className="flex flex-col px-2 space-y-1">
               {links.map((link) => (
                 <Link
-                  key={`${link.path}-${link.label}`}
-                  href={resolveLinkHref(link.path, link.label)}
+                  key={`${link.path}-${link.labelKey}`}
+                  href={resolveLinkHref(link.path, link.labelKey)}
                   className="flex items-center px-4 py-3 rounded-xl text-foreground/80 hover:text-primary hover:bg-primary/5 transition-colors font-medium"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  {translateNavLabel(link.label)}
+                  {translated(link.labelKey)}
                 </Link>
               ))}
 
@@ -528,7 +584,7 @@ const Navbar = () => {
                       }}
                     >
                       <MessageCircle className="h-4 w-4 mr-2" />
-                      Enable Client Telegram (@{CLIENT_BOT_LABEL})
+                      {translated("nav_enable_client_telegram")} (@{CLIENT_BOT_LABEL})
                     </button>
                   )}
                   {canEnableStaffTelegram && (
@@ -542,7 +598,7 @@ const Navbar = () => {
                       }}
                     >
                       <MessageCircle className="h-4 w-4 mr-2" />
-                      Enable Staff Telegram (@{STAFF_BOT_LABEL})
+                      {translated("nav_enable_staff_telegram")} (@{STAFF_BOT_LABEL})
                     </button>
                   )}
                 </>
@@ -559,7 +615,7 @@ const Navbar = () => {
                       router.push(loginHref);
                     }}
                   >
-                    Log in
+                    {translated("nav_login")}
                   </Button>
                   <Button
                     variant="skeuo-primary"
@@ -570,7 +626,7 @@ const Navbar = () => {
                       router.push(registerHref);
                     }}
                   >
-                    Sign Up
+                    {translated("nav_signup")}
                   </Button>
                 </div>
               )}

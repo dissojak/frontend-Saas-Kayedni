@@ -4,6 +4,8 @@ import React, { useState, useCallback } from "react";
 import { ChevronLeft, ChevronRight, Image as ImageIcon } from "lucide-react";
 import { Button } from "@components/ui/button";
 import Image from "next/image";
+import { useLocale } from "@global/hooks/useLocale";
+import { businessDetailT } from "../i18n";
 
 interface GalleryImage {
   imageUrl: string;
@@ -32,6 +34,11 @@ const InlinePhotoGallery: React.FC<InlinePhotoGalleryProps> = ({
   businessName,
   maxImages = 6,
 }) => {
+  const { locale } = useLocale();
+
+  const t = (key: Parameters<typeof businessDetailT>[1], params?: Record<string, string | number>) =>
+    businessDetailT(locale, key, params);
+
   const visibleImages = images.slice(0, maxImages);
   const [activeIndex, setActiveIndex] = useState(0);
   const gridColsClass = getThumbnailGridCols(visibleImages.length);
@@ -109,7 +116,7 @@ const InlinePhotoGallery: React.FC<InlinePhotoGalleryProps> = ({
         <Button
           variant="ghost"
           size="icon"
-          aria-label="Previous image"
+          aria-label={t("gallery_prev_image")}
           onClick={goPrev}
           className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/60 hover:bg-white/90 text-black rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow"
         >
@@ -118,7 +125,7 @@ const InlinePhotoGallery: React.FC<InlinePhotoGalleryProps> = ({
         <Button
           variant="ghost"
           size="icon"
-          aria-label="Next image"
+          aria-label={t("gallery_next_image")}
           onClick={goNext}
           className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/60 hover:bg-white/90 text-black rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow"
         >
@@ -134,7 +141,7 @@ const InlinePhotoGallery: React.FC<InlinePhotoGalleryProps> = ({
                 e.stopPropagation();
                 handleThumbnailClick(idx);
               }}
-              aria-label={`Go to image ${idx + 1}`}
+              aria-label={t("gallery_go_to_image", { index: idx + 1 })}
               className={`w-2 h-2 rounded-full transition-all duration-300 ${
                 idx === activeIndex
                   ? "bg-white scale-125"
@@ -156,7 +163,7 @@ const InlinePhotoGallery: React.FC<InlinePhotoGalleryProps> = ({
           <button
             key={img.imageUrl}
             onClick={() => handleThumbnailClick(idx)}
-            aria-label={`View image ${idx + 1}`}
+            aria-label={t("gallery_view_image", { index: idx + 1 })}
             className={[
               "relative h-16 sm:h-20 md:h-24 rounded-lg overflow-hidden",
               "focus:outline-none ring-offset-2 transition-all duration-200",

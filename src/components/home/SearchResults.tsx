@@ -8,6 +8,8 @@ import { Star, MapPin, X, ArrowRight, Grid2x2, Search as SearchIcon } from 'luci
 import type { BusinessSearchResult, CategorySearchResult } from '@global/lib/api/business.api';
 import type { SearchMode } from '@global/hooks/useSearch';
 import { createBusinessSlug } from '@global/lib/businessSlug';
+import { useLocale } from '@global/hooks/useLocale';
+import { searchT } from '@global/lib/i18n/search';
 
 interface SearchResultsProps {
   results: BusinessSearchResult[];
@@ -37,14 +39,15 @@ export function SearchResults({
   searchDate,
 }: Readonly<SearchResultsProps>) {
   const router = useRouter();
+  const { locale } = useLocale();
   const showCategories = mode === 'categories' || mode === 'mixed';
   const showBusinesses = mode === 'businesses' || mode === 'mixed';
 
-  let headerTitle = 'All treatments and venues';
+  let headerTitle = searchT(locale, 'all_treatments_and_venues');
   if (loading && showBusinesses) {
-    headerTitle = 'Searching...';
+    headerTitle = searchT(locale, 'searching_short');
   } else if (showBusinesses) {
-    headerTitle = `${results.length} Results Found`;
+    headerTitle = searchT(locale, 'results_found', { count: results.length });
   }
 
   // Navigate to search page with current query
@@ -89,7 +92,7 @@ export function SearchResults({
       <div className="flex-1 overflow-y-auto min-h-0 bg-white dark:bg-slate-900 border-x border-gray-100 dark:border-slate-800">
         {loading && (
           <div className="p-8 text-center text-gray-500 dark:text-gray-400 font-medium">
-            Searching for services...
+            {searchT(locale, 'searching_services')}
           </div>
         )}
 
@@ -102,7 +105,7 @@ export function SearchResults({
         {!loading && !error && showCategories && categories.length > 0 && (
           <div className="p-4">
             <div className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-3 px-2">
-              {mode === 'mixed' ? 'Matching categories' : 'Top categories'}
+              {mode === 'mixed' ? searchT(locale, 'matching_categories') : searchT(locale, 'top_categories')}
             </div>
 
             <div className="space-y-1">
@@ -114,7 +117,7 @@ export function SearchResults({
                 <span className="h-10 w-10 rounded-lg border border-gray-200 dark:border-slate-700 flex items-center justify-center bg-white dark:bg-slate-900">
                   <Grid2x2 className="h-4 w-4 text-primary" />
                 </span>
-                <span className="font-medium text-gray-900 dark:text-white">All treatments</span>
+                <span className="font-medium text-gray-900 dark:text-white">{searchT(locale, 'all_treatments')}</span>
               </button>
 
               {categories.map((category) => (
@@ -140,8 +143,8 @@ export function SearchResults({
 
         {!loading && !error && showBusinesses && results.length === 0 && categories.length === 0 && (
           <div className="p-8 text-center">
-            <p className="text-gray-500 dark:text-gray-400 mb-2">No services found matching your search.</p>
-            <p className="text-sm text-gray-400 dark:text-gray-500">Try different keywords or location.</p>
+            <p className="text-gray-500 dark:text-gray-400 mb-2">{searchT(locale, 'no_services_found')}</p>
+            <p className="text-sm text-gray-400 dark:text-gray-500">{searchT(locale, 'try_keywords_or_location')}</p>
           </div>
         )}
 
@@ -225,7 +228,7 @@ export function SearchResults({
             onClick={handleViewAll}
             size="lg"
           >
-            View All Results
+            {searchT(locale, 'view_all_results')}
             <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         </div>

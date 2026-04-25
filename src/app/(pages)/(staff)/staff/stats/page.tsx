@@ -7,7 +7,9 @@ import { Badge } from "@components/ui/badge";
 import { ArrowLeft, Sparkles } from "lucide-react";
 import { useAuth } from "@/(pages)/(auth)/context/AuthContext";
 import { useRouter } from "next/navigation";
+import { useLocale } from '@global/hooks/useLocale';
 import { fetchBookingsForStaff } from "../../../(business)/actions/backend";
+import { staffT } from '../i18n';
 
 // Import shared components, types, and hooks
 import type { Booking } from '../../../shared/dashboard/types';
@@ -23,6 +25,7 @@ import {
 export default function StaffStatsPage() {
   const { user, token } = useAuth();
   const router = useRouter();
+  const { locale } = useLocale();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -59,7 +62,7 @@ export default function StaffStatsPage() {
         <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/20 flex items-center justify-center">
           <div className="text-center">
             <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Loading your stats...</p>
+            <p className="text-muted-foreground">{staffT(locale, 'stats_loading')}</p>
           </div>
         </div>
       </Layout>
@@ -78,20 +81,21 @@ export default function StaffStatsPage() {
                 variant="ghost"
                 size="icon"
                 onClick={() => router.push('/staff/dashboard')}
+                aria-label={staffT(locale, 'back_to_dashboard')}
                 className="rounded-xl hover:bg-slate-200/60 dark:hover:bg-slate-800/60"
               >
                 <ArrowLeft className="w-5 h-5" />
               </Button>
               <div>
                 <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-slate-900 via-slate-700 to-slate-800 dark:from-white dark:via-slate-200 dark:to-slate-300 bg-clip-text text-transparent">
-                  Performance Stats
+                  {staffT(locale, 'stats_title')}
                 </h1>
-                <p className="text-slate-500 dark:text-slate-400 mt-1">Your booking analytics and insights</p>
+                <p className="text-slate-500 dark:text-slate-400 mt-1">{staffT(locale, 'stats_subtitle')}</p>
               </div>
             </div>
             <Badge className="bg-gradient-to-r from-teal-500/10 to-cyan-500/10 text-teal-500 dark:text-teal-400 border border-teal-200/50 dark:border-teal-800/50 px-4 py-1.5 w-fit">
               <Sparkles className="w-3.5 h-3.5 mr-1.5" />
-              Analytics
+              {staffT(locale, 'stats_badge_analytics')}
             </Badge>
           </div>
 

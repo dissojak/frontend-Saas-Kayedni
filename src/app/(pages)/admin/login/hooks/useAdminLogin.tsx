@@ -5,9 +5,12 @@ import { useRouter } from 'next/navigation';
 import { loginAPI } from '@/(pages)/(auth)/api/auth.api';
 import { setAccessToken, setRefreshToken } from '@/(pages)/(auth)/utils/token.utils';
 import { reverseRoleMapping } from '@/(pages)/(auth)/types';
+import { useLocale } from '@global/hooks/useLocale';
+import { adminT } from '@components/dashboard/admin/i18n';
 
 export function useAdminLogin() {
   const router = useRouter();
+  const { locale } = useLocale();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -35,7 +38,7 @@ export function useAdminLogin() {
       if (backendResponse.token) {
         // Verify user has admin role
         if (backendResponse.role !== 'ADMIN') {
-          setError('Access denied. Admin privileges required.');
+          setError(adminT(locale, 'error_access_denied_admin_required'));
           setLoading(false);
           return;
         }
@@ -59,10 +62,10 @@ export function useAdminLogin() {
         // Redirect to admin control panel
         router.push('/admin/control-panel');
       } else {
-        setError(backendResponse.message || 'Login failed');
+        setError(backendResponse.message || adminT(locale, 'error_login_failed'));
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred during login');
+      setError(err instanceof Error ? err.message : adminT(locale, 'error_login_unexpected'));
     } finally {
       setLoading(false);
     }

@@ -4,7 +4,7 @@
  */
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8088/api/v1';
-const EXCLUDED_SIGNUP_CATEGORY_ID = 25;
+const EXCLUDED_SIGNUP_CATEGORY_ID = 10;
 
 export interface BusinessSearchResult {
   id: number;

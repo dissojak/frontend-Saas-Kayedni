@@ -13,6 +13,8 @@ import PastList from './components/PastList';
 import { useTracking } from '@global/hooks/useTracking';
 import TimeOnPageTracker from '@components/tracking/TimeOnPageTracker';
 import TelegramOnboardingPrompt from '@components/telegram/TelegramOnboardingPrompt';
+import { useLocale } from '@global/hooks/useLocale';
+import { bookingT } from '@/(pages)/(booking)/i18n';
 
 const BookingsPage = () => {
   const { user, token } = useAuth();
@@ -32,6 +34,7 @@ const BookingsPage = () => {
   // Review dialog state
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
   const [selectedBookingForReview, setSelectedBookingForReview] = useState<ReviewBookingInfo | null>(null);
+  const { locale } = useLocale();
 
   useEffect(() => {
     if (!user) {
@@ -73,8 +76,10 @@ const BookingsPage = () => {
 
       <div className="container mx-auto px-4 py-8">
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-8">
-          <h1 className="text-3xl font-bold">Your Bookings</h1>
-          <Button onClick={() => router.push('/businesses')} className="mt-4 md:mt-0">Book New Appointment</Button>
+          <h1 className="text-3xl font-bold">{bookingT(locale, 'bookings_title')}</h1>
+          <Button onClick={() => router.push('/businesses')} className="mt-4 md:mt-0">
+            {bookingT(locale, 'bookings_new_appointment')}
+          </Button>
         </div>
 
         <div className="mb-6">
@@ -90,8 +95,8 @@ const BookingsPage = () => {
 
         <Tabs defaultValue="upcoming" className="space-y-6">
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
-            <TabsTrigger value="past">Past</TabsTrigger>
+            <TabsTrigger value="upcoming">{bookingT(locale, 'bookings_tab_upcoming')}</TabsTrigger>
+            <TabsTrigger value="past">{bookingT(locale, 'bookings_tab_past')}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="upcoming">
@@ -108,9 +113,9 @@ const BookingsPage = () => {
               />
             ) : (
               <div className="text-center py-12">
-                <h3 className="text-xl font-semibold mb-2">No upcoming bookings</h3>
-                <p className="text-gray-500 mb-6">You don't have any upcoming appointments scheduled.</p>
-                <Button onClick={() => router.push('/businesses')}>Book an Appointment</Button>
+                <h3 className="text-xl font-semibold mb-2">{bookingT(locale, 'bookings_empty_upcoming_title')}</h3>
+                <p className="text-gray-500 mb-6">{bookingT(locale, 'bookings_empty_upcoming_desc')}</p>
+                <Button onClick={() => router.push('/businesses')}>{bookingT(locale, 'bookings_book_appointment')}</Button>
               </div>
             )}
           </TabsContent>
@@ -128,9 +133,9 @@ const BookingsPage = () => {
               />
             ) : (
               <div className="text-center py-12">
-                <h3 className="text-xl font-semibold mb-2">No past bookings</h3>
-                <p className="text-gray-500 mb-6">You don't have any past appointments.</p>
-                <Button onClick={() => router.push('/businesses')}>Book an Appointment</Button>
+                <h3 className="text-xl font-semibold mb-2">{bookingT(locale, 'bookings_empty_past_title')}</h3>
+                <p className="text-gray-500 mb-6">{bookingT(locale, 'bookings_empty_past_desc')}</p>
+                <Button onClick={() => router.push('/businesses')}>{bookingT(locale, 'bookings_book_appointment')}</Button>
               </div>
             )}
           </TabsContent>

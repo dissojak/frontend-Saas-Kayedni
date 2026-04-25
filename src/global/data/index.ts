@@ -1,4 +1,5 @@
 import type { Business, Staff, Service } from '@global/types';
+import type { HomeKey } from '@global/lib/i18n/home';
 
 export const mockBusinesses: Business[] = [
   {
@@ -108,4 +109,42 @@ export const mockCategories: string[] = [
   'Fitness',
   'Spa',
   'Therapy',
+];
+
+export interface MockHomeTestimonialSeed {
+  clientName: string;
+  serviceCommentKey?: HomeKey;
+  businessCommentKey?: HomeKey;
+  serviceRating?: number;
+  businessRating?: number;
+  serviceNameKey?: HomeKey;
+  businessNameKey?: HomeKey;
+  businessId?: number;
+}
+
+export const mockBusinessReviewCountById: Record<string, number> = {
+  'biz-1': 128,
+  'biz-2': 93,
+  'biz-3': 85,
+};
+
+export const mockHomeTestimonialSeeds: MockHomeTestimonialSeed[] = [
+  {
+    clientName: 'Sarah Johnson',
+    serviceCommentKey: 'testimonials_fallback_comment_1',
+    serviceRating: 5,
+    businessNameKey: 'testimonials_fallback_business_style_studio',
+  },
+  {
+    clientName: 'Mike Chen',
+    businessCommentKey: 'testimonials_fallback_comment_2',
+    businessRating: 5,
+    serviceNameKey: 'testimonials_fallback_service_tech_support',
+  },
+  {
+    clientName: 'Emma Davis',
+    serviceCommentKey: 'testimonials_fallback_comment_3',
+    serviceRating: 5,
+    businessNameKey: 'testimonials_fallback_business_gamezone',
+  },
 ];

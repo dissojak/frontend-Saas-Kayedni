@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from "@components/ui/button";
 import { Badge } from "@components/ui/badge";
+import { useLocale } from '@global/hooks/useLocale';
 import { 
   Calendar, 
   Users, 
@@ -28,9 +29,34 @@ import {
   TopServicesChart, 
   PerformanceInsight 
 } from "../../../app/(pages)/shared/dashboard/components";
+import { dashboardStatusT, dashboardT } from '@/(pages)/shared/dashboard/i18n';
+
+const DATE_LOCALE_MAP = {
+  en: 'en-US',
+  fr: 'fr-FR',
+  ar: 'ar-TN',
+} as const;
+
+function getBookingStatusClass(status: string): string {
+  if (status === 'CONFIRMED') {
+    return 'bg-teal-100 dark:bg-teal-900/30 text-teal-800 dark:text-teal-400';
+  }
+
+  if (status === 'PENDING') {
+    return 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-400';
+  }
+
+  if (status === 'COMPLETED') {
+    return 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-800 dark:text-cyan-400';
+  }
+
+  return 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-400';
+}
 
 export default function BusinessDashboard() {
   const router = useRouter();
+  const { locale } = useLocale();
+  const isArabic = locale === 'ar';
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -54,7 +80,7 @@ export default function BusinessDashboard() {
     
     if (!userData || !token) {
       console.error('[BusinessDashboard] Missing user data or token');
-      setError('Please log in to access the dashboard. If you just logged in, please refresh the page.');
+      setError(dashboardT(locale, 'dashboard_error_login_required'));
       setLoading(false);
       return;
     }
@@ -63,7 +89,7 @@ export default function BusinessDashboard() {
       const user = JSON.parse(userData);
       console.log('[BusinessDashboard] Parsed user:', user);
       
-      setUserName(user.name || 'Business Owner');
+      setUserName(user.name || dashboardT(locale, 'dashboard_owner_fallback'));
       
       // Check for businessId in user object
       if (user.businessId) {
@@ -71,24 +97,17 @@ export default function BusinessDashboard() {
         setBusinessId(String(user.businessId));
       } else {
         console.warn('[BusinessDashboard] No businessId found in user object');
-        setError('No business associated with this account. Please log out and log in again to refresh your session, or create a business first.');
+        setError(dashboardT(locale, 'dashboard_error_no_business'));
         setLoading(false);
       }
     } catch (e) {
       console.error('[BusinessDashboard] Error parsing user data:', e);
-      setError('Invalid user data. Please log in again.');
+      setError(dashboardT(locale, 'dashboard_error_invalid_user'));
       setLoading(false);
     }
-  }, [router]);
+  }, [locale, router]);
 
-  useEffect(() => {
-    if (businessId) {
-      console.log('[BusinessDashboard] Loading dashboard data for business:', businessId);
-      loadDashboardData();
-    }
-  }, [businessId]);
-
-  const loadDashboardData = async () => {
+  const loadDashboardData = useCallback(async () => {
     if (!businessId) {
       console.warn('[BusinessDashboard] loadDashboardData called without businessId');
       return;
@@ -125,22 +144,31 @@ export default function BusinessDashboard() {
       console.log('[BusinessDashboard] Dashboard data loaded successfully');
     } catch (error) {
       console.error('[BusinessDashboard] Failed to load dashboard data:', error);
-      setError('Failed to load dashboard data. Please try again.');
+      setError(dashboardT(locale, 'dashboard_error_fetch_failed'));
     } finally {
       setLoading(false);
     }
-  };
+  }, [businessId, locale]);
+
+  useEffect(() => {
+    if (businessId) {
+      console.log('[BusinessDashboard] Loading dashboard data for business:', businessId);
+      loadDashboardData();
+    }
+  }, [businessId, loadDashboardData]);
 
   const completionRate = stats && stats.total > 0 
     ? Math.round((stats.completed / stats.total) * 100) 
     : 0;
+  const firstName = userName.split(' ')[0] || dashboardT(locale, 'dashboard_owner_fallback');
+  const quickActionArrowClass = 'w-4 h-4 ml-1.5 group-hover:translate-x-1.5 transition-transform';
 
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-background to-slate-100/50 dark:from-slate-950 dark:via-background dark:to-slate-900/50 flex items-center justify-center">
         <div className="text-center">
           <div className="w-14 h-14 border-4 border-violet-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-slate-500 dark:text-slate-400">Loading your dashboard...</p>
+          <p className="text-slate-500 dark:text-slate-400">{dashboardT(locale, 'dashboard_loading')}</p>
         </div>
       </div>
     );
@@ -153,7 +181,7 @@ export default function BusinessDashboard() {
           <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
             <XCircle className="w-8 h-8 text-red-600 dark:text-red-400" />
           </div>
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Error Loading Dashboard</h2>
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">{dashboardT(locale, 'dashboard_error_title')}</h2>
           <p className="text-slate-600 dark:text-slate-400">{error}</p>
         </div>
       </div>
@@ -168,9 +196,11 @@ export default function BusinessDashboard() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-slate-900 via-slate-700 to-slate-800 dark:from-white dark:via-slate-200 dark:to-slate-300 bg-clip-text text-transparent">
-              Business Dashboard
+              {dashboardT(locale, 'dashboard_title_business')}
             </h1>
-            <p className="text-slate-500 dark:text-slate-400 mt-1">Welcome back, {userName.split(' ')[0] || 'Owner'}!</p>
+            <p className="text-slate-500 dark:text-slate-400 mt-1">
+              {dashboardT(locale, 'dashboard_welcome_back', { name: firstName })}
+            </p>
           </div>
           <div className="flex items-center gap-3">
             <Button
@@ -179,11 +209,13 @@ export default function BusinessDashboard() {
               className="flex items-center gap-2"
             >
               <BarChart3 className="w-4 h-4" />
-              {showCharts ? "Hide Analytics" : "Show Analytics"}
+              {showCharts
+                ? dashboardT(locale, 'dashboard_toggle_hide_analytics')
+                : dashboardT(locale, 'dashboard_toggle_show_analytics')}
             </Button>
             <Badge className="bg-gradient-to-r from-violet-500/10 to-purple-500/10 text-violet-500 dark:text-violet-400 border border-violet-200/50 dark:border-violet-800/50 px-4 py-1.5 w-fit">
               <Sparkles className="w-3.5 h-3.5 mr-1.5" />
-              Business Owner
+              {dashboardT(locale, 'dashboard_role_business_owner')}
             </Badge>
           </div>
         </div>
@@ -191,7 +223,11 @@ export default function BusinessDashboard() {
         {/* Quick Stats Grid - Glass Morphism Style */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Total Bookings */}
-          <div className="relative overflow-hidden bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm border border-slate-200/60 dark:border-slate-700/60 rounded-2xl p-5 shadow-lg shadow-slate-200/40 dark:shadow-slate-900/40 cursor-pointer hover:shadow-xl transition-shadow" onClick={() => router.push('/business/bookings')}>
+          <button
+            type="button"
+            className="relative overflow-hidden bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm border border-slate-200/60 dark:border-slate-700/60 rounded-2xl p-5 shadow-lg shadow-slate-200/40 dark:shadow-slate-900/40 cursor-pointer hover:shadow-xl transition-shadow text-left"
+            onClick={() => router.push('/business/bookings')}
+          >
             <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-cyan-400/20 to-transparent rounded-bl-full"></div>
             <div className="flex items-center justify-between mb-3 relative z-10">
               <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-cyan-500 to-sky-500 flex items-center justify-center shadow-lg shadow-cyan-500/30">
@@ -200,11 +236,15 @@ export default function BusinessDashboard() {
               <TrendingUp className="w-4 h-4 text-cyan-500" />
             </div>
             <p className="text-3xl font-bold text-slate-800 dark:text-white">{stats.total}</p>
-            <p className="text-sm text-slate-500 dark:text-slate-400">Total Bookings</p>
-          </div>
+            <p className="text-sm text-slate-500 dark:text-slate-400">{dashboardT(locale, 'dashboard_total_bookings')}</p>
+          </button>
 
           {/* Completed */}
-          <div className="relative overflow-hidden bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm border border-slate-200/60 dark:border-slate-700/60 rounded-2xl p-5 shadow-lg shadow-slate-200/40 dark:shadow-slate-900/40 cursor-pointer hover:shadow-xl transition-shadow" onClick={() => router.push('/business/bookings')}>
+          <button
+            type="button"
+            className="relative overflow-hidden bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm border border-slate-200/60 dark:border-slate-700/60 rounded-2xl p-5 shadow-lg shadow-slate-200/40 dark:shadow-slate-900/40 cursor-pointer hover:shadow-xl transition-shadow text-left"
+            onClick={() => router.push('/business/bookings')}
+          >
             <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-teal-400/20 to-transparent rounded-bl-full"></div>
             <div className="flex items-center justify-between mb-3 relative z-10">
               <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-teal-500/30">
@@ -215,11 +255,15 @@ export default function BusinessDashboard() {
               </span>
             </div>
             <p className="text-3xl font-bold text-slate-800 dark:text-white">{stats.completed}</p>
-            <p className="text-sm text-slate-500 dark:text-slate-400">Completed</p>
-          </div>
+            <p className="text-sm text-slate-500 dark:text-slate-400">{dashboardT(locale, 'dashboard_completed')}</p>
+          </button>
 
           {/* Staff Members */}
-          <div className="relative overflow-hidden bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm border border-slate-200/60 dark:border-slate-700/60 rounded-2xl p-5 shadow-lg shadow-slate-200/40 dark:shadow-slate-900/40 cursor-pointer hover:shadow-xl transition-shadow" onClick={() => router.push('/business/staff')}>
+          <button
+            type="button"
+            className="relative overflow-hidden bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm border border-slate-200/60 dark:border-slate-700/60 rounded-2xl p-5 shadow-lg shadow-slate-200/40 dark:shadow-slate-900/40 cursor-pointer hover:shadow-xl transition-shadow text-left"
+            onClick={() => router.push('/business/staff')}
+          >
             <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-violet-400/20 to-transparent rounded-bl-full"></div>
             <div className="flex items-center justify-between mb-3 relative z-10">
               <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center shadow-lg shadow-violet-500/30">
@@ -227,11 +271,15 @@ export default function BusinessDashboard() {
               </div>
             </div>
             <p className="text-3xl font-bold text-slate-800 dark:text-white">{totalStaff}</p>
-            <p className="text-sm text-slate-500 dark:text-slate-400">Staff Members</p>
-          </div>
+            <p className="text-sm text-slate-500 dark:text-slate-400">{dashboardT(locale, 'dashboard_staff_members')}</p>
+          </button>
 
           {/* Services */}
-          <div className="relative overflow-hidden bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm border border-slate-200/60 dark:border-slate-700/60 rounded-2xl p-5 shadow-lg shadow-slate-200/40 dark:shadow-slate-900/40 cursor-pointer hover:shadow-xl transition-shadow" onClick={() => router.push('/business/services')}>
+          <button
+            type="button"
+            className="relative overflow-hidden bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm border border-slate-200/60 dark:border-slate-700/60 rounded-2xl p-5 shadow-lg shadow-slate-200/40 dark:shadow-slate-900/40 cursor-pointer hover:shadow-xl transition-shadow text-left"
+            onClick={() => router.push('/business/services')}
+          >
             <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-rose-400/20 to-transparent rounded-bl-full"></div>
             <div className="flex items-center justify-between mb-3 relative z-10">
               <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-rose-500 to-pink-500 flex items-center justify-center shadow-lg shadow-rose-500/30">
@@ -239,8 +287,8 @@ export default function BusinessDashboard() {
               </div>
             </div>
             <p className="text-3xl font-bold text-slate-800 dark:text-white">{totalServices}</p>
-            <p className="text-sm text-slate-500 dark:text-slate-400">Services</p>
-          </div>
+            <p className="text-sm text-slate-500 dark:text-slate-400">{dashboardT(locale, 'dashboard_services')}</p>
+          </button>
         </div>
 
         {/* Revenue Card - Featured Style */}
@@ -255,12 +303,12 @@ export default function BusinessDashboard() {
                   <DollarSign className="w-8 h-8 text-white" />
                 </div>
                 <div>
-                  <p className="text-white/80 text-sm font-medium uppercase tracking-wider">Total Revenue</p>
+                  <p className="text-white/80 text-sm font-medium uppercase tracking-wider">{dashboardT(locale, 'dashboard_total_revenue')}</p>
                   <p className="text-4xl sm:text-5xl font-bold mt-1">${stats.totalRevenue.toFixed(2)}</p>
                   <div className="flex items-center gap-2 mt-2">
                     <TrendingUp className="w-4 h-4 text-white/90" />
                     <span className="text-sm text-white/90">
-                    From {stats.completed} completed bookings
+                    {dashboardT(locale, 'dashboard_revenue_from_completed', { count: stats.completed })}
                     </span>
                   </div>
                 </div>
@@ -269,8 +317,17 @@ export default function BusinessDashboard() {
                 onClick={() => router.push('/business/bookings')}
                 className="bg-white/20 hover:bg-white/30 text-white border border-white/30 backdrop-blur-sm rounded-xl px-6"
               >
-                View Details
-                <ArrowRight className="w-4 h-4 ml-2" />
+                {isArabic ? (
+                  <>
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                    {dashboardT(locale, 'dashboard_view_details')}
+                  </>
+                ) : (
+                  <>
+                    {dashboardT(locale, 'dashboard_view_details')}
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </>
+                )}
               </Button>
             </div>
           </div>
@@ -313,11 +370,20 @@ export default function BusinessDashboard() {
             <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-cyan-500 to-sky-500 flex items-center justify-center mb-4 shadow-lg shadow-cyan-500/30 group-hover:scale-110 transition-transform">
               <CalendarDays className="w-7 h-7 text-white" />
             </div>
-            <h3 className="font-bold text-slate-800 dark:text-white text-lg mb-1">Manage Bookings</h3>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">View and manage all appointments</p>
+            <h3 className="font-bold text-slate-800 dark:text-white text-lg mb-1">{dashboardT(locale, 'dashboard_manage_bookings_title')}</h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">{dashboardT(locale, 'dashboard_manage_bookings_desc')}</p>
             <div className="flex items-center text-cyan-600 dark:text-cyan-400 text-sm font-semibold">
-              <span>Go to bookings</span>
-              <ArrowRight className="w-4 h-4 ml-1.5 group-hover:translate-x-1.5 transition-transform" />
+              {isArabic ? (
+                <>
+                  <ArrowRight className={quickActionArrowClass} />
+                  <span>{dashboardT(locale, 'dashboard_manage_bookings_cta')}</span>
+                </>
+              ) : (
+                <>
+                  <span>{dashboardT(locale, 'dashboard_manage_bookings_cta')}</span>
+                  <ArrowRight className={quickActionArrowClass} />
+                </>
+              )}
             </div>
           </button>
 
@@ -330,11 +396,20 @@ export default function BusinessDashboard() {
             <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center mb-4 shadow-lg shadow-violet-500/30 group-hover:scale-110 transition-transform">
               <Users className="w-7 h-7 text-white" />
             </div>
-            <h3 className="font-bold text-slate-800 dark:text-white text-lg mb-1">Manage Staff</h3>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">Add or remove team members</p>
+            <h3 className="font-bold text-slate-800 dark:text-white text-lg mb-1">{dashboardT(locale, 'dashboard_manage_staff_title')}</h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">{dashboardT(locale, 'dashboard_manage_staff_desc')}</p>
             <div className="flex items-center text-violet-600 dark:text-violet-400 text-sm font-semibold">
-              <span>View team</span>
-              <ArrowRight className="w-4 h-4 ml-1.5 group-hover:translate-x-1.5 transition-transform" />
+              {isArabic ? (
+                <>
+                  <ArrowRight className={quickActionArrowClass} />
+                  <span>{dashboardT(locale, 'dashboard_manage_staff_cta')}</span>
+                </>
+              ) : (
+                <>
+                  <span>{dashboardT(locale, 'dashboard_manage_staff_cta')}</span>
+                  <ArrowRight className={quickActionArrowClass} />
+                </>
+              )}
             </div>
           </button>
 
@@ -347,11 +422,20 @@ export default function BusinessDashboard() {
             <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-rose-500 to-pink-500 flex items-center justify-center mb-4 shadow-lg shadow-rose-500/30 group-hover:scale-110 transition-transform">
               <Briefcase className="w-7 h-7 text-white" />
             </div>
-            <h3 className="font-bold text-slate-800 dark:text-white text-lg mb-1">Manage Services</h3>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">Create and edit your offerings</p>
+            <h3 className="font-bold text-slate-800 dark:text-white text-lg mb-1">{dashboardT(locale, 'dashboard_manage_services_title')}</h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">{dashboardT(locale, 'dashboard_manage_services_desc')}</p>
             <div className="flex items-center text-rose-600 dark:text-rose-400 text-sm font-semibold">
-              <span>View services</span>
-              <ArrowRight className="w-4 h-4 ml-1.5 group-hover:translate-x-1.5 transition-transform" />
+              {isArabic ? (
+                <>
+                  <ArrowRight className={quickActionArrowClass} />
+                  <span>{dashboardT(locale, 'dashboard_manage_services_cta')}</span>
+                </>
+              ) : (
+                <>
+                  <span>{dashboardT(locale, 'dashboard_manage_services_cta')}</span>
+                  <ArrowRight className={quickActionArrowClass} />
+                </>
+              )}
             </div>
           </button>
         </div>
@@ -365,8 +449,8 @@ export default function BusinessDashboard() {
                   <Calendar className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-slate-800 dark:text-white text-lg">Recent Bookings</h3>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">Latest appointments</p>
+                  <h3 className="font-bold text-slate-800 dark:text-white text-lg">{dashboardT(locale, 'dashboard_recent_bookings_title')}</h3>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">{dashboardT(locale, 'dashboard_recent_bookings_desc')}</p>
                 </div>
               </div>
               <Button
@@ -374,36 +458,45 @@ export default function BusinessDashboard() {
                 variant="outline"
                 className="rounded-xl"
               >
-                View All
-                <ArrowRight className="w-4 h-4 ml-2" />
+                {isArabic ? (
+                  <>
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                    {dashboardT(locale, 'dashboard_view_all')}
+                  </>
+                ) : (
+                  <>
+                    {dashboardT(locale, 'dashboard_view_all')}
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </>
+                )}
               </Button>
             </div>
             
             <div className="space-y-3">
               {recentBookings.map((booking) => (
-                <div 
+                <button
+                  type="button"
                   key={booking.id} 
-                  className="flex items-center justify-between p-4 border border-slate-200/60 dark:border-slate-700/60 rounded-xl hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer"
+                  className={`w-full flex items-center justify-between p-4 border border-slate-200/60 dark:border-slate-700/60 rounded-xl hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer ${isArabic ? 'text-right' : 'text-left'}`}
                   onClick={() => router.push('/business/bookings')}
                 >
                   <div className="flex-1">
                     <h4 className="font-semibold text-slate-800 dark:text-white">{booking.serviceName}</h4>
                     <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-                      {booking.clientName} • {new Date(booking.date).toLocaleDateString()} at {booking.startTime}
+                      <span>{booking.clientName}</span>
+                      <span className="mx-1">•</span>
+                      <span dir="ltr">{new Date(booking.date).toLocaleDateString(DATE_LOCALE_MAP[locale])}</span>
+                      <span className="mx-1">{dashboardT(locale, 'dashboard_at')}</span>
+                      <span dir="ltr">{booking.startTime}</span>
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      booking.status === 'CONFIRMED' ? 'bg-teal-100 dark:bg-teal-900/30 text-teal-800 dark:text-teal-400' :
-                      booking.status === 'PENDING' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-400' :
-                      booking.status === 'COMPLETED' ? 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-800 dark:text-cyan-400' :
-                      'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-400'
-                    }`}>
-                      {booking.status}
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${getBookingStatusClass(booking.status)}`}>
+                      {dashboardStatusT(locale, booking.status)}
                     </span>
                     <span className="font-semibold text-slate-800 dark:text-white">${booking.price.toFixed(2)}</span>
                   </div>
-                </div>
+                </button>
               ))}
             </div>
           </div>
@@ -415,16 +508,16 @@ export default function BusinessDashboard() {
             <div className="w-20 h-20 bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 rounded-2xl flex items-center justify-center mx-auto mb-4">
               <Calendar className="w-10 h-10 text-slate-400 dark:text-slate-500" />
             </div>
-            <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-2">No Bookings Yet</h3>
+            <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-2">{dashboardT(locale, 'dashboard_no_bookings_title')}</h3>
             <p className="text-slate-600 dark:text-slate-400 mb-6">
-              You don't have any bookings yet. Your appointments will appear here.
+              {dashboardT(locale, 'dashboard_no_bookings_desc')}
             </p>
             <Button
               onClick={() => router.push('/business/bookings')}
               className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white shadow-lg shadow-teal-500/30 rounded-xl"
             >
               <CalendarDays className="w-4 h-4 mr-2" />
-              View All Bookings
+              {dashboardT(locale, 'dashboard_view_all_bookings')}
             </Button>
           </div>
         )}

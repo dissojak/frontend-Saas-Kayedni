@@ -14,11 +14,14 @@ import { Button } from "@components/ui/button";
 import { useTracking } from "@global/hooks/useTracking";
 import TimeOnPageTracker from "@components/tracking/TimeOnPageTracker";
 import ScrollDepthTracker from "@components/tracking/ScrollDepthTracker";
+import { useLocale } from "@global/hooks/useLocale";
+import { businessesT } from "./i18n";
 
 const BusinessesPage: React.FC = () => {
   const bookingCtx = useBooking?.();
   const bookingBusinesses = (bookingCtx && (bookingCtx.businesses as Business[])) || [];
   const { trackEvent } = useTracking();
+  const { locale } = useLocale();
 
   const { businesses: fetchedBusinesses, loading } = useBusinesses();
   const [categories, setCategories] = useState<string[] | undefined>(undefined);
@@ -55,8 +58,7 @@ const BusinessesPage: React.FC = () => {
   // If a ?category=... query param exists, try to set the initial selected category
   useEffect(() => {
     if (!categories) return;
-    // read from window.location.search on the client to avoid SSR/suspense issues
-    const catParam = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('category') : null;
+    const catParam = new URLSearchParams(globalThis.location.search).get('category');
     if (!catParam) return;
     const match = categories.find((c) => String(c).toLowerCase() === String(catParam).toLowerCase());
     if (match) setSelectedCategory(match as any);
@@ -102,7 +104,7 @@ const BusinessesPage: React.FC = () => {
       <ScrollDepthTracker pageName="businesses_list" />
 
       <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-8">Find Businesses</h1>
+        <h1 className="text-3xl font-bold mb-8">{businessesT(locale, "title_find_businesses")}</h1>
 
         <SearchFilter
           searchTerm={searchTerm}
@@ -115,11 +117,14 @@ const BusinessesPage: React.FC = () => {
         {/* Pagination Controls */}
         <div className="mt-4 mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
           <div className="text-sm text-gray-600">
-            Showing <span className="font-medium">{totalItems === 0 ? 0 : startIndex + 1}</span>
-            –<span className="font-medium">{endIndex}</span> of <span className="font-medium">{totalItems}</span>
+            {businessesT(locale, "showing_range", {
+              from: totalItems === 0 ? 0 : startIndex + 1,
+              to: endIndex,
+              total: totalItems,
+            })}
           </div>
           <div className="flex items-center gap-3">
-            <label className="text-sm text-gray-700">Per page:</label>
+            <label className="text-sm text-gray-700">{businessesT(locale, "per_page")}</label>
             <select
               className="border rounded px-2 py-1 text-sm"
               value={pageSize}
@@ -141,17 +146,17 @@ const BusinessesPage: React.FC = () => {
                 disabled={currentPage <= 1}
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               >
-                Prev
+                {businessesT(locale, "prev")}
               </Button>
               <span className="text-sm text-gray-700">
-                Page <span className="font-medium">{currentPage}</span> / <span className="font-medium">{totalPages}</span>
+                {businessesT(locale, "page_of", { current: currentPage, total: totalPages })}
               </span>
               <Button
                 variant="outline"
                 disabled={currentPage >= totalPages}
                 onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
               >
-                Next
+                {businessesT(locale, "next")}
               </Button>
             </div>
           </div>
@@ -166,7 +171,7 @@ const BusinessesPage: React.FC = () => {
           }}
         />
 
-        {loading && <p className="mt-6 text-gray-500">Loading businesses...</p>}
+        {loading && <p className="mt-6 text-gray-500">{businessesT(locale, "loading_businesses")}</p>}
       </div>
     </Layout>
   );

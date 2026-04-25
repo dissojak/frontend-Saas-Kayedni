@@ -10,7 +10,9 @@ import { Textarea } from "@components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@components/ui/dialog";
 import { Label } from "@components/ui/label";
 import { Search, Plus, Clock, DollarSign, Edit, Trash2, Package } from "lucide-react";
-import { fetchServicesByBusinessId, createService, updateService, deleteService, fetchStaffByBusinessId } from "../../actions/backend";
+import { fetchServicesByBusinessId, createService, updateService, deleteService, fetchStaffByBusinessId, fetchOwnerBusiness } from "../../actions/backend";
+import { useLocale } from '@global/hooks/useLocale';
+import { businessServicesT } from './i18n';
 
 interface Service {
   id: number;
@@ -29,6 +31,7 @@ interface StaffMember {
 }
 
 export default function BusinessServicesPage() {
+  const { locale } = useLocale();
   const [services, setServices] = useState<Service[]>([]);
   const [filteredServices, setFilteredServices] = useState<Service[]>([]);
   const [staff, setStaff] = useState<StaffMember[]>([]);
@@ -39,6 +42,8 @@ export default function BusinessServicesPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
 
+  const getAuthToken = () => localStorage.getItem('accessToken') || localStorage.getItem('token');
+
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -47,15 +52,41 @@ export default function BusinessServicesPage() {
     imageUrl: '',
     staffIds: [] as number[],
   });
+  let submitButtonLabel = businessServicesT(locale, 'create_service');
+  if (editingService) {
+    submitButtonLabel = businessServicesT(locale, 'update_service');
+  }
+  if (isSubmitting) {
+    submitButtonLabel = businessServicesT(locale, 'saving');
+  }
 
   useEffect(() => {
-    const userData = localStorage.getItem('user');
-    if (userData) {
-      const user = JSON.parse(userData);
-      if (user.businessId) {
-        setBusinessId(user.businessId);
+    const loadBusinessId = async () => {
+      const token = getAuthToken();
+
+      // Prefer the authenticated owner endpoint to avoid stale localStorage business IDs.
+      if (token) {
+        try {
+          const ownerBusiness = await fetchOwnerBusiness(token);
+          if (ownerBusiness?.id) {
+            setBusinessId(String(ownerBusiness.id));
+            return;
+          }
+        } catch (error) {
+          console.warn('Failed to resolve owner business from API, falling back to local storage:', error);
+        }
       }
-    }
+
+      const userData = localStorage.getItem('user');
+      if (userData) {
+        const user = JSON.parse(userData);
+        if (user.businessId) {
+          setBusinessId(String(user.businessId));
+        }
+      }
+    };
+
+    void loadBusinessId();
   }, []);
 
   useEffect(() => {
@@ -74,7 +105,7 @@ export default function BusinessServicesPage() {
     
     setLoading(true);
     try {
-      const token = localStorage.getItem('token') || undefined;
+      const token = getAuthToken() || undefined;
       const data = await fetchServicesByBusinessId(businessId, token);
       setServices(data);
     } catch (error) {
@@ -88,7 +119,7 @@ export default function BusinessServicesPage() {
     if (!businessId) return;
     
     try {
-      const token = localStorage.getItem('token') || undefined;
+      const token = getAuthToken() || undefined;
       const data = await fetchStaffByBusinessId(businessId, token);
       setStaff(data);
     } catch (error) {
@@ -139,7 +170,7 @@ export default function BusinessServicesPage() {
     
     setIsSubmitting(true);
     try {
-      const token = localStorage.getItem('token') || undefined;
+      const token = getAuthToken() || undefined;
       
       if (editingService) {
         await updateService(businessId, editingService.id, formData, token);
@@ -150,7 +181,7 @@ export default function BusinessServicesPage() {
       setIsDialogOpen(false);
       await loadServices();
     } catch (error: any) {
-      alert(error.message || 'Failed to save service');
+      alert(error.message || businessServicesT(locale, 'error_save_service'));
     } finally {
       setIsSubmitting(false);
     }
@@ -158,15 +189,15 @@ export default function BusinessServicesPage() {
 
   const handleDelete = async (serviceId: number) => {
     if (!businessId) return;
-    if (!confirm('Are you sure you want to delete this service?')) return;
+    if (!confirm(businessServicesT(locale, 'confirm_delete'))) return;
     
     try {
-      const token = localStorage.getItem('token') || undefined;
+      const token = getAuthToken() || undefined;
       await deleteService(businessId, serviceId, token);
       await loadServices();
     } catch (error) {
       console.error('Failed to delete service:', error);
-      alert('Failed to delete service');
+      alert(businessServicesT(locale, 'error_delete_service'));
     }
   };
 
@@ -185,7 +216,7 @@ export default function BusinessServicesPage() {
         <div className="flex items-center justify-center h-96">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-business mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading services...</p>
+            <p className="mt-4 text-gray-600">{businessServicesT(locale, 'loading_services')}</p>
           </div>
         </div>
       </Layout>
@@ -198,42 +229,42 @@ export default function BusinessServicesPage() {
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Services Management</h1>
-            <p className="text-gray-600 mt-1">Manage your business offerings and pricing</p>
+            <h1 className="text-3xl font-bold text-gray-900">{businessServicesT(locale, 'title')}</h1>
+            <p className="text-gray-600 mt-1">{businessServicesT(locale, 'subtitle')}</p>
           </div>
           <div className="flex gap-2">
             <Badge variant="outline" className="text-lg px-4 py-2">
-              {services.length} Services
+              {businessServicesT(locale, 'services_count', { count: services.length })}
             </Badge>
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
                 <Button className="bg-business hover:bg-business-dark" onClick={() => openDialog()}>
                   <Plus className="w-4 h-4 mr-2" />
-                  Add Service
+                  {businessServicesT(locale, 'add_service')}
                 </Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                  <DialogTitle>{editingService ? 'Edit Service' : 'Create New Service'}</DialogTitle>
+                  <DialogTitle>{editingService ? businessServicesT(locale, 'edit_service') : businessServicesT(locale, 'create_service')}</DialogTitle>
                   <DialogDescription>
-                    {editingService ? 'Update the details of your service' : 'Add a new service to your business offerings'}
+                    {editingService ? businessServicesT(locale, 'edit_service_desc') : businessServicesT(locale, 'create_service_desc')}
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                   <div className="space-y-2">
-                    <Label htmlFor="name">Service Name *</Label>
+                    <Label htmlFor="name">{businessServicesT(locale, 'service_name')}</Label>
                     <Input
                       id="name"
-                      placeholder="e.g., Haircut & Styling"
+                      placeholder={businessServicesT(locale, 'service_name_placeholder')}
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="description">Description</Label>
+                    <Label htmlFor="description">{businessServicesT(locale, 'description')}</Label>
                     <Textarea
                       id="description"
-                      placeholder="Describe your service..."
+                      placeholder={businessServicesT(locale, 'description_placeholder')}
                       value={formData.description}
                       onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                       rows={3}
@@ -241,7 +272,7 @@ export default function BusinessServicesPage() {
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="duration">Duration (minutes) *</Label>
+                      <Label htmlFor="duration">{businessServicesT(locale, 'duration_minutes')}</Label>
                       <Input
                         id="duration"
                         type="number"
@@ -252,7 +283,7 @@ export default function BusinessServicesPage() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="price">Price ($) *</Label>
+                      <Label htmlFor="price">{businessServicesT(locale, 'price')}</Label>
                       <Input
                         id="price"
                         type="number"
@@ -264,17 +295,17 @@ export default function BusinessServicesPage() {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="imageUrl">Image URL</Label>
+                    <Label htmlFor="imageUrl">{businessServicesT(locale, 'image_url')}</Label>
                     <Input
                       id="imageUrl"
-                      placeholder="https://example.com/image.jpg"
+                      placeholder={businessServicesT(locale, 'image_url_placeholder')}
                       value={formData.imageUrl}
                       onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
                     />
                   </div>
                   {staff.length > 0 && (
                     <div className="space-y-2">
-                      <Label>Assign Staff (Optional)</Label>
+                      <Label>{businessServicesT(locale, 'assign_staff_optional')}</Label>
                       <div className="border rounded-md p-4 space-y-2 max-h-48 overflow-y-auto">
                         {staff.map((member) => (
                           <div key={member.id} className="flex items-center space-x-2">
@@ -300,7 +331,7 @@ export default function BusinessServicesPage() {
                     variant="outline"
                     onClick={() => setIsDialogOpen(false)}
                   >
-                    Cancel
+                    {businessServicesT(locale, 'cancel')}
                   </Button>
                   <Button
                     type="button"
@@ -308,7 +339,7 @@ export default function BusinessServicesPage() {
                     onClick={handleSubmit}
                     disabled={isSubmitting || !formData.name || formData.price <= 0}
                   >
-                    {isSubmitting ? 'Saving...' : (editingService ? 'Update Service' : 'Create Service')}
+                    {submitButtonLabel}
                   </Button>
                 </DialogFooter>
               </DialogContent>
@@ -322,7 +353,7 @@ export default function BusinessServicesPage() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <Input
-                placeholder="Search services..."
+                placeholder={businessServicesT(locale, 'search_services')}
                 className="pl-10"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -337,7 +368,7 @@ export default function BusinessServicesPage() {
             <CardContent className="flex flex-col items-center justify-center py-12">
               <Package className="w-16 h-16 text-gray-300 mb-4" />
               <p className="text-gray-500 text-lg">
-                {searchTerm ? 'No services found matching your search' : 'No services yet'}
+                {searchTerm ? businessServicesT(locale, 'empty_search') : businessServicesT(locale, 'empty_services')}
               </p>
               {!searchTerm && (
                 <Button 
@@ -345,7 +376,7 @@ export default function BusinessServicesPage() {
                   onClick={() => openDialog()}
                 >
                   <Plus className="w-4 h-4 mr-2" />
-                  Create Your First Service
+                  {businessServicesT(locale, 'create_first_service')}
                 </Button>
               )}
             </CardContent>
@@ -372,7 +403,7 @@ export default function BusinessServicesPage() {
                       <div className="flex items-start justify-between">
                         <h3 className="text-xl font-semibold text-gray-900">{service.name}</h3>
                         {service.active && (
-                          <Badge className="bg-green-100 text-green-800">Active</Badge>
+                          <Badge className="bg-green-100 text-green-800">{businessServicesT(locale, 'active')}</Badge>
                         )}
                       </div>
                       {service.description && (
@@ -384,7 +415,7 @@ export default function BusinessServicesPage() {
                     <div className="space-y-2">
                       <div className="flex items-center text-gray-700">
                         <Clock className="w-4 h-4 mr-2 text-business" />
-                        <span className="text-sm">{service.durationMinutes} minutes</span>
+                        <span className="text-sm">{businessServicesT(locale, 'minutes', { count: service.durationMinutes })}</span>
                       </div>
                       <div className="flex items-center text-gray-700">
                         <DollarSign className="w-4 h-4 mr-2 text-business" />
@@ -400,7 +431,7 @@ export default function BusinessServicesPage() {
                         onClick={() => openDialog(service)}
                       >
                         <Edit className="w-4 h-4 mr-2" />
-                        Edit
+                        {businessServicesT(locale, 'edit')}
                       </Button>
                       <Button
                         variant="destructive"
@@ -408,7 +439,7 @@ export default function BusinessServicesPage() {
                         onClick={() => handleDelete(service.id)}
                       >
                         <Trash2 className="w-4 h-4 mr-2" />
-                        Delete
+                        {businessServicesT(locale, 'delete')}
                       </Button>
                     </div>
                   </div>
@@ -426,12 +457,12 @@ export default function BusinessServicesPage() {
                 <Package className="w-6 h-6 text-purple-600" />
               </div>
               <div className="flex-1">
-                <h3 className="font-semibold text-purple-900 mb-2">About Services</h3>
+                <h3 className="font-semibold text-purple-900 mb-2">{businessServicesT(locale, 'about_title')}</h3>
                 <ul className="text-sm text-purple-800 space-y-1">
-                  <li>• Create and manage services your business offers</li>
-                  <li>• Set duration and pricing for each service</li>
-                  <li>• Assign staff members who can provide each service</li>
-                  <li>• Services can be edited or removed at any time</li>
+                  <li>• {businessServicesT(locale, 'about_1')}</li>
+                  <li>• {businessServicesT(locale, 'about_2')}</li>
+                  <li>• {businessServicesT(locale, 'about_3')}</li>
+                  <li>• {businessServicesT(locale, 'about_4')}</li>
                 </ul>
               </div>
             </div>

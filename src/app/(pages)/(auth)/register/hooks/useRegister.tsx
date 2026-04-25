@@ -8,6 +8,8 @@ import { useTracking } from "@global/hooks/useTracking";
 import { logAuthEvent } from "@global/lib/authLogger";
 import { searchCategories } from "@global/lib/api/business.api";
 import { categoryNameFromSlug, normalizeCategorySlug } from "@global/lib/slices";
+import { useLocale } from "@global/hooks/useLocale";
+import { authT } from "@/(pages)/(auth)/i18n";
 
 interface BusinessCategoryOption {
   id: number;
@@ -15,10 +17,12 @@ interface BusinessCategoryOption {
 }
 
 const OTHER_CATEGORY_VALUE = "__OTHER__";
-const OTHER_CATEGORY_ID = 25;
+const OTHER_CATEGORY_ID = 10;
 
 export function useRegister(defaultRole: UserRole = "CLIENT") {
   const { trackEvent } = useTracking();
+  const { locale } = useLocale();
+  const tr = (key: Parameters<typeof authT>[1]) => authT(locale, key);
   const searchParams = useSearchParams();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -90,6 +94,9 @@ export function useRegister(defaultRole: UserRole = "CLIENT") {
 
         const uniqueById = new Map<number, BusinessCategoryOption>();
         for (const item of found) {
+          if (item.id === OTHER_CATEGORY_ID) {
+            continue;
+          }
           uniqueById.set(item.id, { id: item.id, name: item.name });
         }
         setCategories(Array.from(uniqueById.values()));
@@ -147,12 +154,12 @@ export function useRegister(defaultRole: UserRole = "CLIENT") {
 
   const validateBasicSignup = (): boolean => {
     if (password !== confirmPassword) {
-      reportValidationError("Passwords do not match", "confirm_password", "passwords_dont_match");
+      reportValidationError(tr("error_register_passwords_mismatch"), "confirm_password", "passwords_dont_match");
       return false;
     }
 
     if (!acceptedTerms) {
-      reportValidationError("Please accept the terms and conditions", "terms", "terms_not_accepted");
+      reportValidationError(tr("error_register_accept_terms"), "terms", "terms_not_accepted");
       return false;
     }
 
@@ -165,17 +172,17 @@ export function useRegister(defaultRole: UserRole = "CLIENT") {
     }
 
     if (!businessName.trim()) {
-      reportValidationError("Please enter your business name", "business_name", "business_name_required");
+      reportValidationError(tr("error_register_business_name_required"), "business_name", "business_name_required");
       return false;
     }
 
     if (!businessLocation.trim()) {
-      reportValidationError("Please enter your business location", "business_location", "business_location_required");
+      reportValidationError(tr("error_register_business_location_required"), "business_location", "business_location_required");
       return false;
     }
 
     if (!businessCategoryId) {
-      reportValidationError("Please select a business category", "business_category", "business_category_required");
+      reportValidationError(tr("error_register_business_category_required"), "business_category", "business_category_required");
       return false;
     }
 
@@ -184,7 +191,7 @@ export function useRegister(defaultRole: UserRole = "CLIENT") {
 
   const validateOptionalStep = (): boolean => {
     if (businessPhone.trim() && (businessPhone.trim().length < 8 || businessPhone.trim().length > 20)) {
-      reportValidationError("Phone must be between 8 and 20 characters", "business_phone", "business_phone_invalid_length");
+      reportValidationError(tr("error_register_phone_length"), "business_phone", "business_phone_invalid_length");
       return false;
     }
 
@@ -197,22 +204,22 @@ export function useRegister(defaultRole: UserRole = "CLIENT") {
     }
 
     if (!otherIndustryName.trim()) {
-      reportValidationError("Please enter your actual industry name", "other_industry_name", "other_industry_name_required");
+      reportValidationError(tr("error_register_industry_name_required"), "other_industry_name", "other_industry_name_required");
       return false;
     }
 
     if (!otherIndustryDescription.trim()) {
-      reportValidationError("Please describe your industry so we can review it", "other_industry_description", "other_industry_description_required");
+      reportValidationError(tr("error_register_industry_description_required"), "other_industry_description", "other_industry_description_required");
       return false;
     }
 
     if (!businessPhone.trim()) {
-      reportValidationError("Phone number is required for Other industry requests", "business_phone", "other_industry_phone_required");
+      reportValidationError(tr("error_register_phone_required_other"), "business_phone", "other_industry_phone_required");
       return false;
     }
 
     if (businessPhone.trim().length < 8 || businessPhone.trim().length > 20) {
-      reportValidationError("Phone must be between 8 and 20 characters", "business_phone", "other_industry_phone_invalid_length");
+      reportValidationError(tr("error_register_phone_length"), "business_phone", "other_industry_phone_invalid_length");
       return false;
     }
 
@@ -318,6 +325,9 @@ export function useRegister(defaultRole: UserRole = "CLIENT") {
       return;
     }
 
+    let selectedCategoryMode: "none" | "standard" | "other" = "none";
+    let selectedCategoryId: string | undefined;
+
     setLoading(true);
     logAuthEvent({ action: 'signup_attempt', success: false, email, role });
     try {
@@ -325,8 +335,13 @@ export function useRegister(defaultRole: UserRole = "CLIENT") {
         ? OTHER_CATEGORY_ID
         : Number.parseInt(businessCategoryId, 10);
 
+      if (role === "BUSINESS_OWNER") {
+        selectedCategoryMode = isOtherCategorySelected ? "other" : "standard";
+        selectedCategoryId = isOtherCategorySelected ? OTHER_CATEGORY_VALUE : String(resolvedCategoryId);
+      }
+
       if (role === "BUSINESS_OWNER" && (!resolvedCategoryId || Number.isNaN(resolvedCategoryId))) {
-        throw new Error("No fallback category is configured. Please contact support.");
+        throw new Error(tr("error_register_no_fallback_category"));
       }
 
       const payload = {
@@ -361,7 +376,7 @@ export function useRegister(defaultRole: UserRole = "CLIENT") {
         // Registration successful — do NOT auto-login. User must verify email first.
         setRegistered(true);
         setRegisteredEmail(res.user.email ?? null);
-        setRegistrationMessage(res.message ?? 'Registration successful. Please check your email to activate your account.');
+        setRegistrationMessage(res.message ?? tr('register_success_check_email'));
         if (role === "BUSINESS_OWNER" && isOtherCategorySelected) {
           trackEvent("industry_feedback_submitted", {
             source: "signup",
@@ -379,22 +394,20 @@ export function useRegister(defaultRole: UserRole = "CLIENT") {
           role,
           landingSourceSlug: landingSourceSlug ?? "generic",
           landingSourceName: landingSourceName ?? "Generic",
-          selectedCategoryMode: role === "BUSINESS_OWNER" ? (isOtherCategorySelected ? "other" : "standard") : "none",
-          selectedCategoryId: role === "BUSINESS_OWNER"
-            ? (isOtherCategorySelected ? OTHER_CATEGORY_VALUE : String(resolvedCategoryId))
-            : undefined,
+          selectedCategoryMode,
+          selectedCategoryId,
           selectedCategoryName,
         });
         logAuthEvent({ action: 'signup_success', success: true, email, role });
       } else {
-        setError(res.message ?? "Registration failed");
+        setError(res.message ?? tr("error_register_failed"));
         trackEvent('signup_failed', {
           reason: res.message ?? 'registration_failed',
           role,
           error_type: 'api_error',
           landingSourceSlug: landingSourceSlug ?? "generic",
           landingSourceName: landingSourceName ?? "Generic",
-          selectedCategoryMode: role === "BUSINESS_OWNER" ? (isOtherCategorySelected ? "other" : "standard") : "none",
+          selectedCategoryMode,
           selectedCategoryName,
         });
         logAuthEvent({ action: 'signup_failed', success: false, failReason: res.message ?? 'registration_failed', failStage: 'api', email, role });
@@ -409,7 +422,7 @@ export function useRegister(defaultRole: UserRole = "CLIENT") {
         error_type: 'network_or_server_error',
         landingSourceSlug: landingSourceSlug ?? "generic",
         landingSourceName: landingSourceName ?? "Generic",
-        selectedCategoryMode: role === "BUSINESS_OWNER" ? (isOtherCategorySelected ? "other" : "standard") : "none",
+        selectedCategoryMode,
         selectedCategoryName,
       });
       logAuthEvent({ action: 'signup_failed', success: false, failReason: msg, failStage: 'network_error', email, role });

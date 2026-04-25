@@ -1,7 +1,13 @@
 import React from 'react';
 import { Card, CardContent } from '@components/ui/card';
 
-export default function AdminOverview({ stats }: { stats: Array<{ name: string; value: string; change: string }> }) {
+type AdminOverviewStat = {
+  name: string;
+  value: string;
+  change: string;
+};
+
+export default function AdminOverview({ stats }: { stats: AdminOverviewStat[] }) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       {stats.map((stat) => (

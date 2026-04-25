@@ -1,12 +1,15 @@
 import React from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Twitter, Facebook, Instagram, Github, Mail } from "lucide-react";
 import { Button } from "@components/ui/button";
 import { Input } from "@components/ui/input";
+import { t } from "@global/lib/dictionaryService";
+import { useLocale } from "@global/hooks/useLocale";
 
 const Footer = () => {
 	const currentYear = new Date().getFullYear();
+	const { locale } = useLocale();
+	const translated = (key: Parameters<typeof t>[1]) => t("generic", key, locale);
 
 	return (
 		<footer className="relative bg-zinc-950 text-gray-200 overflow-hidden pt-20 pb-10">
@@ -29,20 +32,20 @@ const Footer = () => {
                             />
 						</Link>
 						<p className="text-gray-400 leading-relaxed text-sm">
-                            Simplifying bookings for everyone. The all-in-one platform for modern businesses and clients.
+							{translated("footer_brand_tagline")}
                         </p>
 						<div className="flex gap-4 pt-2">
-							<a href="#" aria-label="Github" className="text-gray-400 hover:text-white transition-colors hover:scale-110 transform duration-200">
-								<Github size={20} />
+							<a href="https://github.com" target="_blank" rel="noreferrer" aria-label="Github" className="text-gray-400 hover:text-white transition-colors hover:scale-110 transform duration-200">
+								<span className="text-xs font-semibold tracking-wide">GH</span>
 							</a>
-							<a href="#" aria-label="Twitter" className="text-gray-400 hover:text-white transition-colors hover:scale-110 transform duration-200">
-								<Twitter size={20} />
+							<a href="https://x.com" target="_blank" rel="noreferrer" aria-label="Twitter" className="text-gray-400 hover:text-white transition-colors hover:scale-110 transform duration-200">
+								<span className="text-xs font-semibold tracking-wide">X</span>
 							</a>
-							<a href="#" aria-label="Instagram" className="text-gray-400 hover:text-white transition-colors hover:scale-110 transform duration-200">
-								<Instagram size={20} />
+							<a href="https://instagram.com" target="_blank" rel="noreferrer" aria-label="Instagram" className="text-gray-400 hover:text-white transition-colors hover:scale-110 transform duration-200">
+								<span className="text-xs font-semibold tracking-wide">IG</span>
 							</a>
-							<a href="#" aria-label="Facebook" className="text-gray-400 hover:text-white transition-colors hover:scale-110 transform duration-200">
-								<Facebook size={20} />
+							<a href="https://facebook.com" target="_blank" rel="noreferrer" aria-label="Facebook" className="text-gray-400 hover:text-white transition-colors hover:scale-110 transform duration-200">
+								<span className="text-xs font-semibold tracking-wide">FB</span>
 							</a>
 						</div>
 					</div>
@@ -50,49 +53,49 @@ const Footer = () => {
                     {/* Links Columns */}
 					<div className="md:col-span-2 grid grid-cols-2 gap-8 md:pl-12">
 						<div>
-							<h5 className="text-white font-bold mb-6 text-lg tracking-tight">Product</h5>
+							<h5 className="text-white font-bold mb-6 text-lg tracking-tight">{translated("footer_product")}</h5>
 							<ul className="space-y-4 text-gray-400 text-sm">
-								<li><Link href="/features" className="hover:text-primary transition-colors">Features</Link></li>
-								<li><Link href="/pricing" className="hover:text-primary transition-colors">Pricing</Link></li>
-								<li><Link href="/businesses" className="hover:text-primary transition-colors">Find Services</Link></li>
-                                <li><Link href="/integrations" className="hover:text-primary transition-colors">Integrations</Link></li>
+								<li><Link href="/features" className="hover:text-primary transition-colors">{translated("footer_features")}</Link></li>
+								<li><Link href="/pricing" className="hover:text-primary transition-colors">{translated("footer_pricing")}</Link></li>
+								<li><Link href="/businesses" className="hover:text-primary transition-colors">{translated("footer_find_services")}</Link></li>
+								<li><Link href="/integrations" className="hover:text-primary transition-colors">{translated("footer_integrations")}</Link></li>
 							</ul>
 						</div>
 						<div>
-							<h5 className="text-white font-bold mb-6 text-lg tracking-tight">Company</h5>
+							<h5 className="text-white font-bold mb-6 text-lg tracking-tight">{translated("footer_company")}</h5>
 							<ul className="space-y-4 text-gray-400 text-sm">
-								<li><Link href="/about" className="hover:text-primary transition-colors">About Us</Link></li>
-								<li><Link href="/careers" className="hover:text-primary transition-colors">Careers</Link></li>
-								<li><Link href="/blog" className="hover:text-primary transition-colors">Blog</Link></li>
-								<li><Link href="/contact" className="hover:text-primary transition-colors">Contact</Link></li>
-                                <li><Link href="/faq" className="hover:text-primary transition-colors">FAQ</Link></li>
+								<li><Link href="/about" className="hover:text-primary transition-colors">{translated("footer_about_us")}</Link></li>
+								<li><Link href="/careers" className="hover:text-primary transition-colors">{translated("footer_careers")}</Link></li>
+								<li><Link href="/blog" className="hover:text-primary transition-colors">{translated("footer_blog")}</Link></li>
+								<li><Link href="/contact" className="hover:text-primary transition-colors">{translated("footer_contact")}</Link></li>
+								<li><Link href="/faq" className="hover:text-primary transition-colors">{translated("footer_faq")}</Link></li>
 							</ul>
 						</div>
 					</div>
 
 					{/* Newsletter Column */}
 					<div className="md:col-span-1">
-                        <h5 className="text-white font-bold mb-6 text-lg tracking-tight">Stay Updated</h5>
-                        <p className="text-gray-400 text-sm mb-4">Subscribe to our newsletter for the latest updates and offers.</p>
+						<h5 className="text-white font-bold mb-6 text-lg tracking-tight">{translated("footer_stay_updated")}</h5>
+						<p className="text-gray-400 text-sm mb-4">{translated("footer_subscribe_desc")}</p>
 						<form onSubmit={(e)=>e.preventDefault()} className="flex flex-col gap-3">
 							<Input 
                                 type="email" 
-                                placeholder="Enter your email" 
+                                placeholder={translated("footer_email_placeholder")}
                                 className="bg-zinc-900/50 border-zinc-800 text-white placeholder:text-gray-500 focus-visible:ring-primary/50" 
                             />
 							<Button type="submit" variant="skeuo-primary" className="w-full">
-                                Subscribe
+                                {translated("footer_subscribe")}
                             </Button>
 						</form>
 					</div>
 				</div>
 
 				<div className="border-t border-zinc-800 pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-gray-500">
-                    <p>&copy; {currentYear} kayedni. All rights reserved.</p>
+					<p>&copy; {currentYear} kayedni. {translated("footer_all_rights_reserved")}</p>
                     <div className="flex gap-6">
-                        <Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link>
-                        <Link href="/terms" className="hover:text-white transition-colors">Terms of Service</Link>
-                        <Link href="/cookies" className="hover:text-white transition-colors">Cookie Settings</Link>
+						<Link href="/privacy" className="hover:text-white transition-colors">{translated("footer_privacy_policy")}</Link>
+						<Link href="/terms" className="hover:text-white transition-colors">{translated("footer_terms_of_service")}</Link>
+						<Link href="/cookies" className="hover:text-white transition-colors">{translated("footer_cookie_settings")}</Link>
                     </div>
 				</div>
 			</div>

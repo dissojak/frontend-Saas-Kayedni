@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@components/ui/alert-dialog";
 import { Button } from "@components/ui/button";
@@ -9,6 +9,8 @@ import { Label } from "@components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@components/ui/select";
 import { Textarea } from "@components/ui/textarea";
 import { UserPlus, Users, Loader2, CheckCircle, Trash2, AlertTriangle, Trash } from "lucide-react";
+import { useLocale } from '@global/hooks/useLocale';
+import { staffBookingsT } from './i18n';
 import { 
   fetchBusinessClients, 
   createBusinessClient,
@@ -28,7 +30,9 @@ interface WalkInBookingProps {
   onBookingCreated: () => void;
 }
 
-export default function WalkInBooking({ staffId, businessId, token, onBookingCreated }: WalkInBookingProps) {
+export default function WalkInBooking({ staffId, businessId, token, onBookingCreated }: Readonly<WalkInBookingProps>) {
+  const { locale } = useLocale();
+  const isArabic = locale === 'ar';
   const [dialogOpen, setDialogOpen] = useState(false);
   const [step, setStep] = useState<'select' | 'create' | 'book'>('select');
   
@@ -71,15 +75,7 @@ export default function WalkInBooking({ staffId, businessId, token, onBookingCre
   const [creatingBooking, setCreatingBooking] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Load clients and services when dialog opens
-  useEffect(() => {
-    if (dialogOpen) {
-      loadClients();
-      loadServices();
-    }
-  }, [dialogOpen]);
-
-  const loadClients = async () => {
+  const loadClients = useCallback(async () => {
     setLoadingClients(true);
     setError(null);
     try {
@@ -89,13 +85,13 @@ export default function WalkInBooking({ staffId, businessId, token, onBookingCre
       console.error('Failed to load clients:', err);
       // Only show error if it's not a 404 or empty result
       if (err.message && !err.message.includes('404')) {
-        setError('Failed to load clients');
+        setError(staffBookingsT(locale, 'walkin_error_load_clients'));
       }
       setClients([]);
     } finally {
       setLoadingClients(false);
     }
-  };
+  }, [businessId, token, locale]);
 
   const handleDeleteClient = async (clientId: number, clientName: string) => {
     try {
@@ -104,7 +100,7 @@ export default function WalkInBooking({ staffId, businessId, token, onBookingCre
       
       if (bookingInfo.hasActiveBookings) {
         // This shouldn't happen - backend should prevent it
-        setError('Cannot delete client with active bookings');
+        setError(staffBookingsT(locale, 'walkin_error_active_bookings'));
         return;
       }
       
@@ -113,7 +109,7 @@ export default function WalkInBooking({ staffId, businessId, token, onBookingCre
       setDeleteConfirmOpen(true);
     } catch (err: any) {
       console.error('Failed to check client bookings:', err);
-      setError(err.message || 'Failed to check client bookings');
+      setError(err.message || staffBookingsT(locale, 'walkin_error_check_client_bookings'));
     }
   };
 
@@ -129,7 +125,7 @@ export default function WalkInBooking({ staffId, businessId, token, onBookingCre
       setError(null);
     } catch (err: any) {
       console.error('Failed to delete client:', err);
-      setError(err.message || 'Failed to delete client');
+      setError(err.message || staffBookingsT(locale, 'walkin_error_delete_client'));
       setDeleteConfirmOpen(false);
       setDeleteClientInfo(null);
     } finally {
@@ -137,7 +133,7 @@ export default function WalkInBooking({ staffId, businessId, token, onBookingCre
     }
   };
 
-  const loadServices = async () => {
+  const loadServices = useCallback(async () => {
     setLoadingServices(true);
     try {
       console.log('Loading services for staffId:', staffId);
@@ -151,11 +147,19 @@ export default function WalkInBooking({ staffId, businessId, token, onBookingCre
     } finally {
       setLoadingServices(false);
     }
-  };
+  }, [staffId]);
+
+  // Load clients and services when dialog opens
+  useEffect(() => {
+    if (dialogOpen) {
+      loadClients();
+      loadServices();
+    }
+  }, [dialogOpen, loadClients, loadServices]);
 
   const handleCreateClient = async () => {
     if (!newClient.name || !newClient.phone) {
-      setError('Name and phone are required');
+      setError(staffBookingsT(locale, 'walkin_error_name_phone_required'));
       return;
     }
 
@@ -169,7 +173,7 @@ export default function WalkInBooking({ staffId, businessId, token, onBookingCre
       setNewClient({ name: '', phone: '', notes: '' });
     } catch (err: any) {
       console.error('Failed to create client:', err);
-      setError(err.message || 'Failed to create client');
+      setError(err.message || staffBookingsT(locale, 'walkin_error_create_client'));
     } finally {
       setCreatingClient(false);
     }
@@ -177,13 +181,13 @@ export default function WalkInBooking({ staffId, businessId, token, onBookingCre
 
   const handleCreateBooking = async () => {
     if (!selectedClient || !bookingForm.serviceId || !bookingForm.startTime || !bookingForm.endTime) {
-      setError('Please fill in all required fields');
+      setError(staffBookingsT(locale, 'walkin_error_required_fields'));
       return;
     }
 
     const selectedService = services.find(s => s.id.toString() === bookingForm.serviceId);
     if (!selectedService) {
-      setError('Service not found');
+      setError(staffBookingsT(locale, 'walkin_error_service_not_found'));
       return;
     }
 
@@ -208,7 +212,7 @@ export default function WalkInBooking({ staffId, businessId, token, onBookingCre
       handleClose();
     } catch (err: any) {
       console.error('Failed to create booking:', err);
-      setError(err.message || 'Failed to create booking');
+      setError(err.message || staffBookingsT(locale, 'walkin_error_create_booking'));
     } finally {
       setCreatingBooking(false);
     }
@@ -255,22 +259,25 @@ export default function WalkInBooking({ staffId, businessId, token, onBookingCre
         onClick={() => setDialogOpen(true)}
         className="bg-primary hover:bg-primary/90 text-white font-semibold h-12 px-6 rounded-xl shadow-lg"
       >
-        <UserPlus className="w-5 h-5 mr-2" />
-        Book for Walk-in Client
+        <UserPlus className={`w-5 h-5 ${isArabic ? 'ml-2' : 'mr-2'}`} />
+        {staffBookingsT(locale, 'walkin_button')}
       </Button>
 
       <Dialog open={dialogOpen} onOpenChange={handleClose}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
+        <DialogContent
+          dir={isArabic ? 'rtl' : 'ltr'}
+          className={`max-w-2xl max-h-[90vh] overflow-y-auto ${isArabic ? 'text-right [&>button]:left-4 [&>button]:right-auto' : ''}`}
+        >
+          <DialogHeader className={isArabic ? 'text-right sm:text-right' : undefined}>
             <DialogTitle className="text-2xl font-bold">
-              {step === 'select' && 'Select or Add Client'}
-              {step === 'create' && 'Create New Client'}
-              {step === 'book' && `Book Service for ${selectedClient?.name}`}
+              {step === 'select' && staffBookingsT(locale, 'walkin_step_select_title')}
+              {step === 'create' && staffBookingsT(locale, 'walkin_step_create_title')}
+              {step === 'book' && staffBookingsT(locale, 'walkin_step_book_title', { name: selectedClient?.name ?? '' })}
             </DialogTitle>
             <DialogDescription>
-              {step === 'select' && 'Choose an existing client or create a new one'}
-              {step === 'create' && 'Enter the client\'s information'}
-              {step === 'book' && 'Select a service and time slot'}
+              {step === 'select' && staffBookingsT(locale, 'walkin_step_select_desc')}
+              {step === 'create' && staffBookingsT(locale, 'walkin_step_create_desc')}
+              {step === 'book' && staffBookingsT(locale, 'walkin_step_book_desc')}
             </DialogDescription>
           </DialogHeader>
 
@@ -289,25 +296,25 @@ export default function WalkInBooking({ staffId, businessId, token, onBookingCre
               ) : (
                 <>
                   <div className="space-y-2">
-                    <Label className="text-base font-semibold">Existing Clients ({clients.length})</Label>
+                    <Label className="text-base font-semibold">{staffBookingsT(locale, 'walkin_existing_clients', { count: clients.length })}</Label>
                     {clients.length === 0 ? (
                       <div className="text-center py-8 text-muted-foreground">
                         <Users className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                        <p>No clients yet. Create your first one!</p>
+                        <p>{staffBookingsT(locale, 'walkin_no_clients_title')}. {staffBookingsT(locale, 'walkin_no_clients_desc')}</p>
                       </div>
                     ) : (
                       <div className="max-h-64 overflow-y-auto border rounded-lg divide-y">
                         {clients.map((client) => (
                           <div
                             key={client.id}
-                            className="p-4 hover:bg-muted/50 transition-colors flex items-center justify-between gap-3"
+                            className={`p-4 hover:bg-muted/50 transition-colors flex items-center justify-between gap-3 ${isArabic ? 'flex-row-reverse' : ''}`}
                           >
                             <button
                               onClick={() => {
                                 setSelectedClient(client);
                                 setStep('book');
                               }}
-                              className="flex-1 text-left"
+                              className={`flex-1 ${isArabic ? 'text-right' : 'text-left'}`}
                             >
                               <div className="font-semibold">{client.name}</div>
                               <div className="text-sm text-muted-foreground">{client.phone}</div>
@@ -331,7 +338,7 @@ export default function WalkInBooking({ staffId, businessId, token, onBookingCre
 
                   <div className="flex items-center gap-4">
                     <div className="flex-1 border-t" />
-                    <span className="text-sm text-muted-foreground">OR</span>
+                    <span className="text-sm text-muted-foreground">{staffBookingsT(locale, 'walkin_or')}</span>
                     <div className="flex-1 border-t" />
                   </div>
 
@@ -340,8 +347,8 @@ export default function WalkInBooking({ staffId, businessId, token, onBookingCre
                     variant="outline"
                     className="w-full h-12"
                   >
-                    <UserPlus className="w-5 h-5 mr-2" />
-                    Create New Client
+                    <UserPlus className={`w-5 h-5 ${isArabic ? 'ml-2' : 'mr-2'}`} />
+                    {staffBookingsT(locale, 'walkin_create_new_client')}
                   </Button>
                 </>
               )}
@@ -351,34 +358,34 @@ export default function WalkInBooking({ staffId, businessId, token, onBookingCre
           {step === 'create' && (
             <div className="space-y-4">
               <div>
-                <Label htmlFor="name">Name *</Label>
+                <Label htmlFor="name">{staffBookingsT(locale, 'walkin_name_label')}</Label>
                 <Input
                   id="name"
                   value={newClient.name}
                   onChange={(e) => setNewClient({ ...newClient, name: e.target.value })}
-                  placeholder="Client name"
+                  placeholder={staffBookingsT(locale, 'walkin_client_name_placeholder')}
                   className="mt-1.5"
                 />
               </div>
 
               <div>
-                <Label htmlFor="phone">Phone *</Label>
+                <Label htmlFor="phone">{staffBookingsT(locale, 'walkin_phone_label')}</Label>
                 <Input
                   id="phone"
                   value={newClient.phone}
                   onChange={(e) => setNewClient({ ...newClient, phone: e.target.value })}
-                  placeholder="+1234567890"
+                  placeholder={staffBookingsT(locale, 'walkin_phone_placeholder')}
                   className="mt-1.5"
                 />
               </div>
 
               <div>
-                <Label htmlFor="notes">Notes (Optional)</Label>
+                <Label htmlFor="notes">{staffBookingsT(locale, 'walkin_notes_optional')}</Label>
                 <Textarea
                   id="notes"
                   value={newClient.notes}
                   onChange={(e) => setNewClient({ ...newClient, notes: e.target.value })}
-                  placeholder="Any special notes about this client..."
+                  placeholder={staffBookingsT(locale, 'walkin_client_notes_placeholder')}
                   className="mt-1.5"
                   rows={3}
                 />
@@ -390,7 +397,7 @@ export default function WalkInBooking({ staffId, businessId, token, onBookingCre
                   variant="outline"
                   className="flex-1"
                 >
-                  Back
+                  {staffBookingsT(locale, 'walkin_back')}
                 </Button>
                 <Button
                   onClick={handleCreateClient}
@@ -400,12 +407,12 @@ export default function WalkInBooking({ staffId, businessId, token, onBookingCre
                   {creatingClient ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Creating...
+                      {staffBookingsT(locale, 'walkin_creating')}
                     </>
                   ) : (
                     <>
                       <CheckCircle className="w-4 h-4 mr-2" />
-                      Create & Continue
+                      {staffBookingsT(locale, 'walkin_create_continue')}
                     </>
                   )}
                 </Button>
@@ -421,10 +428,10 @@ export default function WalkInBooking({ staffId, businessId, token, onBookingCre
               </div>
 
               <div>
-                <Label htmlFor="service">Service *</Label>
+                <Label htmlFor="service">{staffBookingsT(locale, 'walkin_service_label')}</Label>
                 <Select value={bookingForm.serviceId} onValueChange={handleServiceChange}>
                   <SelectTrigger className="mt-1.5">
-                    <SelectValue placeholder="Select a service" />
+                    <SelectValue placeholder={staffBookingsT(locale, 'walkin_select_service')} />
                   </SelectTrigger>
                   <SelectContent>
                     {loadingServices && (
@@ -434,12 +441,16 @@ export default function WalkInBooking({ staffId, businessId, token, onBookingCre
                     )}
                     {!loadingServices && services.length === 0 && (
                       <div className="p-4 text-center text-sm text-muted-foreground">
-                        No services available
+                        {staffBookingsT(locale, 'walkin_no_services_available')}
                       </div>
                     )}
                     {!loadingServices && services.length > 0 && services.map((service) => (
                       <SelectItem key={service.id} value={service.id.toString()}>
-                        {service.name} - ${service.price} ({service.estimatedDuration} min)
+                        {staffBookingsT(locale, 'walkin_service_option', {
+                          name: service.name,
+                          price: `$${service.price}`,
+                          duration: service.estimatedDuration,
+                        })}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -447,7 +458,7 @@ export default function WalkInBooking({ staffId, businessId, token, onBookingCre
               </div>
 
               <div>
-                <Label htmlFor="date">Date *</Label>
+                <Label htmlFor="date">{staffBookingsT(locale, 'walkin_date_label')}</Label>
                 <Input
                   id="date"
                   type="date"
@@ -460,7 +471,7 @@ export default function WalkInBooking({ staffId, businessId, token, onBookingCre
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="startTime">Start Time *</Label>
+                  <Label htmlFor="startTime">{staffBookingsT(locale, 'walkin_start_time_label')}</Label>
                   <Input
                     id="startTime"
                     type="time"
@@ -479,7 +490,7 @@ export default function WalkInBooking({ staffId, businessId, token, onBookingCre
                 </div>
 
                 <div>
-                  <Label htmlFor="endTime">End Time *</Label>
+                  <Label htmlFor="endTime">{staffBookingsT(locale, 'walkin_end_time_label')}</Label>
                   <Input
                     id="endTime"
                     type="time"
@@ -491,12 +502,12 @@ export default function WalkInBooking({ staffId, businessId, token, onBookingCre
               </div>
 
               <div>
-                <Label htmlFor="bookingNotes">Notes (Optional)</Label>
+                <Label htmlFor="bookingNotes">{staffBookingsT(locale, 'walkin_booking_notes_label')}</Label>
                 <Textarea
                   id="bookingNotes"
                   value={bookingForm.notes}
                   onChange={(e) => setBookingForm({ ...bookingForm, notes: e.target.value })}
-                  placeholder="Any special requests or notes..."
+                  placeholder={staffBookingsT(locale, 'walkin_booking_notes_placeholder')}
                   className="mt-1.5"
                   rows={3}
                 />
@@ -511,7 +522,7 @@ export default function WalkInBooking({ staffId, businessId, token, onBookingCre
                   variant="outline"
                   className="flex-1"
                 >
-                  Back
+                  {staffBookingsT(locale, 'walkin_back')}
                 </Button>
                 <Button
                   onClick={handleCreateBooking}
@@ -521,12 +532,12 @@ export default function WalkInBooking({ staffId, businessId, token, onBookingCre
                   {creatingBooking ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Creating...
+                      {staffBookingsT(locale, 'walkin_creating')}
                     </>
                   ) : (
                     <>
                       <CheckCircle className="w-4 h-4 mr-2" />
-                      Create Booking
+                      {staffBookingsT(locale, 'walkin_create_booking')}
                     </>
                   )}
                 </Button>
@@ -538,21 +549,24 @@ export default function WalkInBooking({ staffId, businessId, token, onBookingCre
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
-        <AlertDialogContent className="max-w-md">
+        <AlertDialogContent
+          dir={isArabic ? 'rtl' : 'ltr'}
+          className={`max-w-md ${isArabic ? 'text-right' : ''}`}
+        >
           <AlertDialogHeader>
-            <div className="flex items-center gap-3">
+            <div className={`flex items-center gap-3 ${isArabic ? 'flex-row-reverse' : ''}`}>
               <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
                 <AlertTriangle className="w-5 h-5 text-red-600" />
               </div>
               <div>
-                <AlertDialogTitle className="text-lg">Delete Client</AlertDialogTitle>
+                <AlertDialogTitle className="text-lg">{staffBookingsT(locale, 'walkin_delete_client_title')}</AlertDialogTitle>
               </div>
             </div>
           </AlertDialogHeader>
           
           <AlertDialogDescription className="space-y-3 py-4">
             <p className="font-medium text-gray-900">
-              Are you sure you want to delete <span className="font-semibold text-gray-950">"{deleteClientInfo?.name}"</span>?
+              {staffBookingsT(locale, 'walkin_delete_client_confirm', { name: deleteClientInfo?.name ?? '' })}
             </p>
             
             {deleteClientInfo?.info && (
@@ -560,7 +574,7 @@ export default function WalkInBooking({ staffId, businessId, token, onBookingCre
                 {deleteClientInfo.info.hasCompletedBookings && (
                   <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
                     <p className="text-sm text-orange-800">
-                      <span className="font-semibold">⚠️ This client has completed bookings</span> that will also be deleted. This action cannot be undone.
+                      <span className="font-semibold">{staffBookingsT(locale, 'walkin_delete_completed_warning_title')}</span> {staffBookingsT(locale, 'walkin_delete_completed_warning_desc')}
                     </p>
                   </div>
                 )}
@@ -568,7 +582,7 @@ export default function WalkInBooking({ staffId, businessId, token, onBookingCre
                 {!deleteClientInfo.info.hasCompletedBookings && deleteClientInfo.info.count > 0 && (
                   <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
                     <p className="text-sm text-amber-800">
-                      <span className="font-semibold">📋 This client has previous bookings</span> (cancelled/no-show) that will also be deleted. This action cannot be undone.
+                      <span className="font-semibold">{staffBookingsT(locale, 'walkin_delete_previous_warning_title')}</span> {staffBookingsT(locale, 'walkin_delete_previous_warning_desc')}
                     </p>
                   </div>
                 )}
@@ -576,7 +590,7 @@ export default function WalkInBooking({ staffId, businessId, token, onBookingCre
                 {deleteClientInfo.info.count === 0 && (
                   <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
                     <p className="text-sm text-gray-600">
-                      This client has no bookings. This action cannot be undone.
+                      {staffBookingsT(locale, 'walkin_delete_no_bookings_desc')}
                     </p>
                   </div>
                 )}
@@ -589,7 +603,7 @@ export default function WalkInBooking({ staffId, businessId, token, onBookingCre
               disabled={isDeleting}
               className="hover:bg-gray-100"
             >
-              Cancel
+              {staffBookingsT(locale, 'cancel')}
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDeleteClient}
@@ -599,12 +613,12 @@ export default function WalkInBooking({ staffId, businessId, token, onBookingCre
               {isDeleting ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Deleting...
+                  {staffBookingsT(locale, 'walkin_deleting')}
                 </>
               ) : (
                 <>
                   <Trash className="w-4 h-4 mr-2" />
-                  Delete Client
+                  {staffBookingsT(locale, 'walkin_delete_client_action')}
                 </>
               )}
             </AlertDialogAction>

@@ -9,6 +9,8 @@ export interface BusinessInfo {
   email?: string;
   rating?: number | string | null;
   reviewCount?: number;
+  createdAt?: string;
+  updatedAt?: string | null;
 }
 
 export interface BusinessImage {

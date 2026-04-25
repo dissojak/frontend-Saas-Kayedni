@@ -19,9 +19,11 @@ import {
   uploadProfileImage,
 } from '@global/lib/api/profile.api';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Loader2, Save, Camera, Shield, User, Mail, Phone, Lock, Sparkles, Crown } from 'lucide-react';
+import { Loader2, Save, Camera, Shield, User, Mail, Lock, Sparkles, Crown } from 'lucide-react';
 import { useTracking } from '@global/hooks/useTracking';
 import TimeOnPageTracker from '@components/tracking/TimeOnPageTracker';
+import { useLocale } from '@global/hooks/useLocale';
+import { profileT } from './i18n';
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -29,6 +31,7 @@ export default function ProfilePage() {
   const { toast } = useToast();
   const { isAuthenticated, updateUser, hydrated } = useAuth();
   const { trackEvent } = useTracking();
+  const { locale } = useLocale();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const { data: profile, isPending: loadingProfile } = useQuery<UserProfile>({
@@ -90,8 +93,8 @@ export default function ProfilePage() {
       queryClient.setQueryData(['profile'], data);
       setCurrentAvatar(data.avatarUrl ?? currentAvatar);
       toast({ 
-        title: 'Profile updated successfully!', 
-        description: 'Your changes have been saved securely.', 
+        title: profileT(locale, 'profile_toast_update_success_title'), 
+        description: profileT(locale, 'profile_toast_update_success_desc'), 
         variant: 'success' 
       });
       trackEvent('profile_update', { fields: ['name', 'email', 'phone'].filter(Boolean) });
@@ -107,9 +110,9 @@ export default function ProfilePage() {
       );
     },
     onError: (error: any) => {
-      const message = error?.message || 'Failed to update profile.';
+      const message = error?.message || profileT(locale, 'profile_toast_update_failed_desc');
       toast({ 
-        title: 'Update failed', 
+        title: profileT(locale, 'profile_toast_update_failed_title'), 
         description: message, 
         variant: 'error' 
       });
@@ -123,15 +126,15 @@ export default function ProfilePage() {
       setNewPassword('');
       setConfirmPassword('');
       toast({ 
-        title: 'Password changed successfully!', 
-        description: 'Your account security has been updated.', 
+        title: profileT(locale, 'profile_toast_password_success_title'), 
+        description: profileT(locale, 'profile_toast_password_success_desc'), 
         variant: 'success' 
       });
     },
     onError: (error: any) => {
-      const message = error?.message || 'Failed to change password.';
+      const message = error?.message || profileT(locale, 'profile_toast_password_failed_desc');
       toast({ 
-        title: 'Password change failed', 
+        title: profileT(locale, 'profile_toast_password_failed_title'), 
         description: message, 
         variant: 'error' 
       });
@@ -159,15 +162,15 @@ export default function ProfilePage() {
         queryClient.invalidateQueries({ queryKey: ['profile'] });
       }
       toast({ 
-        title: 'Profile photo updated!', 
-        description: 'Your new profile picture has been saved successfully.', 
+        title: profileT(locale, 'profile_toast_photo_success_title'), 
+        description: profileT(locale, 'profile_toast_photo_success_desc'), 
         variant: 'success' 
       });
     },
     onError: (error: any) => {
-      const message = error?.message || 'Failed to upload image.';
+      const message = error?.message || profileT(locale, 'profile_toast_photo_failed_desc');
       toast({ 
-        title: 'Upload failed', 
+        title: profileT(locale, 'profile_toast_photo_failed_title'), 
         description: message, 
         variant: 'error' 
       });
@@ -258,16 +261,16 @@ export default function ProfilePage() {
             <div className="flex-1 text-center md:text-left space-y-2 z-10">
               <div className="flex items-center justify-center md:justify-start gap-2">
                 <h1 className="text-3xl md:text-4xl font-bold text-foreground tracking-tight">
-                  {profile?.name || 'Your Profile'}
+                  {profile?.name || profileT(locale, 'profile_default_name')}
                 </h1>
                 {profile?.role === 'ADMIN' && <Crown className="h-5 w-5 text-yellow-500 fill-yellow-500" />}
               </div>
               <p className="text-muted-foreground text-lg max-w-xl">
-                Manage your account settings and preferences.
+                {profileT(locale, 'profile_subtitle')}
               </p>
               <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mt-4">
                  <div className="inline-flex items-center px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold border border-primary/20">
-                    <Shield className="w-3 h-3 mr-1" /> Verified User
+                    <Shield className="w-3 h-3 mr-1" /> {profileT(locale, 'profile_verified_user')}
                  </div>
                  {profile?.email && (
                    <div className="inline-flex items-center px-3 py-1 rounded-full bg-secondary text-secondary-foreground text-xs font-medium border border-border">
@@ -294,7 +297,7 @@ export default function ProfilePage() {
                     <div className="absolute inset-0 bg-background/80 backdrop-blur-[2px] z-50 flex items-center justify-center rounded-2xl">
                       <div className="flex flex-col items-center gap-2">
                         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                        <span className="text-sm font-medium text-muted-foreground">Saving changes...</span>
+                        <span className="text-sm font-medium text-muted-foreground">{profileT(locale, 'profile_saving_changes')}</span>
                       </div>
                     </div>
                   )}
@@ -306,8 +309,8 @@ export default function ProfilePage() {
                           <User className="h-5 w-5" />
                         </div>
                         <div>
-                          <CardTitle className="text-lg font-semibold text-foreground">Personal Information</CardTitle>
-                          <p className="text-sm text-muted-foreground">Update your personal details</p>
+                          <CardTitle className="text-lg font-semibold text-foreground">{profileT(locale, 'profile_personal_info_title')}</CardTitle>
+                          <p className="text-sm text-muted-foreground">{profileT(locale, 'profile_personal_info_desc')}</p>
                         </div>
                       </div>
                       <Button 
@@ -315,7 +318,7 @@ export default function ProfilePage() {
                         disabled={updateProfileMutation.isPending || loadingProfile}
                         className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20 transition-all hover:-translate-y-0.5"
                       >
-                         <Save className="h-4 w-4 mr-2" /> Save
+                         <Save className="h-4 w-4 mr-2" /> {profileT(locale, 'profile_save')}
                       </Button>
                     </div>
                   </CardHeader>
@@ -323,12 +326,12 @@ export default function ProfilePage() {
                     
                     {/* Name Input */}
                     <div className="space-y-2">
-                      <Label htmlFor="name">Full Name</Label>
+                      <Label htmlFor="name">{profileT(locale, 'profile_full_name')}</Label>
                       <Input
                         id="name"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        placeholder="John Doe"
+                        placeholder={profileT(locale, 'profile_name_placeholder')}
                         className="h-12 border-input/60 focus-visible:ring-primary bg-background/50"
                       />
                     </div>
@@ -337,8 +340,8 @@ export default function ProfilePage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-2">
                          <div className="flex justify-between">
-                            <Label htmlFor="email">Email Address</Label>
-                            <span className="text-xs text-muted-foreground flex items-center gap-1"><Lock className="w-3 h-3"/> Read-only</span>
+                           <Label htmlFor="email">{profileT(locale, 'profile_email_address')}</Label>
+                           <span className="text-xs text-muted-foreground flex items-center gap-1"><Lock className="w-3 h-3"/> {profileT(locale, 'profile_read_only')}</span>
                          </div>
                         <Input 
                           id="email" 
@@ -350,12 +353,12 @@ export default function ProfilePage() {
                       </div>
                       
                       <div className="space-y-2">
-                        <Label htmlFor="phone">Phone Number</Label>
+                        <Label htmlFor="phone">{profileT(locale, 'profile_phone_number')}</Label>
                         <Input
                           id="phone"
                           value={phone}
                           onChange={(e) => setPhone(e.target.value)}
-                          placeholder="+1 (555) 000-0000"
+                          placeholder={profileT(locale, 'profile_phone_placeholder')}
                           className="h-12 border-input/60 focus-visible:ring-primary bg-background/50"
                         />
                       </div>
@@ -374,7 +377,7 @@ export default function ProfilePage() {
                     <div className="absolute inset-0 bg-background/80 backdrop-blur-[2px] z-50 flex items-center justify-center rounded-2xl">
                       <div className="flex flex-col items-center gap-2">
                         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                        <span className="text-sm font-medium text-muted-foreground">Updating password...</span>
+                        <span className="text-sm font-medium text-muted-foreground">{profileT(locale, 'profile_updating_password')}</span>
                       </div>
                     </div>
                   )}
@@ -386,8 +389,8 @@ export default function ProfilePage() {
                             <Shield className="h-5 w-5" />
                          </div>
                          <div>
-                            <CardTitle className="text-lg font-semibold text-foreground">Security Settings</CardTitle>
-                            <p className="text-sm text-muted-foreground">Manage your password and security</p>
+                           <CardTitle className="text-lg font-semibold text-foreground">{profileT(locale, 'profile_security_title')}</CardTitle>
+                           <p className="text-sm text-muted-foreground">{profileT(locale, 'profile_security_desc')}</p>
                          </div>
                       </div>
                       <Button 
@@ -395,7 +398,7 @@ export default function ProfilePage() {
                         disabled={!currentPassword || !newPassword || !confirmPassword || changePasswordMutation.isPending}
                         className="bg-brand-orange hover:bg-brand-orange/90 text-white shadow-lg shadow-brand-orange/20 transition-all hover:-translate-y-0.5"
                       >
-                        <Lock className="h-4 w-4 mr-2" /> Update Password
+                        <Lock className="h-4 w-4 mr-2" /> {profileT(locale, 'profile_update_password')}
                       </Button>
                     </div>
                   </CardHeader>
@@ -403,13 +406,13 @@ export default function ProfilePage() {
                     
                     {/* Current Password */}
                     <div className="space-y-2">
-                      <Label htmlFor="currentPassword">Current Password</Label>
+                      <Label htmlFor="currentPassword">{profileT(locale, 'profile_current_password')}</Label>
                       <Input
                         id="currentPassword"
                         type="password"
                         value={currentPassword}
                         onChange={(e) => setCurrentPassword(e.target.value)}
-                        placeholder="Enter current password"
+                        placeholder={profileT(locale, 'profile_current_password_placeholder')}
                         className="h-12 border-input/60 focus-visible:ring-brand-orange bg-background/50"
                       />
                     </div>
@@ -417,25 +420,25 @@ export default function ProfilePage() {
                     {/* New Password Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-2">
-                        <Label htmlFor="newPassword">New Password</Label>
+                        <Label htmlFor="newPassword">{profileT(locale, 'profile_new_password')}</Label>
                         <Input
                           id="newPassword"
                           type="password"
                           value={newPassword}
                           onChange={(e) => setNewPassword(e.target.value)}
-                          placeholder="Min. 8 characters"
+                          placeholder={profileT(locale, 'profile_new_password_placeholder')}
                           className="h-12 border-input/60 focus-visible:ring-brand-orange bg-background/50"
                         />
                       </div>
                       
                       <div className="space-y-2">
-                         <Label htmlFor="confirmPassword">Confirm Password</Label>
+                         <Label htmlFor="confirmPassword">{profileT(locale, 'profile_confirm_password')}</Label>
                         <Input
                           id="confirmPassword"
                           type="password"
                           value={confirmPassword}
                           onChange={(e) => setConfirmPassword(e.target.value)}
-                          placeholder="Re-enter password"
+                          placeholder={profileT(locale, 'profile_confirm_password_placeholder')}
                           className="h-12 border-input/60 focus-visible:ring-brand-orange bg-background/50"
                         />
                       </div>
@@ -444,7 +447,7 @@ export default function ProfilePage() {
                     {/* Password Strength Indicator */}
                     <div className="p-4 rounded-xl bg-muted/50 border border-border/50 flex gap-3 text-sm text-muted-foreground">
                        <Shield className="w-5 h-5 flex-shrink-0 text-brand-teal" />
-                       <p>Password requirements: At least 8 characters, using a mix of letters, numbers & symbols for maximum security.</p>
+                       <p>{profileT(locale, 'profile_password_requirements')}</p>
                     </div>
                   </CardContent>
                 </Card>
@@ -463,7 +466,7 @@ export default function ProfilePage() {
                        <div className="p-2 rounded-xl bg-background border border-border/50 text-foreground">
                           <User className="h-5 w-5" />
                        </div>
-                       <CardTitle className="text-lg font-semibold text-foreground">Account Details</CardTitle>
+                        <CardTitle className="text-lg font-semibold text-foreground">{profileT(locale, 'profile_account_details')}</CardTitle>
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-4 pt-6">
@@ -476,8 +479,8 @@ export default function ProfilePage() {
                              <User className="h-4 w-4" />
                           </div>
                           <div>
-                            <p className="text-xs text-muted-foreground">Display Name</p>
-                            <p className="text-sm font-semibold text-foreground">{name || profile?.name || 'Not set'}</p>
+                            <p className="text-xs text-muted-foreground">{profileT(locale, 'profile_display_name')}</p>
+                            <p className="text-sm font-semibold text-foreground">{name || profile?.name || profileT(locale, 'profile_not_set')}</p>
                           </div>
                         </div>
                       </div>
@@ -488,7 +491,7 @@ export default function ProfilePage() {
                              <Mail className="h-4 w-4" />
                           </div>
                           <div className="overflow-hidden">
-                            <p className="text-xs text-muted-foreground">Email</p>
+                            <p className="text-xs text-muted-foreground">{profileT(locale, 'profile_email_label')}</p>
                             <p className="text-sm font-semibold text-foreground truncate max-w-[150px]">{email}</p>
                           </div>
                         </div>
@@ -500,9 +503,9 @@ export default function ProfilePage() {
                              <Crown className="h-4 w-4" />
                           </div>
                           <div>
-                            <p className="text-xs text-muted-foreground">Role</p>
+                            <p className="text-xs text-muted-foreground">{profileT(locale, 'profile_role')}</p>
                             <p className="text-sm font-bold text-foreground uppercase tracking-wider text-[10px]">
-                              {profile?.role ?? 'User'}
+                              {profile?.role ?? profileT(locale, 'profile_role_fallback_user')}
                             </p>
                           </div>
                         </div>
@@ -514,9 +517,9 @@ export default function ProfilePage() {
                       <div className="flex gap-2">
                         <Lock className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
                         <div>
-                          <p className="text-xs font-semibold text-amber-700 dark:text-amber-300">Protected Account</p>
+                          <p className="text-xs font-semibold text-amber-700 dark:text-amber-300">{profileT(locale, 'profile_protected_account')}</p>
                           <p className="text-[10px] text-amber-600/80 dark:text-amber-400/80 leading-tight mt-0.5">
-                            Critical information changes require admin verification.
+                            {profileT(locale, 'profile_protected_account_desc')}
                           </p>
                         </div>
                       </div>
@@ -530,16 +533,16 @@ export default function ProfilePage() {
                 <Card className="relative border border-border/60 shadow-sm bg-card/50 backdrop-blur-xl rounded-2xl overflow-hidden">
                   <div className="p-4 border-b border-border/40 flex items-center gap-2">
                       <Sparkles className="h-4 w-4 text-brand-orange" />
-                      <span className="font-semibold text-sm">Account Status</span>
+                      <span className="font-semibold text-sm">{profileT(locale, 'profile_account_status')}</span>
                   </div>
                   <div className="p-4 grid grid-cols-2 gap-4">
                       <div className="text-center p-3 rounded-xl bg-primary/5 border border-primary/10">
                           <div className="text-2xl font-bold text-primary mb-1">{phone ? '100%' : '85%'}</div>
-                          <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Completion</div>
+                        <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">{profileT(locale, 'profile_completion')}</div>
                       </div>
                       <div className="text-center p-3 rounded-xl bg-brand-teal/5 border border-brand-teal/10">
-                          <div className="text-2xl font-bold text-brand-teal mb-1">Active</div>
-                          <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Status</div>
+                        <div className="text-2xl font-bold text-brand-teal mb-1">{profileT(locale, 'profile_active')}</div>
+                        <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">{profileT(locale, 'profile_status')}</div>
                       </div>
                   </div>
                 </Card>

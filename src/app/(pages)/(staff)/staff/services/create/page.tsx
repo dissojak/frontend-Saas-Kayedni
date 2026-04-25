@@ -7,7 +7,6 @@ import { Button } from "@components/ui/button";
 import { Input } from "@components/ui/input";
 import { Textarea } from "@components/ui/textarea";
 import { Label } from "@components/ui/label";
-import { Switch } from "@components/ui/switch";
 import { 
   ArrowLeft,
   Save,
@@ -21,14 +20,17 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/(pages)/(auth)/context/AuthContext";
 import { useRouter } from "next/navigation";
+import { useLocale } from '@global/hooks/useLocale';
 import { 
   fetchCurrentStaffInfo,
   createService
 } from "../../../../(business)/actions/backend";
+import { staffServicesT } from '../i18n';
 
 export default function StaffCreateServicePage() {
   const { user, token } = useAuth();
   const router = useRouter();
+  const { locale } = useLocale();
   
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -63,7 +65,7 @@ export default function StaffCreateServicePage() {
     if (bizId) {
       setBusinessId(bizId);
     } else {
-      setError('No business linked');
+      setError(staffServicesT(locale, 'error_no_business_linked'));
     }
     setLoading(false);
   };
@@ -74,12 +76,12 @@ export default function StaffCreateServicePage() {
     console.log('handleSubmit: businessId=', businessId, 'token=', token ? 'present' : 'MISSING');
     
     if (!businessId) {
-      setError('Missing business ID');
+      setError(staffServicesT(locale, 'error_missing_business_id'));
       return;
     }
     
     if (!token) {
-      setError('Authentication token missing. Please log in again.');
+      setError(staffServicesT(locale, 'error_auth_token_missing'));
       return;
     }
     
@@ -104,7 +106,7 @@ export default function StaffCreateServicePage() {
       router.push('/staff/services/my-services');
     } catch (error: any) {
       console.error('Failed to create service:', error);
-      setError(error.message || 'Failed to create service');
+      setError(error.message || staffServicesT(locale, 'error_create_service_failed'));
     } finally {
       setSaving(false);
     }
@@ -127,16 +129,16 @@ export default function StaffCreateServicePage() {
           <Card className="border-yellow-200 bg-yellow-50 dark:bg-yellow-900/20 dark:border-yellow-800">
             <CardContent className="py-8 text-center">
               <Package className="h-12 w-12 mx-auto text-yellow-500 mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No Business Linked</h3>
+              <h3 className="text-lg font-semibold mb-2">{staffServicesT(locale, 'no_business_linked_title')}</h3>
               <p className="text-gray-600 dark:text-gray-400 mb-4">
-                You need to be linked to a business to create services.
+                {staffServicesT(locale, 'no_business_linked_desc_create')}
               </p>
               <Button 
                 variant="outline"
                 onClick={() => router.push('/staff/dashboard')}
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Dashboard
+                {staffServicesT(locale, 'back_to_dashboard')}
               </Button>
             </CardContent>
           </Card>
@@ -160,10 +162,10 @@ export default function StaffCreateServicePage() {
           <div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
               <Sparkles className="h-6 w-6 text-emerald-500" />
-              Create New Service
+              {staffServicesT(locale, 'create_new_service_title')}
             </h1>
             <p className="text-gray-500 dark:text-gray-400">
-              Add a new service you can provide
+              {staffServicesT(locale, 'create_new_service_subtitle')}
             </p>
           </div>
         </div>
@@ -185,13 +187,13 @@ export default function StaffCreateServicePage() {
               <div className="space-y-2">
                 <Label htmlFor="name" className="flex items-center gap-2">
                   <Package className="h-4 w-4" />
-                  Service Name *
+                  {staffServicesT(locale, 'service_name_label')}
                 </Label>
                 <Input
                   id="name"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="e.g., Haircut, Massage, Consultation"
+                  placeholder={staffServicesT(locale, 'service_name_placeholder')}
                   required
                 />
               </div>
@@ -200,13 +202,13 @@ export default function StaffCreateServicePage() {
               <div className="space-y-2">
                 <Label htmlFor="description" className="flex items-center gap-2">
                   <FileText className="h-4 w-4" />
-                  Description
+                  {staffServicesT(locale, 'description_label')}
                 </Label>
                 <Textarea
                   id="description"
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Describe what this service includes, any special techniques, materials used..."
+                  placeholder={staffServicesT(locale, 'description_placeholder')}
                   rows={4}
                 />
               </div>
@@ -216,7 +218,7 @@ export default function StaffCreateServicePage() {
                 <div className="space-y-2">
                   <Label htmlFor="duration" className="flex items-center gap-2">
                     <Clock className="h-4 w-4" />
-                    Duration (minutes) *
+                    {staffServicesT(locale, 'duration_minutes_label')}
                   </Label>
                   <Input
                     id="duration"
@@ -224,18 +226,18 @@ export default function StaffCreateServicePage() {
                     min="5"
                     step="5"
                     value={formData.durationMinutes}
-                    onChange={(e) => setFormData({ ...formData, durationMinutes: parseInt(e.target.value) || 30 })}
+                    onChange={(e) => setFormData({ ...formData, durationMinutes: Number.parseInt(e.target.value, 10) || 30 })}
                     required
                   />
                   <p className="text-xs text-gray-500">
-                    Common: 15, 30, 45, 60, 90 minutes
+                    {staffServicesT(locale, 'duration_helper')}
                   </p>
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="price" className="flex items-center gap-2">
                     <DollarSign className="h-4 w-4" />
-                    Price ($) *
+                    {staffServicesT(locale, 'price_label')}
                   </Label>
                   <Input
                     id="price"
@@ -243,7 +245,7 @@ export default function StaffCreateServicePage() {
                     min="0"
                     step="0.01"
                     value={formData.price}
-                    onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
+                    onChange={(e) => setFormData({ ...formData, price: Number.parseFloat(e.target.value) || 0 })}
                     required
                   />
                 </div>
@@ -253,20 +255,20 @@ export default function StaffCreateServicePage() {
               <div className="space-y-2">
                 <Label htmlFor="imageUrl" className="flex items-center gap-2">
                   <ImageIcon className="h-4 w-4" />
-                  Image URL (optional)
+                  {staffServicesT(locale, 'image_url_optional_label')}
                 </Label>
                 <Input
                   id="imageUrl"
                   type="url"
                   value={formData.imageUrl}
                   onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-                  placeholder="https://example.com/image.jpg"
+                  placeholder={staffServicesT(locale, 'image_url_placeholder')}
                 />
                 {formData.imageUrl && (
                   <div className="mt-2 rounded-lg overflow-hidden border">
                     <img 
                       src={formData.imageUrl} 
-                      alt="Preview" 
+                      alt={staffServicesT(locale, 'preview_alt')}
                       className="w-full h-40 object-cover"
                       onError={(e) => {
                         (e.target as HTMLImageElement).style.display = 'none';
@@ -279,11 +281,10 @@ export default function StaffCreateServicePage() {
               {/* Info Box */}
               <div className="p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg border border-emerald-200 dark:border-emerald-800">
                 <h4 className="font-medium text-emerald-800 dark:text-emerald-200 mb-1">
-                  About creating services
+                  {staffServicesT(locale, 'about_creating_services_title')}
                 </h4>
                 <p className="text-sm text-emerald-700 dark:text-emerald-300">
-                  When you create a service, you'll automatically be linked to it as a provider. 
-                  Clients will be able to book this service with you. You can edit or update your services at any time.
+                  {staffServicesT(locale, 'about_creating_services_desc')}
                 </p>
               </div>
 
@@ -295,7 +296,7 @@ export default function StaffCreateServicePage() {
                   className="flex-1"
                   onClick={() => router.push('/staff/services')}
                 >
-                  Cancel
+                  {staffServicesT(locale, 'cancel')}
                 </Button>
                 <Button
                   type="submit"
@@ -305,12 +306,12 @@ export default function StaffCreateServicePage() {
                   {saving ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Creating...
+                      {staffServicesT(locale, 'creating')}
                     </>
                   ) : (
                     <>
                       <Save className="h-4 w-4 mr-2" />
-                      Create Service
+                      {staffServicesT(locale, 'create_service')}
                     </>
                   )}
                 </Button>

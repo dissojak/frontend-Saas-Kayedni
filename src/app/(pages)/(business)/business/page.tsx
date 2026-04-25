@@ -68,6 +68,9 @@ import {
   type BusinessUpdateRequest,
 } from "../actions/backend";
 import { clearPendingOwnerCategory, getPendingOwnerCategory } from "@global/lib/slices";
+import { useLocale } from "@global/hooks/useLocale";
+import { createBusinessSlug } from "@global/lib/businessSlug";
+import { businessManageStatusT, businessManageT, businessManageWeekdayT, type BusinessManageKey } from "./i18n";
 
 interface Category {
   id: number;
@@ -99,6 +102,12 @@ async function fetchCategoriesWithIds(): Promise<Category[]> {
 export default function BusinessManagementPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const { locale } = useLocale();
+  const isArabic = locale === 'ar';
+  const t = useCallback(
+    (key: BusinessManageKey, params?: Record<string, string | number>) => businessManageT(locale, key, params),
+    [locale],
+  );
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // State
@@ -140,7 +149,7 @@ export default function BusinessManagementPage() {
   const loadData = useCallback(async () => {
     const token = getToken();
     if (!token) {
-      toast({ variant: "error", title: "Please log in to view your business" });
+      toast({ variant: "error", title: t('toast_login_required_view') });
       setLoading(false);
       return;
     }
@@ -174,11 +183,11 @@ export default function BusinessManagementPage() {
       setAiHealthy(aiHealth.ok);
     } catch (error) {
       console.error('Error loading business data:', error);
-      toast({ variant: "error", title: "Failed to load business data" });
+      toast({ variant: "error", title: t('toast_load_failed') });
     } finally {
       setLoading(false);
     }
-  }, [getToken, toast]);
+  }, [getToken, t, toast]);
 
   useEffect(() => {
     loadData();
@@ -214,15 +223,15 @@ export default function BusinessManagementPage() {
   const handleCreateBusiness = async () => {
     const token = getToken();
     if (!token) {
-      toast({ variant: "error", title: "Please log in to create your business" });
+      toast({ variant: "error", title: t('toast_login_required_create') });
       return;
     }
 
     if (!createForm.name.trim() || !createForm.location.trim() || !createForm.categoryId) {
       toast({
         variant: "error",
-        title: "Missing required fields",
-        description: "Business name, location, and category are required.",
+        title: t('toast_missing_fields_title'),
+        description: t('toast_missing_fields_desc'),
       });
       return;
     }
@@ -269,11 +278,11 @@ export default function BusinessManagementPage() {
         }
       }
 
-      toast({ variant: "success", title: "Business created successfully" });
+      toast({ variant: "success", title: t('toast_create_success') });
     } catch (error: any) {
       toast({
         variant: "error",
-        title: "Failed to create business",
+        title: t('toast_create_failed'),
         description: error.message,
       });
     } finally {
@@ -294,13 +303,13 @@ export default function BusinessManagementPage() {
       if (updated) {
         setBusiness(updated);
         setIsEditing(false);
-        toast({ variant: "success", title: "Business updated successfully!" });
+        toast({ variant: "success", title: t('toast_update_success') });
         
         // Reload to get fresh evaluation
         await loadData();
       }
     } catch (error: any) {
-      toast({ variant: "error", title: "Failed to update business", description: error.message });
+      toast({ variant: "error", title: t('toast_update_failed'), description: error.message });
     } finally {
       setSaving(false);
     }
@@ -314,12 +323,12 @@ export default function BusinessManagementPage() {
       setAiHealthy(health.ok);
       toast({ 
         variant: health.ok ? "success" : "destructive", 
-        title: health.ok ? "AI is Available" : "AI Unavailable", 
+        title: health.ok ? t('toast_ai_available_title') : t('toast_ai_unavailable_title'), 
         description: health.message,
       });
     } catch (error: any) {
       setAiHealthy(false);
-      toast({ variant: "destructive", title: "Failed to check AI", description: error.message });
+      toast({ variant: "destructive", title: t('toast_check_ai_failed'), description: error.message });
     } finally {
       setCheckingAI(false);
     }
@@ -342,8 +351,8 @@ export default function BusinessManagementPage() {
         setBusiness(updated);
         toast({ 
           variant: "success", 
-          title: "Re-evaluation complete!", 
-          description: `Your business has been re-evaluated. New score: ${updated.evaluation?.overallScore ?? 'N/A'}` 
+          title: t('toast_reevaluate_success_title'), 
+          description: t('toast_reevaluate_success_desc', { score: updated.evaluation?.overallScore ?? 'N/A' }),
         });
       }
     } catch (error: any) {
@@ -351,14 +360,14 @@ export default function BusinessManagementPage() {
       if (error.code === 'RATE_LIMIT_EXCEEDED') {
         toast({ 
           variant: "destructive", 
-          title: "Daily limit reached", 
-          description: error.message || "You've reached your daily AI re-evaluation limit. Please try again tomorrow." 
+          title: t('toast_daily_limit_title'), 
+          description: error.message || t('toast_daily_limit_desc'),
         });
       } else {
         toast({ 
           variant: "destructive", 
-          title: "Failed to re-evaluate", 
-          description: error.message || "An error occurred while re-evaluating your business. Please try again."
+          title: t('toast_reevaluate_failed_title'), 
+          description: error.message || t('toast_reevaluate_failed_desc'),
         });
       }
     } finally {
@@ -387,7 +396,7 @@ export default function BusinessManagementPage() {
       // Reload to get updated status
       await loadData();
     } catch (error: any) {
-      toast({ variant: "error", title: "Failed to submit", description: error.message });
+      toast({ variant: "error", title: t('toast_submit_failed'), description: error.message });
     } finally {
       setSaving(false);
     }
@@ -405,9 +414,9 @@ export default function BusinessManagementPage() {
       const newImage = await uploadBusinessImage(business.id, newImageUrl.trim(), token);
       setImages(prev => [...prev, newImage]);
       setNewImageUrl('');
-      toast({ variant: "success", title: "Image added successfully!" });
+      toast({ variant: "success", title: t('toast_image_add_success') });
     } catch (error: any) {
-      toast({ variant: "error", title: "Failed to add image", description: error.message });
+      toast({ variant: "error", title: t('toast_image_add_failed'), description: error.message });
     } finally {
       setAddingImage(false);
     }
@@ -423,19 +432,19 @@ export default function BusinessManagementPage() {
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
-      toast({ variant: "error", title: "Invalid file type", description: "Please upload an image file" });
+      toast({ variant: "error", title: t('toast_invalid_file_type_title'), description: t('toast_invalid_file_type_desc') });
       return;
     }
 
     // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      toast({ variant: "error", title: "File too large", description: "Maximum file size is 5MB" });
+      toast({ variant: "error", title: t('toast_file_too_large_title'), description: t('toast_file_too_large_desc') });
       return;
     }
 
     // Check image limit
     if (images.length >= 6) {
-      toast({ variant: "error", title: "Maximum images reached", description: "You can only have up to 6 images" });
+      toast({ variant: "error", title: t('toast_max_images_title'), description: t('toast_max_images_desc') });
       return;
     }
 
@@ -443,9 +452,9 @@ export default function BusinessManagementPage() {
       setUploadingImage(true);
       const newImage = await uploadBusinessImageFile(business.id, file, token);
       setImages(prev => [...prev, newImage]);
-      toast({ variant: "success", title: "Image uploaded successfully!" });
+      toast({ variant: "success", title: t('toast_image_upload_success') });
     } catch (error: any) {
-      toast({ variant: "error", title: "Failed to upload image", description: error.message });
+      toast({ variant: "error", title: t('toast_image_upload_failed'), description: error.message });
     } finally {
       setUploadingImage(false);
       // Reset file input
@@ -493,12 +502,12 @@ export default function BusinessManagementPage() {
     try {
       const imageIds = newImages.map(img => img.id);
       await reorderBusinessImages(business.id, imageIds, token);
-      toast({ variant: "success", title: "Images reordered!", description: "First image is now the primary photo" });
+      toast({ variant: "success", title: t('toast_images_reordered_title'), description: t('toast_images_reordered_desc') });
     } catch (error: any) {
       // Revert on error
       const imagesData = await fetchOwnerBusinessImages(business.id, token);
       setImages(imagesData);
-      toast({ variant: "error", title: "Failed to reorder", description: error.message });
+      toast({ variant: "error", title: t('toast_images_reorder_failed'), description: error.message });
     }
   };
 
@@ -517,9 +526,9 @@ export default function BusinessManagementPage() {
     try {
       await deleteBusinessImage(business.id, deleteImageId, token);
       setImages(prev => prev.filter(img => img.id !== deleteImageId));
-      toast({ variant: "success", title: "Image deleted successfully!" });
+      toast({ variant: "success", title: t('toast_image_delete_success') });
     } catch (error: any) {
-      toast({ variant: "error", title: "Failed to delete image", description: error.message });
+      toast({ variant: "error", title: t('toast_image_delete_failed'), description: error.message });
     } finally {
       setDeleteImageId(null);
     }
@@ -527,38 +536,32 @@ export default function BusinessManagementPage() {
 
   // Get score color
   const getScoreColor = (score: number) => {
-    if (score >= 80) return 'text-emerald-500';
-    if (score >= 60) return 'text-amber-500';
-    return 'text-rose-500';
-  };
-
-  const getScoreBg = (score: number) => {
-    if (score >= 80) return 'bg-emerald-500/10 border-emerald-500/30';
-    if (score >= 60) return 'bg-amber-500/10 border-amber-500/30';
-    return 'bg-rose-500/10 border-rose-500/30';
+    if (score >= 80) return 'text-primary';
+    if (score >= 60) return 'text-accent';
+    return 'text-destructive';
   };
 
   // Status badge
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'ACTIVE':
-        return <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/30">Active</Badge>;
+        return <Badge className="border border-primary/30 bg-primary/10 text-primary">{t('status_active')}</Badge>;
       case 'PENDING':
-        return <Badge className="bg-amber-500/10 text-amber-500 border-amber-500/30">Pending Review</Badge>;
+        return <Badge className="border border-accent/40 bg-accent/15 text-accent">{t('status_pending_review')}</Badge>;
       case 'SUSPENDED':
-        return <Badge className="bg-rose-500/10 text-rose-500 border-rose-500/30">Suspended</Badge>;
+        return <Badge className="border border-destructive/30 bg-destructive/10 text-destructive">{t('status_suspended')}</Badge>;
       default:
-        return <Badge variant="outline">{status}</Badge>;
+        return <Badge className="border border-[#d9cfb4] bg-[#f8f4e8] text-[#4d4637]">{businessManageStatusT(locale, status)}</Badge>;
     }
   };
 
   if (loading) {
     return (
       <Layout>
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-background to-slate-100/50 dark:from-slate-950 dark:via-background dark:to-slate-900/50 flex items-center justify-center">
+        <div className="flex min-h-screen items-center justify-center bg-[#f4efe1]">
           <div className="text-center">
-            <div className="w-14 h-14 border-4 border-violet-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-slate-500 dark:text-slate-400">Loading your business...</p>
+            <div className="mx-auto mb-4 h-14 w-14 animate-spin rounded-full border-4 border-primary border-t-accent"></div>
+            <p className="text-[#5c5140]">{t('loading_business')}</p>
           </div>
         </div>
       </Layout>
@@ -568,52 +571,52 @@ export default function BusinessManagementPage() {
   if (!business) {
     return (
       <Layout>
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-background to-slate-100/50 dark:from-slate-950 dark:via-background dark:to-slate-900/50 flex items-center justify-center p-6">
-          <div className="w-full max-w-xl rounded-3xl border border-slate-200/70 bg-white/80 p-6 shadow-xl backdrop-blur-sm dark:border-slate-700/70 dark:bg-slate-900/80">
+        <div className="flex min-h-screen items-center justify-center bg-[#f4efe1] p-6">
+          <div className="w-full max-w-xl rounded-[28px] border border-[#e6dcc1] bg-[#fdfbf6]/95 p-6 shadow-[0_14px_36px_rgba(34,26,5,0.08)]">
             <div className="mb-6 text-center">
-              <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100 dark:bg-slate-800">
-                <Building2 className="h-8 w-8 text-slate-400" />
+              <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-2xl border border-[#e3d8bc] bg-[#f8f2df]">
+                <Building2 className="h-8 w-8 text-primary" />
               </div>
-              <h2 className="text-xl font-bold text-slate-900 dark:text-white">Create Your Business</h2>
-              <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-                Finish onboarding by creating your first business profile.
+              <h2 className="text-xl font-bold text-[#1a1a1a]">{t('create_title')}</h2>
+              <p className="mt-1 text-sm text-[#5c5140]">
+                {t('create_subtitle')}
               </p>
               {pendingCategoryName && (
                 <p className="mt-2 text-xs font-medium text-primary">
-                  Category preselected from signup flow: {pendingCategoryName}
+                  {t('create_category_preselected', { name: pendingCategoryName })}
                 </p>
               )}
             </div>
 
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="create-business-name">Business name</Label>
+                <Label htmlFor="create-business-name">{t('create_business_name')}</Label>
                 <Input
                   id="create-business-name"
                   value={createForm.name}
                   onChange={(e) => setCreateForm((prev) => ({ ...prev, name: e.target.value }))}
-                  placeholder="Downtown Barber Studio"
+                  placeholder={t('placeholder_business_name')}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="create-business-location">Location</Label>
+                <Label htmlFor="create-business-location">{t('create_location')}</Label>
                 <Input
                   id="create-business-location"
                   value={createForm.location}
                   onChange={(e) => setCreateForm((prev) => ({ ...prev, location: e.target.value }))}
-                  placeholder="Cairo, Nasr City"
+                  placeholder={t('placeholder_location')}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label>Category</Label>
+                <Label>{t('create_category')}</Label>
                 <Select
                   value={createForm.categoryId ? createForm.categoryId.toString() : ''}
                   onValueChange={(value) => setCreateForm((prev) => ({ ...prev, categoryId: Number.parseInt(value, 10) }))}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select a category" />
+                    <SelectValue placeholder={t('create_select_category')} />
                   </SelectTrigger>
                   <SelectContent>
                     {categories.map((category) => (
@@ -627,43 +630,47 @@ export default function BusinessManagementPage() {
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="create-business-phone">Phone (optional)</Label>
+                  <Label htmlFor="create-business-phone">{t('create_phone_optional')}</Label>
                   <Input
                     id="create-business-phone"
                     value={createForm.phone || ''}
                     onChange={(e) => setCreateForm((prev) => ({ ...prev, phone: e.target.value }))}
-                    placeholder="+20 1X XXX XXXX"
+                    placeholder={t('placeholder_phone')}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="create-business-email">Business email (optional)</Label>
+                  <Label htmlFor="create-business-email">{t('create_email_optional')}</Label>
                   <Input
                     id="create-business-email"
                     type="email"
                     value={createForm.email || ''}
                     onChange={(e) => setCreateForm((prev) => ({ ...prev, email: e.target.value }))}
-                    placeholder="business@example.com"
+                    placeholder={t('placeholder_email')}
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="create-business-description">Description (optional)</Label>
+                <Label htmlFor="create-business-description">{t('create_description_optional')}</Label>
                 <Textarea
                   id="create-business-description"
                   value={createForm.description || ''}
                   onChange={(e) => setCreateForm((prev) => ({ ...prev, description: e.target.value }))}
-                  placeholder="Describe your services"
+                  placeholder={t('placeholder_description')}
                   className="min-h-[100px]"
                 />
               </div>
 
               <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:justify-end">
-                <Button variant="outline" onClick={() => router.push('/business/dashboard')}>
-                  Back to Dashboard
+                <Button variant="outline" className="border-[#d8cda8] text-[#4f4638]" onClick={() => router.push('/business/dashboard')}>
+                  {t('create_back_dashboard')}
                 </Button>
-                <Button onClick={handleCreateBusiness} disabled={creatingBusiness || !categories.length}>
-                  {creatingBusiness ? 'Creating...' : 'Create Business'}
+                <Button
+                  onClick={handleCreateBusiness}
+                  disabled={creatingBusiness || !categories.length}
+                  className="bg-primary text-primary-foreground hover:bg-primary/90"
+                >
+                  {creatingBusiness ? t('create_creating') : t('create_cta')}
                 </Button>
               </div>
             </div>
@@ -676,658 +683,693 @@ export default function BusinessManagementPage() {
   const evaluation = business.evaluation;
   const canSubmitForReview = business.status === 'DRAFT' || business.status === 'INACTIVE' || business.status === 'PENDING';
   const isPendingReview = business.status === 'PENDING';
+  const defaultBrandingDetails = t('images_default_details');
+  const scoreValue = evaluation?.overallScore ?? 0;
+  const scoreProgress = Math.max(0, Math.min(100, scoreValue));
+  const hasContactInfo = Boolean((business.phone ?? '').trim() && (business.email ?? '').trim());
+  const hasBrandingAssets = images.length >= 3;
+  const hasCoreProfile = Boolean((business.name ?? '').trim() && (business.description ?? '').trim() && (business.location ?? '').trim());
+
+  let imagesSummaryText = t('images_summary_empty');
+  if (images.length > 0) {
+    const params = {
+      count: images.length,
+      score: evaluation?.overallScore ?? 'N/A',
+      details: evaluation?.brandingDetails || defaultBrandingDetails,
+    };
+
+    imagesSummaryText = images.length >= 3 ? t('images_summary_many', params) : t('images_summary_few', params);
+  }
 
   return (
     <Layout>
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-background to-slate-100/50 dark:from-slate-950 dark:via-background dark:to-slate-900/50">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
-          
-          {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <Button 
-                variant="ghost" 
-                size="icon"
-                onClick={() => router.push('/business/dashboard')}
-                className="rounded-xl"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </Button>
-              <div>
-                <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-slate-900 via-slate-700 to-slate-800 dark:from-white dark:via-slate-200 dark:to-slate-300 bg-clip-text text-transparent">
-                  My Business
-                </h1>
-                <p className="text-slate-500 dark:text-slate-400 mt-1">Manage your business profile and settings</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              {getStatusBadge(business.status)}
-              <Badge className="bg-gradient-to-r from-violet-500/10 to-purple-500/10 text-violet-500 dark:text-violet-400 border border-violet-200/50 dark:border-violet-800/50 px-4 py-1.5">
-                <Sparkles className="w-3.5 h-3.5 mr-1.5" />
-                Business Owner
-              </Badge>
-            </div>
-          </div>
-
-            {/* Top Priority Go-Live CTA */}
-            {canSubmitForReview && (
-              <div className="relative overflow-hidden rounded-3xl border-2 border-amber-300/70 dark:border-amber-700/60 bg-gradient-to-r from-amber-50 via-orange-50 to-yellow-50 dark:from-amber-950/30 dark:via-orange-950/20 dark:to-yellow-950/20 p-6 sm:p-7 shadow-xl">
-                <div className="absolute -right-14 -top-14 h-40 w-40 rounded-full bg-amber-300/30 blur-2xl" />
-                <div className="absolute -left-10 -bottom-10 h-32 w-32 rounded-full bg-orange-300/20 blur-2xl" />
-
-                <div className="relative flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-                  <div className="space-y-3">
-                    <div className="inline-flex items-center gap-2 rounded-full bg-amber-500 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-white">
-                      <TrendingUp className="h-3.5 w-3.5" />
-                      Action Required
-                    </div>
-                    <h2 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">
-                      {isPendingReview ? 'Re-submit For Activation' : 'Submit For Review To Go Live'}
-                    </h2>
-                    <p className="max-w-3xl text-sm text-slate-700 dark:text-slate-300">
-                      Your business is currently <span className="font-semibold">{business.status}</span>.
-                      Submitting triggers AI evaluation using your business evaluation rules.
-                    </p>
-                    <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                      If overall score is <span className="font-semibold">above 70</span>, it can become <span className="font-semibold">ACTIVE</span> automatically.
-                      Otherwise it stays <span className="font-semibold">PENDING</span> until you improve details and re-submit.
-                    </p>
-                  </div>
-
-                  <Button
-                    onClick={handleSubmitForActivation}
-                    disabled={saving}
-                    className="h-12 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 px-6 text-white shadow-lg hover:from-amber-600 hover:to-orange-600"
-                  >
-                    {saving ? (
-                      <>
-                        <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                        Submitting...
-                      </>
-                    ) : (
-                      <>
-                        <CheckCircle className="w-4 h-4 mr-2" />
-                        {isPendingReview ? 'Re-submit For Activation' : 'Submit For Review'}
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {isPendingReview && (
-              <div className="rounded-2xl border border-sky-200/70 bg-sky-50/70 px-4 py-3 text-sm text-sky-800 dark:border-sky-800/50 dark:bg-sky-950/20 dark:text-sky-300">
-                This business is pending review. Improve your profile details, then use Re-submit For Activation to run evaluation again.
-              </div>
-            )}
-
-          {/* AI Health Status */}
-          {aiHealthy !== null && (
-            <div className={`flex items-center gap-3 px-4 py-3 rounded-xl border ${aiHealthy ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800/50' : 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800/50'}`}>
-              <Brain className={`w-5 h-5 ${aiHealthy ? 'text-emerald-500' : 'text-amber-500'}`} />
-              <span className={`text-sm ${aiHealthy ? 'text-emerald-700 dark:text-emerald-300' : 'text-amber-700 dark:text-amber-300'}`}>
-                AI Evaluation: {aiHealthy ? 'Available' : 'Limited (using heuristic fallback)'}
-              </span>
-            </div>
-          )}
-
-          {/* Overall Score Card */}
-          {evaluation && (
-            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950 text-white shadow-2xl">
-              <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-bl from-violet-500/30 via-purple-500/20 to-transparent rounded-full blur-3xl"></div>
-              <div className="absolute bottom-0 left-0 w-64 h-64 bg-gradient-to-tr from-teal-500/20 via-cyan-500/10 to-transparent rounded-full blur-3xl"></div>
-              
-              <div className="relative p-6 sm:p-8">
-                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-                  <div className="flex items-center gap-6">
-                    <div className={`w-24 h-24 rounded-2xl ${getScoreBg(evaluation.overallScore)} flex flex-col items-center justify-center border-2`}>
-                      <span className={`text-4xl font-bold ${getScoreColor(evaluation.overallScore)}`}>
-                        {evaluation.overallScore}
-                      </span>
-                      <span className="text-xs text-slate-400">/ 100</span>
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2 mb-2">
-                        <Award className="w-5 h-5 text-violet-400" />
-                        <span className="text-sm text-violet-400 font-medium uppercase tracking-wider">Overall Score</span>
-                      </div>
-                      <h2 className="text-2xl font-bold text-white mb-1">Business Evaluation</h2>
-                      <p className="text-slate-400 text-sm">
-                        Evaluated by {evaluation.source === 'AI' ? 'AI' : 'Heuristic System'} • {new Date(evaluation.createdAt).toLocaleDateString()}
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex gap-3">
-                    <Button
-                      onClick={handleCheckAI}
-                      disabled={checkingAI}
-                      variant="outline"
-                      className="text-white border-teal-500 bg-teal-500 hover:bg-white/10 hover:border-white/20 rounded-xl"
-                    >
-                      {checkingAI ? (
-                        <>
-                          <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                          Checking...
-                        </>
-                      ) : (
-                        <>
-                          <Brain className="w-4 h-4 mr-2" />
-                          Check AI
-                        </>
-                      )}
-                    </Button>
-                    <Button
-                      onClick={handleReEvaluate}
-                      disabled={reEvaluating}
-                      className="bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600 text-white shadow-lg rounded-xl"
-                    >
-                      {reEvaluating ? (
-                        <>
-                          <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                          Re-evaluating...
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="w-4 h-4 mr-2" />
-                          Re-evaluate
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-
-
-          {/* Business Information Card */}
-          <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border border-slate-200/60 dark:border-slate-700/60 rounded-2xl shadow-lg overflow-hidden">
-            <div className="p-6 border-b border-slate-200/60 dark:border-slate-700/60 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-teal-500/30">
-                  <Building2 className="w-5 h-5 text-white" />
-                </div>
+      <div className="min-h-screen bg-[#f4efe1] text-[#1a1a1a]">
+          <div className="mx-auto w-full max-w-[1280px] px-4 py-8 sm:px-6 lg:px-8">
+            <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+              <div className="flex items-start gap-4">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => router.push('/business/dashboard')}
+                  className="rounded-xl border border-primary/30 bg-primary/10 text-primary hover:bg-primary/15"
+                >
+                  <ArrowLeft className="h-5 w-5" />
+                </Button>
                 <div>
-                  <h3 className="font-bold text-slate-800 dark:text-white text-lg">Business Information</h3>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">Manage your business details</p>
+                  <h1 className="text-3xl font-extrabold tracking-tight text-[#1a1a1a]">{t('header_my_business')}</h1>
+                  <p className="mt-1 text-sm text-[#5c5140]">{t('header_manage_profile')}</p>
                 </div>
               </div>
-              
-              {isEditing ? (
-                <div className="flex gap-2">
-                  <Button
-                    variant="ghost"
-                    onClick={() => {
-                      setIsEditing(false);
-                      setEditForm({
-                        name: business.name,
-                        location: business.location || '',
-                        phone: business.phone || '',
-                        email: business.email || '',
-                        description: business.description || '',
-                        categoryId: business.categoryId,
-                        weekendDay: business.weekendDay || '',
-                      });
-                    }}
-                    className="rounded-xl"
-                  >
-                    <X className="w-4 h-4 mr-2" />
-                    Cancel
-                  </Button>
-                  <Button
-                    onClick={handleSave}
-                    disabled={saving}
-                    className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white rounded-xl"
-                  >
-                    {saving ? (
-                      <>
-                        <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                        Saving...
-                      </>
-                    ) : (
-                      <>
-                        <Save className="w-4 h-4 mr-2" />
-                        Save Changes
-                      </>
-                    )}
-                  </Button>
-                </div>
-              ) : (
-                <Button
-                  variant="outline"
-                  onClick={() => setIsEditing(true)}
-                  className="rounded-xl"
-                >
-                  <Edit3 className="w-4 h-4 mr-2" />
-                  Edit
-                </Button>
-              )}
-            </div>
-
-            <div className="p-6 space-y-6">
-              {/* Business Name */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="name">Business Name</Label>
-                  {evaluation && <InlineScore score={evaluation.nameProfessionalismScore} />}
-                </div>
-                {isEditing ? (
-                  <Input
-                    id="name"
-                    value={editForm.name || ''}
-                    onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
-                    className="rounded-xl"
-                    placeholder="Enter business name"
-                  />
-                ) : (
-                  <p className="text-slate-800 dark:text-white font-medium">{business.name}</p>
-                )}
-                {evaluation && (
-                  <InlineEvaluation
-                    details={evaluation.nameDetails}
-                    suggestions={evaluation.nameSuggestions}
-                  />
-                )}
-              </div>
-
-              {/* Description */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="description">Description</Label>
-                  {evaluation && <InlineScore score={evaluation.descriptionProfessionalismScore} />}
-                </div>
-                {isEditing ? (
-                  <Textarea
-                    id="description"
-                    value={editForm.description || ''}
-                    onChange={(e) => setEditForm(prev => ({ ...prev, description: e.target.value }))}
-                    className="rounded-xl min-h-[120px]"
-                    placeholder="Describe your business..."
-                  />
-                ) : (
-                  <p className="text-slate-600 dark:text-slate-400">{business.description || 'No description'}</p>
-                )}
-                {evaluation && (
-                  <InlineEvaluation
-                    details={evaluation.descriptionDetails}
-                    suggestions={evaluation.descriptionSuggestions}
-                  />
-                )}
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Email */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="email">Email</Label>
-                    {evaluation && <InlineScore score={evaluation.emailProfessionalismScore} />}
-                  </div>
-                  {isEditing ? (
-                    <Input
-                      id="email"
-                      type="email"
-                      value={editForm.email || ''}
-                      onChange={(e) => setEditForm(prev => ({ ...prev, email: e.target.value }))}
-                      className="rounded-xl"
-                      placeholder="business@example.com"
-                    />
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <Mail className="w-4 h-4 text-slate-400" />
-                      <p className="text-slate-600 dark:text-slate-400">{business.email || 'Not set'}</p>
-                    </div>
-                  )}
-                  {evaluation && (
-                    <InlineEvaluation
-                      details={evaluation.emailDetails}
-                      suggestions={evaluation.emailSuggestions}
-                    />
-                  )}
-                </div>
-
-                {/* Phone */}
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone</Label>
-                  {isEditing ? (
-                    <Input
-                      id="phone"
-                      value={editForm.phone || ''}
-                      onChange={(e) => setEditForm(prev => ({ ...prev, phone: e.target.value }))}
-                      className="rounded-xl"
-                      placeholder="+1 234 567 8900"
-                    />
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <Phone className="w-4 h-4 text-slate-400" />
-                      <p className="text-slate-600 dark:text-slate-400">{business.phone || 'Not set'}</p>
-                    </div>
-                  )}
-                </div>
-
-                {/* Location */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="location">Location</Label>
-                    {evaluation && <InlineScore score={evaluation.locationScore} />}
-                  </div>
-                  {isEditing ? (
-                    <Input
-                      id="location"
-                      value={editForm.location || ''}
-                      onChange={(e) => setEditForm(prev => ({ ...prev, location: e.target.value }))}
-                      className="rounded-xl"
-                      placeholder="City, Country"
-                    />
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <MapPin className="w-4 h-4 text-slate-400" />
-                      <p className="text-slate-600 dark:text-slate-400">{business.location || 'Not set'}</p>
-                    </div>
-                  )}
-                  {evaluation && (
-                    <InlineEvaluation
-                      details={evaluation.locationDetails}
-                      suggestions={null}
-                    />
-                  )}
-                </div>
-
-                {/* Category */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="category">Category</Label>
-                    {evaluation && <InlineScore score={evaluation.categoryScore} />}
-                  </div>
-                  {isEditing ? (
-                    <Select
-                      value={editForm.categoryId?.toString() || ''}
-                      onValueChange={(value) => setEditForm(prev => ({ ...prev, categoryId: Number.parseInt(value, 10) }))}
-                    >
-                      <SelectTrigger className="rounded-xl">
-                        <SelectValue placeholder="Select category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {categories.map((cat) => (
-                          <SelectItem key={cat.id} value={cat.id.toString()}>
-                            {cat.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <Building2 className="w-4 h-4 text-slate-400" />
-                      <p className="text-slate-600 dark:text-slate-400">{business.categoryName || 'Not set'}</p>
-                    </div>
-                  )}
-                  {evaluation && (
-                    <InlineEvaluation
-                      details={evaluation.categoryDetails}
-                      suggestions={null}
-                    />
-                  )}
-                </div>
-
-                {/* Weekend Day */}
-                <div className="space-y-2">
-                  <Label htmlFor="weekendDay">Weekend Day (Closed)</Label>
-                  {isEditing ? (
-                    <Select
-                      value={editForm.weekendDay || 'NONE'}
-                      onValueChange={(value) => setEditForm(prev => ({ ...prev, weekendDay: value === 'NONE' ? '' : value }))}
-                    >
-                      <SelectTrigger className="rounded-xl">
-                        <SelectValue placeholder="Select weekend day" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="NONE">None</SelectItem>
-                        <SelectItem value="MONDAY">Monday</SelectItem>
-                        <SelectItem value="TUESDAY">Tuesday</SelectItem>
-                        <SelectItem value="WEDNESDAY">Wednesday</SelectItem>
-                        <SelectItem value="THURSDAY">Thursday</SelectItem>
-                        <SelectItem value="FRIDAY">Friday</SelectItem>
-                        <SelectItem value="SATURDAY">Saturday</SelectItem>
-                        <SelectItem value="SUNDAY">Sunday</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-slate-400" />
-                      <p className="text-slate-600 dark:text-slate-400">
-                        {business.weekendDay ? business.weekendDay.charAt(0) + business.weekendDay.slice(1).toLowerCase() : 'Not set'}
-                      </p>
-                    </div>
-                  )}
-                </div>
+              <div className="flex flex-wrap items-center gap-3">
+                {getStatusBadge(business.status)}
+                <Badge className="border border-accent/40 bg-accent/15 text-accent px-4 py-1.5">
+                  <Sparkles className="mr-1.5 h-3.5 w-3.5" />
+                  {t('badge_business_owner')}
+                </Badge>
               </div>
             </div>
-          </div>
 
-          {/* Images Section with Branding Score */}
-          <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border border-slate-200/60 dark:border-slate-700/60 rounded-2xl shadow-lg overflow-hidden">
-            <div className="p-6 border-b border-slate-200/60 dark:border-slate-700/60">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center shadow-lg shadow-violet-500/30">
-                    <ImageIcon className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-slate-800 dark:text-white text-lg">Business Images & Branding</h3>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">Manage your business photos</p>
-                  </div>
-                </div>
-                {evaluation && <InlineScore score={evaluation.brandingScore} label="Branding" />}
-              </div>
-              {/* Image count info */}
-              <div className="mt-3 flex items-center gap-2 text-sm">
-                <Info className="w-4 h-4 text-violet-500" />
-                <span className="text-slate-600 dark:text-slate-400">
-                  {images.length > 0 
-                    ? `${images.length >= 3 ? '3+ images' : `${images.length} image${images.length > 1 ? 's' : ''}`} (${images.length} images). AI Overall: ${evaluation?.overallScore ?? 'N/A'}/100 — ${evaluation?.brandingDetails || 'Excellent profile with strong scores across all categories, particularly in branding and location.'}`
-                    : 'Add images to improve your branding score. 3+ images recommended (max 6).'}
-                </span>
-              </div>
-              {/* Branding Evaluation */}
-              {evaluation && evaluation.brandingSuggestions && (
-                <div className="mt-4">
-                  <InlineEvaluation
-                    details={null}
-                    suggestions={evaluation.brandingSuggestions}
-                  />
-                </div>
-              )}
-            </div>
-
-            <div className="p-6 space-y-6">
-              {/* Upload Section */}
-              <div className="flex flex-col sm:flex-row gap-3">
-                {/* File Upload Button */}
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileUpload}
-                  className="hidden"
+            <div className="col-span-12 lg:col-span-8 tactile-card overflow-hidden group relative rounded-[28px] mb-6 md:h-[500px] sm:h-[400px] h-[400px]">
+              <div className="absolute inset-0 z-0">
+                <img
+                  className="w-full h-full object-cover opacity-90 group-hover:scale-105 transition-transform duration-700"
+                  alt={`${business.name} cover`}
+                  src={business.firstImageUrl || 'https://lh3.googleusercontent.com/aida-public/AB6AXuDzp0cyJGT6cgbRp2U2ZlPupvjS6cv5-eZ_LFy6HusvSveY9LUK4atkEEzM2uX80pE6Y0HTvqfLQO3ZiQeTm-Mfz_ydb5yVcuy-c47uzOXze2geS48kTZi8gk61F_jz4nghrG2BUcvU6bcUPpxgM9dQdqFnZ6yq_Yz6vc_wYaPIaaH3e0SPhW9Udqwto_3G9-B7pD9xGhGkOs98YRBcezRd-3s81HSbSTSEu4AbF07L2pP_9MM1paa7IK7tLemboVnwThLMRlKpFC-N'}
                 />
-                <Button
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploadingImage || images.length >= 6}
-                  className="bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600 text-white rounded-xl shadow-lg"
-                >
-                  {uploadingImage ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Uploading...
-                    </>
-                  ) : (
-                    <>
-                      <Upload className="w-4 h-4 mr-2" />
-                      Upload Image
-                    </>
-                  )}
-                </Button>
-
-                {/* OR separator */}
-                <div className="flex items-center gap-2 text-sm text-slate-400">
-                  <span>or</span>
+                <div className={`absolute inset-0 ${isArabic ? 'bg-gradient-to-l from-black/80 via-black/40 to-transparent' : 'bg-gradient-to-r from-black/80 via-black/40 to-transparent'}`} />
+              </div>
+              <div className="relative z-10 p-12 h-full flex flex-col justify-between text-white">
+                <div>
+                  <span className="inline-block px-4 py-1.5 rounded-full bg-[#476500] text-white text-caption-bold font-caption-bold mb-4">{businessManageStatusT(locale, business.status)}</span>
+                  <h1 className="font-h1 text-h1 mb-2">{business.name}</h1>
+                  <div className="flex items-center gap-2 text-white/80">
+                    <span className="material-symbols-outlined text-lg" data-icon="location_on">{t('location_on')}</span>
+                    <span className="font-body-md text-body-md">{business.location || t('field_not_set')}</span>
+                  </div>
                 </div>
-
-                {/* URL Input */}
-                <div className="flex flex-1 gap-2">
-                  <Input
-                    value={newImageUrl}
-                    onChange={(e) => setNewImageUrl(e.target.value)}
-                    placeholder="Enter image URL..."
-                    className="flex-1 rounded-xl"
-                  />
-                  <Button
-                    onClick={handleAddImage}
-                    disabled={!newImageUrl.trim() || addingImage || images.length >= 6}
-                    variant="outline"
-                    className="rounded-xl"
+                <div className="flex items-center gap-4 mt-8">
+                  <button
+                    type="button"
+                    onClick={handleSubmitForActivation}
+                    disabled={saving || !canSubmitForReview}
+                    className="bg-white text-[#344b00] px-8 py-4 rounded-2xl font-bold flex items-center gap-3 hover:shadow-xl active:scale-95 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    {addingImage ? (
-                      <RefreshCw className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <>
-                        <Plus className="w-4 h-4 mr-2" />
-                        Add
-                      </>
-                    )}
-                  </Button>
+                    {/* <span className="material-symbols-outlined" data-icon="sensors">sensors</span> */}
+                    <span>{canSubmitForReview ? (isPendingReview ? t('cta_resubmit_btn') : t('cta_submit_btn')) : t('status_active')}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => router.push(`/business/${createBusinessSlug(business.name, business.id)}`)}
+                    className="bg-white/10 backdrop-blur-md border border-white/20 text-white px-8 py-4 rounded-2xl font-bold hover:bg-white/20 active:scale-95 transition-all"
+                  >
+                    {t('btn_view_public_page')}
+                  </button>
                 </div>
               </div>
+            </div>
 
-              {/* Drag hint */}
-              {images.length > 1 && (
-                <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-                  <GripVertical className="w-3.5 h-3.5" />
-                  Drag and drop to reorder. First image will be your primary photo.
-                </p>
-              )}
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+              <section className="space-y-6 lg:col-span-8">
+                {isPendingReview && (
+                  <div className="rounded-2xl border border-accent/40 bg-accent/15 px-4 py-3 text-sm text-accent">
+                    {t('pending_review_info')}
+                  </div>
+                )}
 
-              {/* Images Grid with Drag & Drop */}
-              {images.length > 0 ? (
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                  {images.map((img, index) => (
-                    <div
-                      key={img.id}
-                      draggable
-                      onDragStart={() => handleDragStart(index)}
-                      onDragOver={(e) => handleDragOver(e, index)}
-                      onDragLeave={handleDragLeave}
-                      onDrop={(e) => handleDrop(e, index)}
-                      onDragEnd={handleDragEnd}
-                      className={`relative group aspect-square rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 cursor-grab active:cursor-grabbing transition-all duration-200 ${
-                        draggedIndex === index ? 'opacity-50 scale-95' : ''
-                      } ${
-                        dragOverIndex === index && draggedIndex !== index
-                          ? 'ring-2 ring-violet-500 ring-offset-2 scale-105'
-                          : ''
-                      }`}
-                    >
-                      <img
-                        src={img.imageUrl}
-                        alt={`${business.name} gallery ${index + 1}`}
-                        className="w-full h-full object-cover pointer-events-none"
-                      />
-                      {/* Drag handle overlay */}
-                      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <div className="p-1.5 bg-black/50 backdrop-blur-sm rounded-lg">
-                          <GripVertical className="w-4 h-4 text-white" />
-                        </div>
+                <div className="rounded-[28px] border border-[#e6dcc1] bg-[#fdfbf6]/95 p-6 shadow-[0_16px_32px_rgba(34,26,5,0.08)]">
+                  <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.35)]">
+                        <Building2 className="h-5 w-5" />
                       </div>
-                      {/* Delete button overlay */}
-                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <div>
+                        <h3 className="text-lg font-bold text-[#1a1a1a]">{t('info_title')}</h3>
+                        <p className="text-sm text-[#5c5140]">{t('info_subtitle')}</p>
+                      </div>
+                    </div>
+
+                    {isEditing ? (
+                      <div className="flex gap-2">
                         <Button
-                          variant="destructive"
-                          size="icon"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setDeleteImageId(img.id);
+                          variant="outline"
+                          onClick={() => {
+                            setIsEditing(false);
+                            setEditForm({
+                              name: business.name,
+                              location: business.location || '',
+                              phone: business.phone || '',
+                              email: business.email || '',
+                              description: business.description || '',
+                              categoryId: business.categoryId,
+                              weekendDay: business.weekendDay || '',
+                            });
                           }}
-                          className="rounded-full"
+                          className="rounded-full border-[#d8cda8] text-[#4f4638]"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <X className="mr-2 h-4 w-4" />
+                          {t('btn_cancel')}
+                        </Button>
+                        <Button
+                          onClick={handleSave}
+                          disabled={saving}
+                          className="rounded-full bg-primary px-5 text-primary-foreground hover:bg-primary/90"
+                        >
+                          {saving ? (
+                            <>
+                              <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                              {t('btn_saving')}
+                            </>
+                          ) : (
+                            <>
+                              <Save className="mr-2 h-4 w-4" />
+                              {t('btn_save_changes')}
+                            </>
+                          )}
                         </Button>
                       </div>
-                      {/* Primary badge */}
-                      {index === 0 && (
-                        <Badge className="absolute top-2 left-2 bg-violet-500 text-white shadow-lg">Primary</Badge>
-                      )}
-                      {/* Order number */}
-                      {index > 0 && (
-                        <div className="absolute bottom-2 left-2 w-6 h-6 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center">
-                          <span className="text-xs font-medium text-white">{index + 1}</span>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        onClick={() => setIsEditing(true)}
+                        className="rounded-full border-[#d8cda8] bg-[#f8f2df] text-[#4f4638] hover:bg-[#efe5cb]"
+                      >
+                        <Edit3 className="mr-2 h-4 w-4" />
+                        {t('btn_edit')}
+                      </Button>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+                    <div className="space-y-6">
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor="name">{t('field_business_name')}</Label>
+                          {evaluation && <InlineScore score={evaluation.nameProfessionalismScore} />}
                         </div>
-                      )}
+                        {isEditing ? (
+                          <Input
+                            id="name"
+                            value={editForm.name || ''}
+                            onChange={(e) => setEditForm((prev) => ({ ...prev, name: e.target.value }))}
+                            className="rounded-xl border-[#ddd0ab] bg-[#fffdf8]"
+                            placeholder={t('field_business_name')}
+                          />
+                        ) : (
+                          <p className="text-base font-semibold text-[#1a1a1a]">{business.name}</p>
+                        )}
+                        {evaluation && (
+                          <InlineEvaluation
+                            details={evaluation.nameDetails}
+                            suggestions={evaluation.nameSuggestions}
+                          />
+                        )}
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor="description">{t('field_description')}</Label>
+                          {evaluation && <InlineScore score={evaluation.descriptionProfessionalismScore} />}
+                        </div>
+                        {isEditing ? (
+                          <Textarea
+                            id="description"
+                            value={editForm.description || ''}
+                            onChange={(e) => setEditForm((prev) => ({ ...prev, description: e.target.value }))}
+                            className="min-h-[120px] rounded-xl border-[#ddd0ab] bg-[#fffdf8]"
+                            placeholder={t('placeholder_description')}
+                          />
+                        ) : (
+                          <p className="text-sm leading-relaxed text-[#4f4638]">{business.description || t('field_no_description')}</p>
+                        )}
+                        {evaluation && (
+                          <InlineEvaluation
+                            details={evaluation.descriptionDetails}
+                            suggestions={evaluation.descriptionSuggestions}
+                          />
+                        )}
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor="category">{t('field_category')}</Label>
+                          {evaluation && <InlineScore score={evaluation.categoryScore} />}
+                        </div>
+                        {isEditing ? (
+                          <Select
+                            value={editForm.categoryId?.toString() || ''}
+                            onValueChange={(value) => setEditForm((prev) => ({ ...prev, categoryId: Number.parseInt(value, 10) }))}
+                          >
+                            <SelectTrigger className="rounded-xl border-[#ddd0ab] bg-[#fffdf8]">
+                              <SelectValue placeholder={t('field_select_category')} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {categories.map((cat) => (
+                                <SelectItem key={cat.id} value={cat.id.toString()}>
+                                  {cat.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <Badge className="border border-[#d9cfb4] bg-[#f8f4e8] text-[#4d4637]">{business.categoryName || t('field_not_set')}</Badge>
+                        )}
+                        {evaluation && (
+                          <InlineEvaluation
+                            details={evaluation.categoryDetails}
+                            suggestions={null}
+                          />
+                        )}
+                      </div>
                     </div>
-                  ))}
+
+                    <div className="rounded-2xl border border-[#e6dcc1] bg-[#faf5e8] p-5">
+                      <div className="space-y-6">
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <Label htmlFor="phone">{t('field_phone')}</Label>
+                          </div>
+                          {isEditing ? (
+                            <Input
+                              id="phone"
+                              value={editForm.phone || ''}
+                              onChange={(e) => setEditForm((prev) => ({ ...prev, phone: e.target.value }))}
+                              className="rounded-xl border-[#ddd0ab] bg-[#fffdf8]"
+                              placeholder={t('placeholder_phone')}
+                            />
+                          ) : (
+                            <div className="flex items-center gap-2 text-[#4f4638]">
+                              <Phone className="h-4 w-4 text-[#7b6b4a]" />
+                              <p className="text-sm">{business.phone || t('field_not_set')}</p>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <Label htmlFor="email">{t('field_email')}</Label>
+                            {evaluation && <InlineScore score={evaluation.emailProfessionalismScore} />}
+                          </div>
+                          {isEditing ? (
+                            <Input
+                              id="email"
+                              type="email"
+                              value={editForm.email || ''}
+                              onChange={(e) => setEditForm((prev) => ({ ...prev, email: e.target.value }))}
+                              className="rounded-xl border-[#ddd0ab] bg-[#fffdf8]"
+                              placeholder={t('placeholder_email')}
+                            />
+                          ) : (
+                            <div className="flex items-center gap-2 text-[#4f4638]">
+                              <Mail className="h-4 w-4 text-[#7b6b4a]" />
+                              <p className="text-sm">{business.email || t('field_not_set')}</p>
+                            </div>
+                          )}
+                          {evaluation && (
+                            <InlineEvaluation
+                              details={evaluation.emailDetails}
+                              suggestions={evaluation.emailSuggestions}
+                            />
+                          )}
+                        </div>
+
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <Label htmlFor="location">{t('field_location')}</Label>
+                            {evaluation && <InlineScore score={evaluation.locationScore} />}
+                          </div>
+                          {isEditing ? (
+                            <Input
+                              id="location"
+                              value={editForm.location || ''}
+                              onChange={(e) => setEditForm((prev) => ({ ...prev, location: e.target.value }))}
+                              className="rounded-xl border-[#ddd0ab] bg-[#fffdf8]"
+                              placeholder={t('placeholder_location')}
+                            />
+                          ) : (
+                            <div className="flex items-center gap-2 text-[#4f4638]">
+                              <MapPin className="h-4 w-4 text-[#7b6b4a]" />
+                              <p className="text-sm">{business.location || t('field_not_set')}</p>
+                            </div>
+                          )}
+                          {evaluation && (
+                            <InlineEvaluation
+                              details={evaluation.locationDetails}
+                              suggestions={null}
+                            />
+                          )}
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="weekendDay">{t('field_weekend_day_closed')}</Label>
+                          {isEditing ? (
+                            <Select
+                              value={editForm.weekendDay || 'NONE'}
+                              onValueChange={(value) => setEditForm((prev) => ({ ...prev, weekendDay: value === 'NONE' ? '' : value }))}
+                            >
+                              <SelectTrigger className="rounded-xl border-[#ddd0ab] bg-[#fffdf8]">
+                                <SelectValue placeholder={t('field_select_weekend_day')} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="NONE">{t('weekday_none')}</SelectItem>
+                                <SelectItem value="MONDAY">{t('weekday_monday')}</SelectItem>
+                                <SelectItem value="TUESDAY">{t('weekday_tuesday')}</SelectItem>
+                                <SelectItem value="WEDNESDAY">{t('weekday_wednesday')}</SelectItem>
+                                <SelectItem value="THURSDAY">{t('weekday_thursday')}</SelectItem>
+                                <SelectItem value="FRIDAY">{t('weekday_friday')}</SelectItem>
+                                <SelectItem value="SATURDAY">{t('weekday_saturday')}</SelectItem>
+                                <SelectItem value="SUNDAY">{t('weekday_sunday')}</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <div className="flex items-center gap-2 text-[#4f4638]">
+                              <Calendar className="h-4 w-4 text-[#7b6b4a]" />
+                              <p className="text-sm">{businessManageWeekdayT(locale, business.weekendDay)}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              ) : (
-                <div 
-                  className="text-center py-12 bg-slate-50 dark:bg-slate-800/50 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 cursor-pointer hover:border-violet-400 hover:bg-violet-50/50 dark:hover:bg-violet-900/20 transition-colors"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <Upload className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
-                  <p className="text-slate-600 dark:text-slate-400 font-medium">Click to upload your first image</p>
-                  <p className="text-sm text-slate-400 dark:text-slate-500 mt-1">PNG, JPG up to 5MB</p>
+
+                <div className="rounded-[28px] border border-[#e6dcc1] bg-[#fdfbf6]/95 p-6 shadow-[0_16px_32px_rgba(34,26,5,0.08)]">
+                  <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-accent/30 text-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.35)]">
+                        <ImageIcon className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-bold text-[#1a1a1a]">{t('images_title')}</h3>
+                        <p className="text-sm text-[#5c5140]">{t('images_subtitle')}</p>
+                      </div>
+                    </div>
+                    {evaluation && <InlineScore score={evaluation.brandingScore} label={t('images_branding_label')} />}
+                  </div>
+
+                  <div className="mb-4 flex items-center gap-2 text-sm text-[#5c5140]">
+                    <Info className="h-4 w-4 text-primary" />
+                    <span>{imagesSummaryText}</span>
+                  </div>
+
+                  {evaluation?.brandingSuggestions && (
+                    <div className="mb-4">
+                      <InlineEvaluation details={null} suggestions={evaluation.brandingSuggestions} />
+                    </div>
+                  )}
+
+                  <div className="space-y-6">
+                    <div className="flex flex-col gap-3 sm:flex-row">
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileUpload}
+                        className="hidden"
+                      />
+                      <Button
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={uploadingImage || images.length >= 6}
+                        className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90"
+                      >
+                        {uploadingImage ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            {t('images_uploading')}
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="mr-2 h-4 w-4" />
+                            {t('images_upload')}
+                          </>
+                        )}
+                      </Button>
+
+                      <div className="flex items-center text-sm text-[#8a7b5d]">
+                        <span>{t('images_or')}</span>
+                      </div>
+
+                      <div className="flex flex-1 gap-2">
+                        <Input
+                          value={newImageUrl}
+                          onChange={(e) => setNewImageUrl(e.target.value)}
+                          placeholder={t('images_url_placeholder')}
+                          className="flex-1 rounded-xl border-[#ddd0ab] bg-[#fffdf8]"
+                        />
+                        <Button
+                          onClick={handleAddImage}
+                          disabled={!newImageUrl.trim() || addingImage || images.length >= 6}
+                          variant="outline"
+                          className="rounded-full border-[#d8cda8] text-[#4f4638]"
+                        >
+                          {addingImage ? (
+                            <RefreshCw className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <>
+                              <Plus className="mr-2 h-4 w-4" />
+                              {t('images_add')}
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+
+                    {images.length > 1 && (
+                      <p className="flex items-center gap-1.5 text-xs text-[#6b604b]">
+                        <GripVertical className="h-3.5 w-3.5" />
+                        {t('images_drag_hint')}
+                      </p>
+                    )}
+
+                    {images.length > 0 ? (
+                      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+                        {images.map((img, index) => (
+                          <div
+                            key={img.id}
+                            draggable
+                            onDragStart={() => handleDragStart(index)}
+                            onDragOver={(e) => handleDragOver(e, index)}
+                            onDragLeave={handleDragLeave}
+                            onDrop={(e) => handleDrop(e, index)}
+                            onDragEnd={handleDragEnd}
+                            className={`group relative aspect-square cursor-grab overflow-hidden rounded-2xl border border-[#dfd3b1] bg-[#f8f2df] transition-all duration-200 active:cursor-grabbing ${
+                              draggedIndex === index ? 'scale-95 opacity-50' : ''
+                            } ${
+                              dragOverIndex === index && draggedIndex !== index
+                                ? 'ring-2 ring-primary ring-offset-2 ring-offset-[#f4efe1] scale-105'
+                                : ''
+                            }`}
+                          >
+                            <img
+                              src={img.imageUrl}
+                              alt={`${business.name} gallery ${index + 1}`}
+                              className="h-full w-full object-cover pointer-events-none"
+                            />
+
+                            <div className="absolute right-2 top-2 opacity-0 transition-opacity group-hover:opacity-100">
+                              <div className="rounded-lg bg-black/45 p-1.5 backdrop-blur-sm">
+                                <GripVertical className="h-4 w-4 text-white" />
+                              </div>
+                            </div>
+
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/45 opacity-0 transition-opacity group-hover:opacity-100">
+                              <Button
+                                variant="destructive"
+                                size="icon"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setDeleteImageId(img.id);
+                                }}
+                                className="rounded-full"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+
+                            {index === 0 && (
+                              <Badge className="absolute left-2 top-2 bg-primary text-primary-foreground shadow-lg">{t('images_primary')}</Badge>
+                            )}
+
+                            {index > 0 && (
+                              <div className="absolute bottom-2 left-2 flex h-6 w-6 items-center justify-center rounded-full bg-black/45 backdrop-blur-sm">
+                                <span className="text-xs font-medium text-white">{index + 1}</span>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        className="rounded-2xl border-2 border-dashed border-[#d8cda8] bg-[#fbf6e8] py-12 text-center transition-colors hover:border-primary hover:bg-[#f4ecd4]"
+                        onClick={() => fileInputRef.current?.click()}
+                      >
+                        <Upload className="mx-auto mb-3 h-12 w-12 text-[#c0b28d]" />
+                        <p className="font-medium text-[#4f4638]">{t('images_click_upload')}</p>
+                        <p className="mt-1 text-sm text-[#7d7157]">{t('images_format_hint')}</p>
+                      </button>
+                    )}
+                  </div>
                 </div>
-              )}
+              </section>
+
+              <aside className="space-y-6 lg:col-span-4">
+                <div className="relative overflow-hidden rounded-[28px] border border-primary/40 bg-primary p-7 text-center text-primary-foreground shadow-[0_18px_36px_rgba(46,58,7,0.35)]">
+                  <div className="absolute -right-12 -top-12 h-32 w-32 rounded-full bg-white/15 blur-3xl" />
+                  <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full border border-white/35 bg-white/15">
+                    <TrendingUp className="h-8 w-8" />
+                  </div>
+                  <h3 className="mb-2 text-3xl font-extrabold tracking-tight">
+                    {isPendingReview ? t('cta_resubmit_title') : t('cta_submit_title')}
+                  </h3>
+                  <p className="mx-auto mb-6 max-w-sm text-sm leading-relaxed text-primary-foreground/85">
+                    {t('cta_current_status', { status: businessManageStatusT(locale, business.status) })}
+                  </p>
+                  <Button
+                    onClick={handleSubmitForActivation}
+                    disabled={saving || !canSubmitForReview}
+                    className="h-12 w-full rounded-2xl border border-accent/50 bg-accent text-base font-bold text-accent-foreground hover:bg-accent/90"
+                  >
+                    {saving ? (
+                      <>
+                        <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                        {t('cta_submitting')}
+                      </>
+                    ) : canSubmitForReview ? (
+                      <>{isPendingReview ? t('cta_resubmit_btn') : t('cta_submit_btn')}</>
+                    ) : (
+                      <>{t('status_active')}</>
+                    )}
+                  </Button>
+                  <p className="mt-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#e2d7b5]">
+                    {t('cta_submit_desc_line2')}
+                  </p>
+                </div>
+
+                {evaluation && (
+                  <div className="rounded-[28px] border border-[#e6dcc1] bg-[#fdfbf6]/95 p-6 shadow-[0_12px_26px_rgba(34,26,5,0.08)]">
+                    <div className="mb-4 flex items-center justify-between">
+                      <span className="rounded bg-primary/10 px-2 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-primary">
+                        {t('score_overall_label')}
+                      </span>
+                      <Award className="h-5 w-5 text-primary" />
+                    </div>
+
+                    <div className="mb-4 flex items-end gap-2">
+                      <span className={`text-5xl font-black leading-none ${getScoreColor(scoreValue)}`}>{scoreValue}</span>
+                      <span className="pb-1 text-xl font-bold text-[#8c7f63]">/100</span>
+                    </div>
+
+                    <div className="mb-6 h-2 w-full overflow-hidden rounded-full bg-[#ebe2c8]">
+                      <div className="h-full rounded-full bg-primary" style={{ width: `${scoreProgress}%` }} />
+                    </div>
+
+                    <ul className="space-y-3 text-xs font-semibold text-[#4f4638]">
+                      <li className="flex items-center gap-2">
+                        {hasContactInfo ? <CheckCircle className="h-4 w-4 text-primary" /> : <Info className="h-4 w-4 text-accent" />}
+                        <span>{t('field_email')} + {t('field_phone')}</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        {hasBrandingAssets ? <CheckCircle className="h-4 w-4 text-primary" /> : <Info className="h-4 w-4 text-accent" />}
+                        <span>{t('images_title')}</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        {hasCoreProfile ? <CheckCircle className="h-4 w-4 text-primary" /> : <Info className="h-4 w-4 text-accent" />}
+                        <span>{t('field_business_name')} + {t('field_description')}</span>
+                      </li>
+                    </ul>
+
+                    <div className="mt-6 flex gap-2">
+                      <Button
+                        onClick={handleCheckAI}
+                        disabled={checkingAI}
+                        variant="outline"
+                        className="flex-1 rounded-full border-[#d8cda8] text-[#4f4638]"
+                      >
+                        {checkingAI ? (
+                          <>
+                            <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                            {t('btn_checking_ai')}
+                          </>
+                        ) : (
+                          <>
+                            <Brain className="mr-2 h-4 w-4" />
+                            {t('btn_check_ai')}
+                          </>
+                        )}
+                      </Button>
+                      <Button
+                        onClick={handleReEvaluate}
+                        disabled={reEvaluating}
+                        className="flex-1 rounded-full bg-accent text-accent-foreground hover:bg-accent/90"
+                      >
+                        {reEvaluating ? (
+                          <>
+                            <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                            {t('btn_reevaluating')}
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="mr-2 h-4 w-4" />
+                            {t('btn_reevaluate')}
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {aiHealthy !== null && (
+                  <div className={`rounded-[24px] border p-4 text-sm ${aiHealthy ? 'border-primary/30 bg-primary/10 text-primary' : 'border-accent/40 bg-accent/15 text-accent'}`}>
+                    <div className="flex items-center gap-2 font-semibold">
+                      <Brain className="h-4 w-4" />
+                      <span>{t('ai_evaluation_label')}</span>
+                    </div>
+                    <p className="mt-1">{aiHealthy ? t('ai_available') : t('ai_limited')}</p>
+                  </div>
+                )}
+
+                {(evaluation?.brandingSuggestions || evaluation?.brandingDetails) && (
+                  <div className="rounded-[24px] border border-[#e5d7bd] bg-[#f8f1e3] p-5">
+                    <div className="mb-1 flex items-center gap-2">
+                      <Lightbulb className="h-5 w-5 text-accent" />
+                      <p className="text-sm font-bold text-[#3f372a]">AI Insight</p>
+                    </div>
+                    <p className="text-sm leading-relaxed text-[#5b5040]">
+                      {evaluation.brandingSuggestions || evaluation.brandingDetails}
+                    </p>
+                  </div>
+                )}
+              </aside>
             </div>
           </div>
-
         </div>
-      </div>
 
-      {/* Delete Image Confirmation */}
-      <AlertDialog open={deleteImageId !== null} onOpenChange={() => setDeleteImageId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Image?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete this image? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteImage} className="bg-red-500 hover:bg-red-600">
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </Layout>
-  );
+        {/* Delete Image Confirmation */}
+        <AlertDialog open={deleteImageId !== null} onOpenChange={() => setDeleteImageId(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{t('dialog_delete_image_title')}</AlertDialogTitle>
+              <AlertDialogDescription>
+                {t('dialog_delete_image_desc')}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>{t('btn_cancel')}</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDeleteImage} className="bg-red-500 hover:bg-red-600">
+                {t('dialog_delete')}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </Layout>
+    );
 }
 
 // Inline Score Badge Component - Shows score next to field label
 function InlineScore({ 
   score, 
   label 
-}: { 
+}: Readonly<{ 
   score: number; 
   label?: string;
-}) {
+}>) {
   const getScoreColor = (s: number) => {
-    if (s >= 80) return 'text-emerald-600 dark:text-emerald-400';
-    if (s >= 60) return 'text-amber-600 dark:text-amber-400';
-    return 'text-rose-600 dark:text-rose-400';
+    if (s >= 80) return 'text-primary';
+    if (s >= 60) return 'text-accent';
+    return 'text-destructive';
   };
 
   const getScoreBg = (s: number) => {
-    if (s >= 80) return 'bg-emerald-50 dark:bg-emerald-950/50 border-emerald-200 dark:border-emerald-800/50';
-    if (s >= 60) return 'bg-amber-50 dark:bg-amber-950/50 border-amber-200 dark:border-amber-800/50';
-    return 'bg-rose-50 dark:bg-rose-950/50 border-rose-200 dark:border-rose-800/50';
+    if (s >= 80) return 'bg-primary/10 border-primary/30';
+    if (s >= 60) return 'bg-accent/15 border-accent/40';
+    return 'bg-destructive/10 border-destructive/30';
   };
 
   return (
     <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border ${getScoreBg(score)}`}>
-      {label && <span className="text-xs text-slate-500 dark:text-slate-400">{label}:</span>}
+      {label && <span className="text-xs text-[#6b604b]">{label}:</span>}
       <span className={`text-sm font-bold ${getScoreColor(score)}`}>{score}</span>
-      <span className="text-xs text-slate-400">/100</span>
+      <span className="text-xs text-[#8c7f63]">/100</span>
     </div>
   );
 }
@@ -1336,27 +1378,27 @@ function InlineScore({
 function InlineEvaluation({ 
   details, 
   suggestions 
-}: { 
+}: Readonly<{ 
   details?: string | null; 
   suggestions?: string | null;
-}) {
+}>) {
   if (!details && !suggestions) return null;
 
   return (
     <div className="mt-2 space-y-2">
       {/* Details */}
       {details && (
-        <div className="flex items-start gap-2 text-sm p-2.5 bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200/60 dark:border-indigo-800/50 rounded-lg">
-          <Info className="w-4 h-4 text-indigo-500 mt-0.5 shrink-0" />
-          <p className="text-indigo-700 dark:text-indigo-200">{details}</p>
+        <div className="flex items-start gap-2 rounded-lg border border-[#e3d2ad] bg-[#f4ecd6] p-2.5 text-sm">
+          <Info className="mt-0.5 h-4 w-4 shrink-0 text-[#7b6b4a]" />
+          <p className="text-[#4f4638]">{details}</p>
         </div>
       )}
       
       {/* Suggestions */}
       {suggestions && (
-        <div className="flex items-start gap-2 p-2.5 bg-fuchsia-50 dark:bg-fuchsia-950/40 border border-fuchsia-200/60 dark:border-fuchsia-800/50 rounded-lg">
-          <Lightbulb className="w-4 h-4 text-fuchsia-500 mt-0.5 shrink-0" />
-          <p className="text-sm text-fuchsia-700 dark:text-fuchsia-200">{suggestions}</p>
+        <div className="flex items-start gap-2 rounded-lg border border-accent/40 bg-accent/15 p-2.5">
+          <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
+          <p className="text-sm text-[#5b4a25]">{suggestions}</p>
         </div>
       )}
     </div>

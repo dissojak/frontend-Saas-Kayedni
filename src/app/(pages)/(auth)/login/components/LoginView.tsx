@@ -9,6 +9,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { withCategoryQuery } from "@global/lib/slices";
+import { useLocale } from "@global/hooks/useLocale";
+import { authT } from "@/(pages)/(auth)/i18n";
 
 export default function LoginView({
   email,
@@ -21,9 +23,12 @@ export default function LoginView({
   error,
   onSubmit,
 }: Readonly<LoginViewProps>) {
+  const { locale } = useLocale();
+  const tr = (key: Parameters<typeof authT>[1]) => authT(locale, key);
   const searchParams = useSearchParams();
   const categoryParam = searchParams.get("category");
   const registerHref = categoryParam ? withCategoryQuery("/register", categoryParam) : "/register";
+  const forgotHref = categoryParam ? withCategoryQuery("/forgot-password", categoryParam) : "/forgot-password";
 
   return (
     <div className="text-slate-100 ">
@@ -46,28 +51,28 @@ export default function LoginView({
                   <Image src="/assets/KayedniLogo.png" alt="kayedni Logo" width={28} height={28} />
                 </div>
                 <div>
-                  <p className="text-xs uppercase tracking-[0.2em] text-white/60">kayedni OS</p>
-                  <h1 className="text-2xl font-semibold">Scheduling that feels smooth</h1>
+                  <p className="text-xs uppercase tracking-[0.2em] text-white/60">{tr("auth_brand_os")}</p>
+                  <h1 className="text-2xl font-semibold">{tr("auth_hero_title")}</h1>
                 </div>
               </div>
 
               <div className="space-y-4 max-w-lg">
-                <p className="text-4xl sm:text-5xl font-bold leading-tight">Welcome back.</p>
+                <p className="text-4xl sm:text-5xl font-bold leading-tight">{tr("login_welcome_back")}</p>
                 <p className="text-sm text-white/80">
-                  Keep bookings, clients, and staff in sync. Fast, focused, and ready for your next busy day.
+                  {tr("login_hero_desc")}
                 </p>
                 <div className="flex flex-wrap gap-2 text-xs text-white/80">
-                  <span className="rounded-full bg-white/10 px-3 py-1">Live updates</span>
-                  <span className="rounded-full bg-white/10 px-3 py-1">Role-based control</span>
-                  <span className="rounded-full bg-white/10 px-3 py-1">Secure by design</span>
+                  <span className="rounded-full bg-white/10 px-3 py-1">{tr("login_live_updates")}</span>
+                  <span className="rounded-full bg-white/10 px-3 py-1">{tr("login_role_control")}</span>
+                  <span className="rounded-full bg-white/10 px-3 py-1">{tr("login_secure_design")}</span>
                 </div>
               </div>
 
               <div className="flex items-center gap-3 text-xs text-white/75">
                 <div className="h-10 w-10 rounded-full bg-white/10 backdrop-blur flex items-center justify-center">★</div>
                 <div>
-                  <p className="font-semibold">Trusted by busy teams</p>
-                  <p className="text-white/60">Optimized for mobile and desktop, day or night.</p>
+                  <p className="font-semibold">{tr("auth_trusted_title")}</p>
+                  <p className="text-white/60">{tr("auth_trusted_desc")}</p>
                 </div>
               </div>
             </div>
@@ -78,15 +83,15 @@ export default function LoginView({
             <div className="h-full p-8 sm:p-10 flex flex-col justify-center">
               <div className="mb-8 flex items-center justify-between gap-4">
                 <div>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">Sign in</p>
-                  <h2 className="text-2xl font-semibold">Welcome to kayedni</h2>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">{tr("login_sign_in")}</p>
+                  <h2 className="text-2xl font-semibold">{tr("login_welcome_title")}</h2>
                 </div>
                 <Link
                   href={registerHref}
                   className="hidden sm:inline-flex items-center gap-2 rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:border-slate-300 dark:border-slate-800 dark:text-slate-100 dark:hover:border-slate-700"
                 >
-                  New here?{" "}
-                  <span className="text-[var(--color-primary)]">Create account</span>
+                  {tr("login_new_here")} {" "}
+                  <span className="text-[var(--color-primary)]">{tr("common_create_account")}</span>
                 </Link>
               </div>
 
@@ -104,13 +109,13 @@ export default function LoginView({
                 className="space-y-5"
               >
                 <div className="space-y-2">
-                  <Label htmlFor="email" className="text-sm font-medium">Email</Label>
+                  <Label htmlFor="email" className="text-sm font-medium">{tr("login_email")}</Label>
                   <Input
                     id="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     type="email"
-                    placeholder="you@kayedni.com"
+                    placeholder={tr("login_email_placeholder")}
                     required
                     className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-slate-900 shadow-sm transition focus:border-[var(--color-primary)] focus-visible:ring-[var(--color-primary)] dark:border-slate-800 dark:bg-slate-900 dark:text-white"
                   />
@@ -118,9 +123,9 @@ export default function LoginView({
 
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="password" className="text-sm font-medium">Password</Label>
+                    <Label htmlFor="password" className="text-sm font-medium">{tr("login_password")}</Label>
                     <Link 
-                      href="/forgot-password" 
+                      href={forgotHref}
                       className="text-sm text-[var(--color-primary)] hover:underline"
                       onClick={() => {
                         if (email) {
@@ -128,7 +133,7 @@ export default function LoginView({
                         }
                       }}
                     >
-                      Forgot?
+                      {tr("login_forgot")}
                     </Link>
                   </div>
                   <Input
@@ -145,20 +150,20 @@ export default function LoginView({
                 <input type="hidden" name="role" value={role} />
 
                 <div className="flex flex-wrap items-center gap-3 text-sm text-slate-600 dark:text-slate-300">
-                  <span className="font-medium text-slate-800 dark:text-white">Sign in as</span>
+                  <span className="font-medium text-slate-800 dark:text-white">{tr("login_sign_in_as")}</span>
                   <button
                     type="button"
                     onClick={() => setRole("CLIENT")}
                     className={`rounded-full border px-3 py-1 transition ${role === "CLIENT" ? "border-[var(--color-primary)] bg-[var(--color-primary)]/10 text-[var(--color-primary)]" : "border-slate-200 text-slate-600 hover:border-slate-300 dark:border-slate-800 dark:text-slate-300 dark:hover:border-slate-700"}`}
                   >
-                    Client
+                    {tr("login_role_client")}
                   </button>
                   <button
                     type="button"
                     onClick={() => setRole("BUSINESS_OWNER")}
                     className={`rounded-full border px-3 py-1 transition ${role === "BUSINESS_OWNER" ? "border-[var(--color-primary)] bg-[var(--color-primary)]/10 text-[var(--color-primary)]" : "border-slate-200 text-slate-600 hover:border-slate-300 dark:border-slate-800 dark:text-slate-300 dark:hover:border-slate-700"}`}
                   >
-                    Business
+                    {tr("login_role_business")}
                   </button>
                 </div>
 
@@ -167,19 +172,19 @@ export default function LoginView({
                   disabled={loading}
                   className="w-full h-12 rounded-full bg-[var(--color-primary)] text-white font-semibold shadow-lg shadow-[var(--color-primary)]/30 transition hover:-translate-y-0.5 hover:shadow-xl hover:shadow-[var(--color-primary)]/35 disabled:opacity-70"
                 >
-                  {loading ? "Signing in..." : "Sign in"}
+                  {loading ? tr("login_submitting") : tr("login_submit")}
                 </Button>
               </form>
 
               <div className="mt-8 flex flex-col gap-3 text-sm text-slate-500 dark:text-slate-400">
                 <div className="flex items-center gap-2">
                   <span className="h-1.5 w-8 rounded-full bg-[var(--color-primary)]/70" aria-hidden />{" "}
-                  Quick, responsive, and secure for every role.
+                  {tr("login_quick_secure")}
                 </div>
                 <div className="text-center">
-                  Don't have an account? {" "}
+                  {tr("login_no_account")} {" "}
                   <Link href={registerHref} className="font-semibold text-[var(--color-primary)] hover:underline">
-                    Create account
+                    {tr("common_create_account")}
                   </Link>
                 </div>
               </div>

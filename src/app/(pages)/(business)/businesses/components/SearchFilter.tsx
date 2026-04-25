@@ -2,6 +2,8 @@
 import React from "react";
 import { Input } from "@components/ui/input";
 import { Button } from "@components/ui/button";
+import { useLocale } from "@global/hooks/useLocale";
+import { businessesT } from "../i18n";
 
 const SearchFilter: React.FC<{
   searchTerm: string;
@@ -10,12 +12,19 @@ const SearchFilter: React.FC<{
   selectedCategory: string;
   onCategoryChange: (c: string) => void;
 }> = ({ searchTerm, onSearchChange, categories, selectedCategory, onCategoryChange }) => {
+  const { locale } = useLocale();
+
   return (
     <div className="mb-8">
       <div className="flex flex-col md:flex-row gap-4 mb-6">
-        <Input placeholder="Search businesses..." className="md:w-96" value={searchTerm} onChange={(e) => onSearchChange(e.target.value)} />
+        <Input
+          placeholder={businessesT(locale, "search_businesses_placeholder")}
+          className="md:w-96"
+          value={searchTerm}
+          onChange={(e) => onSearchChange(e.target.value)}
+        />
         <Button variant="outline" className="md:w-auto">
-          Advanced Filters
+          {businessesT(locale, "advanced_filters")}
         </Button>
       </div>
 
@@ -28,7 +37,7 @@ const SearchFilter: React.FC<{
             }`}
             onClick={() => onCategoryChange(category)}
           >
-            {category}
+            {category === "All" ? businessesT(locale, "category_all") : category}
           </button>
         ))}
       </div>

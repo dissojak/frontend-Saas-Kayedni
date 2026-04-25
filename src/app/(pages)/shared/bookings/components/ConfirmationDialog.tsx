@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
+import { useLocale } from '@global/hooks/useLocale';
 import {
   AlertDialog,
   AlertDialogContent,
@@ -8,15 +9,36 @@ import {
   AlertDialogDescription,
 } from '@components/ui/alert-dialog';
 import { Button } from '@components/ui/button';
-import { Input } from '@components/ui/input';
 import { Textarea } from '@components/ui/textarea';
-import { AlertTriangle, Ban, Plus, Trash2, X } from 'lucide-react';
+import { AlertTriangle, Ban, Plus, Trash2 } from 'lucide-react';
 import type { ConfirmationDialogProps } from '../types/ConfirmationDialogProps';
 import {
   addCancellationReason,
   deleteCancellationReason,
   getCancellationReasons,
 } from '@/(pages)/(business)/actions/backend';
+import type { LocaleCode } from '@global/lib/locales';
+import { businessBookingsT } from '@/(pages)/(business)/business/bookings/i18n';
+
+function getDialogTitle(locale: LocaleCode, isNoShow: boolean, isReject: boolean): string {
+  if (isNoShow) {
+    return businessBookingsT(locale, 'dialog_mark_no_show');
+  }
+
+  if (isReject) {
+    return businessBookingsT(locale, 'dialog_reject_booking');
+  }
+
+  return businessBookingsT(locale, 'dialog_cancel_booking');
+}
+
+function getCancelActionLabel(locale: LocaleCode, isReject: boolean): string {
+  if (isReject) {
+    return businessBookingsT(locale, 'action_reject').toLowerCase();
+  }
+
+  return businessBookingsT(locale, 'action_cancel').toLowerCase();
+}
 
 export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
   dialogState,
@@ -25,9 +47,11 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
   businessId,
   authToken,
 }) => {
+  const { locale } = useLocale();
   const isNoShow = dialogState.type === 'no_show';
   const isReject = !isNoShow && dialogState.bookingStatus?.toUpperCase() === 'PENDING';
   const isCancelAction = !isNoShow;
+  const dialogTitle = getDialogTitle(locale, isNoShow, isReject);
 
   const [reason, setReason] = useState('');
   const [presets, setPresets] = useState<{ id: number; reason: string }[]>([]);
@@ -36,7 +60,7 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
   const [manageSelectedId, setManageSelectedId] = useState('');
   const [manageText, setManageText] = useState('');
 
-  const loadPresets = async () => {
+  const loadPresets = useCallback(async () => {
     if (!isCancelAction || !businessId) return;
     try {
       const result = await getCancellationReasons(businessId, authToken);
@@ -44,7 +68,7 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
     } catch {
       setPresets([]);
     }
-  };
+  }, [isCancelAction, businessId, authToken]);
 
   useEffect(() => {
     if (dialogState.open) {
@@ -58,7 +82,7 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
       setManageSelectedId('');
       setManageText('');
     }
-  }, [dialogState.open, isCancelAction, businessId, authToken]);
+  }, [dialogState.open, loadPresets]);
 
   const openManageView = () => {
     setIsManageView(true);
@@ -142,27 +166,29 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
                 )}
               </div>
               <AlertDialogTitle className="text-xl font-bold text-foreground">
-                {isNoShow ? 'Mark as No-Show?' : isReject ? 'Reject Booking?' : 'Cancel Booking?'}
+                {dialogTitle}
               </AlertDialogTitle>
             </div>
             <AlertDialogDescription className="text-muted-foreground text-base leading-relaxed">
               {isCancelAction ? (
                 <>
-                  Are you sure you want to {isReject ? 'reject' : 'cancel'} the booking for{' '}
-                  <span className="font-semibold text-foreground">{dialogState.clientName}</span>?
+                    {businessBookingsT(locale, 'dialog_cancel_message', {
+                      action: getCancelActionLabel(locale, isReject),
+                      name: dialogState.clientName,
+                    })}
                   <br />
                   <span className="text-sm mt-2 block text-amber-600 dark:text-amber-400">
-                    The client will be notified.
+                      {businessBookingsT(locale, 'dialog_client_notified')}
                   </span>
                 </>
               ) : (
                 <>
-                  Mark{' '}
-                  <span className="font-semibold text-foreground">{dialogState.clientName}</span>
-                  {' '}as a no-show?
+                    {businessBookingsT(locale, 'dialog_no_show_message', {
+                      name: dialogState.clientName,
+                    })}
                   <br />
                   <span className="text-sm mt-2 block text-muted-foreground">
-                    This indicates the client did not attend their scheduled appointment.
+                      {businessBookingsT(locale, 'dialog_no_show_hint')}
                   </span>
                 </>
               )}
@@ -178,13 +204,13 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
                     value={selectedReasonValue}
                     onChange={(e) => onActionReasonChange(e.target.value)}
                   >
-                    <option value="">Choose a saved reason...</option>
+                    <option value="">{businessBookingsT(locale, 'dialog_choose_saved_reason')}</option>
                     {presets.map((preset) => (
                       <option key={preset.id} value={preset.id.toString()}>
                         {preset.reason}
                       </option>
                     ))}
-                    <option value="custom">Custom reason...</option>
+                    <option value="custom">{businessBookingsT(locale, 'dialog_custom_reason')}</option>
                   </select>
                 </div>
               )}
@@ -192,7 +218,7 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
               {(selectedReasonValue === 'custom' || presets.length === 0) && (
                 <div className="space-y-2">
                   <Textarea
-                    placeholder="Type custom reason here..."
+                    placeholder={businessBookingsT(locale, 'dialog_write_reason')}
                     value={reason}
                     onChange={(e) => setReason(e.target.value)}
                     className="resize-none rounded-xl border-input min-h-[90px] text-sm"
@@ -206,14 +232,14 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
                 className="text-sm text-primary hover:underline font-medium"
                 onClick={openManageView}
               >
-                Manage your predefined reasons list
+                {businessBookingsT(locale, 'dialog_manage_reasons')}
               </button>
             </div>
           )}
 
           {isCancelAction && isManageView && (
             <div className="mt-5 space-y-3 rounded-xl border border-border bg-background/70 p-3">
-              <p className="text-sm font-semibold text-foreground">List of reasons</p>
+              <p className="text-sm font-semibold text-foreground">{businessBookingsT(locale, 'dialog_list_of_reasons')}</p>
 
               <div className="flex gap-2">
                 <select
@@ -221,7 +247,7 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
                   value={manageSelectedId}
                   onChange={(e) => onManageSelectChange(e.target.value)}
                 >
-                  <option value="">Select a reason to edit...</option>
+                  <option value="">{businessBookingsT(locale, 'dialog_select_reason_edit')}</option>
                   {presets.map((preset) => (
                     <option key={preset.id} value={preset.id.toString()}>
                       {preset.reason}
@@ -235,14 +261,14 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
                   className="h-10 w-10 text-destructive border-destructive/30 hover:bg-destructive/10"
                   onClick={handleDeleteReason}
                   disabled={!manageSelectedId}
-                  title="Delete selected reason"
+                  title={businessBookingsT(locale, 'dialog_delete_selected_reason')}
                 >
                   <Trash2 className="w-4 h-4" />
                 </Button>
               </div>
 
               <Textarea
-                placeholder="Write reason here..."
+                placeholder={businessBookingsT(locale, 'dialog_write_reason')}
                 value={manageText}
                 onChange={(e) => setManageText(e.target.value)}
                 className="resize-none rounded-xl border-input min-h-[100px] text-sm"
@@ -256,7 +282,8 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
                   disabled={!manageText.trim()}
                   className="h-10 rounded-xl"
                 >
-                  <Plus className="w-4 h-4 mr-1" /> {manageSelectedId ? 'Save' : 'Add'}
+                  <Plus className="w-4 h-4 mr-1" />
+                  {manageSelectedId ? businessBookingsT(locale, 'dialog_save') : businessBookingsT(locale, 'dialog_add')}
                 </Button>
                 <Button
                   type="button"
@@ -271,7 +298,7 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
                   }}
                   className="h-10 rounded-xl"
                 >
-                  {manageText.trim() ? 'Cancel' : 'Done'}
+                  {manageText.trim() ? businessBookingsT(locale, 'action_cancel') : businessBookingsT(locale, 'dialog_done')}
                 </Button>
               </div>
             </div>
@@ -283,7 +310,7 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
               onClick={onClose}
               className="w-full sm:w-auto border-2 border-border hover:bg-muted font-semibold h-11 rounded-xl"
             >
-              Go Back
+              {businessBookingsT(locale, 'dialog_go_back')}
             </Button>
             {!isManageView && (
               <Button
@@ -297,12 +324,14 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
                 {isCancelAction ? (
                   <>
                     <AlertTriangle className="w-4 h-4 mr-2" />
-                    {isReject ? 'Yes, Reject Booking' : 'Yes, Cancel Booking'}
+                    {isReject
+                      ? businessBookingsT(locale, 'dialog_yes_reject')
+                      : businessBookingsT(locale, 'dialog_yes_cancel')}
                   </>
                 ) : (
                   <>
                     <Ban className="w-4 h-4 mr-2" />
-                    Yes, Mark No-Show
+                    {businessBookingsT(locale, 'dialog_yes_no_show')}
                   </>
                 )}
               </Button>

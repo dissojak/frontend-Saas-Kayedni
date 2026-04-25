@@ -1,11 +1,23 @@
 import React from 'react';
 import { Activity } from 'lucide-react';
+import { useLocale } from '@global/hooks/useLocale';
+import { dashboardT } from '../i18n';
 
 interface PerformanceInsightProps {
   completionRate: number;
 }
 
-export function PerformanceInsight({ completionRate }: PerformanceInsightProps) {
+export function PerformanceInsight({ completionRate }: Readonly<PerformanceInsightProps>) {
+  const { locale } = useLocale();
+  let insightKey: 'dashboard_insight_high' | 'dashboard_insight_mid' | 'dashboard_insight_low' =
+    'dashboard_insight_low';
+
+  if (completionRate >= 90) {
+    insightKey = 'dashboard_insight_high';
+  } else if (completionRate >= 70) {
+    insightKey = 'dashboard_insight_mid';
+  }
+
   return (
     <div className="relative overflow-hidden bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950 dark:from-slate-900 dark:via-slate-950 dark:to-black rounded-2xl p-6 shadow-xl">
       {/* Decorative elements */}
@@ -17,26 +29,10 @@ export function PerformanceInsight({ completionRate }: PerformanceInsightProps) 
           <Activity className="w-7 h-7 text-white" />
         </div>
         <div>
-          <h3 className="font-bold text-white text-lg mb-2">Performance Insight</h3>
-          {completionRate >= 90 ? (
-            <p className="text-slate-300 leading-relaxed">
-              <span className="text-2xl mr-2">🎉</span>
-              <span className="font-semibold text-teal-400">{completionRate}%</span> completion rate is outstanding! 
-              You&apos;re delivering exceptional service quality. Keep up the amazing work!
-            </p>
-          ) : completionRate >= 70 ? (
-            <p className="text-slate-300 leading-relaxed">
-              <span className="text-2xl mr-2">👍</span>
-              Your <span className="font-semibold text-cyan-400">{completionRate}%</span> completion rate is solid. 
-              Focus on reducing no-shows by sending reminders to boost it even higher.
-            </p>
-          ) : (
-            <p className="text-slate-300 leading-relaxed">
-              <span className="text-2xl mr-2">💡</span>
-              Your completion rate is <span className="font-semibold text-amber-400">{completionRate}%</span>. 
-              Consider following up with clients before appointments to reduce cancellations and no-shows.
-            </p>
-          )}
+          <h3 className="font-bold text-white text-lg mb-2">{dashboardT(locale, 'dashboard_insight_title')}</h3>
+          <p className="text-slate-300 leading-relaxed">
+            {dashboardT(locale, insightKey, { rate: completionRate })}
+          </p>
         </div>
       </div>
     </div>

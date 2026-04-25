@@ -24,7 +24,7 @@ export const SLICE_THEME_CONFIG: Record<string, SliceThemePalette> = {
     accent: '#FB923C',
     primaryForeground: '#FFFFFF',
   },
-  'health&care': {
+  'health-care': {
     primary: '#0EA5A4',
     primaryDark: '#0F766E',
     accent: '#38BDF8',

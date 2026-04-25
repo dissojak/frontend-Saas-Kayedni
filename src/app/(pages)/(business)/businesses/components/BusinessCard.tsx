@@ -7,10 +7,13 @@ import type { Business } from "../types/business";
 import { useRouter } from "next/navigation";
 import { createBusinessSlug } from "@global/lib/businessSlug";
 import { useTracking } from "@global/hooks/useTracking";
+import { useLocale } from "@global/hooks/useLocale";
+import { businessesT } from "../i18n";
 
 const BusinessCard: React.FC<{ business: Business }> = ({ business }) => {
   const router = useRouter();
   const { trackEvent } = useTracking();
+  const { locale } = useLocale();
   return (
     <Card key={business.id} className="overflow-hidden card-hover">
       <div className="h-48 overflow-hidden">
@@ -27,7 +30,7 @@ const BusinessCard: React.FC<{ business: Business }> = ({ business }) => {
           </div>
         </div>
         <Button className="w-full" onClick={() => { trackEvent('business_view', { businessId: String(business.id), businessName: business.name, category: business.category, source: 'businesses_list' }); router.push(`/business/${createBusinessSlug(business.name, business.id)}`); }}>
-          View Details
+          {businessesT(locale, "view_details")}
         </Button>
       </CardContent>
     </Card>

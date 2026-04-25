@@ -5,10 +5,14 @@ import { resetPasswordAPI } from '../../api/auth.api';
 import { useRouter } from 'next/navigation';
 import { useTracking } from '@global/hooks/useTracking';
 import { logAuthEvent } from '@global/lib/authLogger';
+import { useLocale } from '@global/hooks/useLocale';
+import { authT } from '@/(pages)/(auth)/i18n';
 
 export function useResetPassword() {
   const router = useRouter();
   const { trackEvent } = useTracking();
+  const { locale } = useLocale();
+  const tr = (key: Parameters<typeof authT>[1]) => authT(locale, key);
   const [email, setEmail] = useState('');
   const [resetCode, setResetCode] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -36,15 +40,15 @@ export function useResetPassword() {
       
       // Validation
       if (!emailToUse) {
-        setError('Email not found. Please go back to forgot password page.');
+        setError(tr('error_reset_email_missing'));
         trackEvent('reset_password_failed', { reason: 'no_email', stage: 'validation' });
         logAuthEvent({ action: 'reset_password_failed', success: false, failReason: 'no_email', failStage: 'validation' });
         setLoading(false);
         return;
       }
 
-      if (!resetCode || resetCode.length !== 6) {
-        setError('Please enter a valid 6-digit reset code');
+      if (resetCode?.length !== 6) {
+        setError(tr('error_reset_invalid_code'));
         trackEvent('reset_password_failed', { reason: 'invalid_code_format', stage: 'validation' });
         logAuthEvent({ action: 'reset_password_failed', success: false, failReason: 'invalid_code_format', failStage: 'validation', email: emailToUse });
         setLoading(false);
@@ -52,7 +56,7 @@ export function useResetPassword() {
       }
 
       if (!newPassword || newPassword.length < 8) {
-        setError('Password must be at least 8 characters');
+        setError(tr('error_reset_password_length'));
         trackEvent('reset_password_failed', { reason: 'password_too_short', stage: 'validation' });
         logAuthEvent({ action: 'reset_password_failed', success: false, failReason: 'password_too_short', failStage: 'validation', email: emailToUse });
         setLoading(false);
@@ -60,7 +64,7 @@ export function useResetPassword() {
       }
 
       if (newPassword !== confirmPassword) {
-        setError('Passwords do not match');
+        setError(tr('error_passwords_mismatch'));
         trackEvent('reset_password_failed', { reason: 'passwords_dont_match', stage: 'validation' });
         logAuthEvent({ action: 'reset_password_failed', success: false, failReason: 'passwords_dont_match', failStage: 'validation', email: emailToUse });
         setLoading(false);
@@ -84,12 +88,12 @@ export function useResetPassword() {
           router.push('/login');
         }, 2000);
       } else {
-        setError('Failed to reset password. Please try again.');
+        setError(tr('error_reset_failed'));
         trackEvent('reset_password_failed', { reason: 'api_no_message', stage: 'api' });
         logAuthEvent({ action: 'reset_password_failed', success: false, failReason: 'api_no_message', failStage: 'api', email: emailToUse });
       }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'An error occurred. Please try again.';
+      const msg = err instanceof Error ? err.message : tr('error_unknown_try_again');
       setError(msg);
       trackEvent('reset_password_failed', { reason: msg, stage: 'network_error' });
       logAuthEvent({ action: 'reset_password_failed', success: false, failReason: msg, failStage: 'network_error', email });
