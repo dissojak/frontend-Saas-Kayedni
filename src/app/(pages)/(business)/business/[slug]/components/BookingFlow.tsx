@@ -186,7 +186,7 @@ const BookingFlow: React.FC<BookingFlowProps> = ({
                               {t("service_duration_min", { duration: service.duration })}
                             </p>
                           </div>
-                          <span className="font-bold text-lg">${service.price}</span>
+                          <span className="font-bold text-lg">{service.price} DNT</span>
                         </div>
                       </button>
                     ))}

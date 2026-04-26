@@ -2,14 +2,20 @@
 import React from "react";
 import { Button } from "@components/ui/button";
 import type { Business } from "@/(pages)/(business)/businesses/types/business";
-import { MapPin, Star, Tag } from "lucide-react";
+import { MapPin, QrCode, Share2, Star, Tag } from "lucide-react";
 import { useLocale } from "@global/hooks/useLocale";
+import { businessQrT } from "@global/lib/i18n/businessQr";
 import {
   businessDetailReviewCountLabel,
   businessDetailT,
 } from "../i18n";
 
-const BusinessHeader: React.FC<{ business: Business; onBook?: () => void }> = ({ business, onBook }) => {
+const BusinessHeader: React.FC<{
+  business: Business;
+  onBook?: () => void;
+  onShareBusiness?: () => void;
+  onShowQr?: () => void;
+}> = ({ business, onBook, onShareBusiness, onShowQr }) => {
   const { locale } = useLocale();
 
   const t = (key: Parameters<typeof businessDetailT>[1], params?: Record<string, string | number>) =>
@@ -54,14 +60,40 @@ const BusinessHeader: React.FC<{ business: Business; onBook?: () => void }> = ({
             )}
           </div>
         </div>
-        <Button 
-          onClick={onBook} 
-          size="xl" 
-          variant="skeuo-primary"
-          className="w-full md:w-auto shadow-premium hover:shadow-premium-hover"
-        >
-          {t("book_appointment")}
-        </Button>
+        <div className="flex flex-col gap-3 w-full md:w-auto">
+          <Button 
+            onClick={onBook} 
+            size="xl" 
+            variant="skeuo-primary"
+            className="w-full shadow-premium hover:shadow-premium-hover"
+          >
+            {t("book_appointment")}
+          </Button>
+          <div className="grid grid-cols-2 gap-3 w-full">
+            <Button
+              type="button"
+              variant="outline"
+              size="lg"
+              className="h-14 rounded-xl border-border bg-background/80 px-4 sm:px-6 font-semibold shadow-sm"
+              onClick={onShareBusiness}
+              disabled={!onShareBusiness}
+            >
+              <Share2 className="w-4 h-4 mr-2" />
+              {businessQrT(locale, 'action_share_business')}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="lg"
+              className="h-14 rounded-xl border-border bg-background/80 px-4 sm:px-6 font-semibold shadow-sm"
+              onClick={onShowQr}
+              disabled={!onShowQr || !business.qrCodeUrl}
+            >
+              <QrCode className="w-4 h-4 mr-2" />
+              {businessQrT(locale, 'action_view_qr')}
+            </Button>
+          </div>
+        </div>
       </div>
     </div>
   );

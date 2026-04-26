@@ -25,7 +25,7 @@ import {
   AlertDialogTitle,
 } from "@components/ui/alert-dialog";
 import { useToast } from "@global/hooks/use-toast";
-import { 
+import {
   Building2, 
   Sparkles, 
   Edit3, 
@@ -48,7 +48,11 @@ import {
   Calendar,
   Upload,
   GripVertical,
-  Loader2
+  Loader2,
+  QrCode,
+  Download,
+  Printer,
+  Share2,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
@@ -71,6 +75,11 @@ import { clearPendingOwnerCategory, getPendingOwnerCategory } from "@global/lib/
 import { useLocale } from "@global/hooks/useLocale";
 import { createBusinessSlug } from "@global/lib/businessSlug";
 import { businessManageStatusT, businessManageT, businessManageWeekdayT, type BusinessManageKey } from "./i18n";
+import BusinessQrDialog from "@components/business/BusinessQrDialog";
+import {
+  downloadImageFromUrl,
+  printImageFromUrl,
+} from "@global/lib/businessQr";
 
 interface Category {
   id: number;
@@ -128,6 +137,7 @@ export default function BusinessManagementPage() {
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [creatingBusiness, setCreatingBusiness] = useState(false);
   const [pendingCategoryName, setPendingCategoryName] = useState<string | null>(null);
+  const [isQrDialogOpen, setIsQrDialogOpen] = useState(false);
   
   // Edit form state
   const [editForm, setEditForm] = useState<BusinessUpdateRequest>({});
@@ -264,7 +274,6 @@ export default function BusinessManagementPage() {
       clearPendingOwnerCategory();
       setPendingCategoryName(null);
 
-      // Keep local session profile aligned so owner routes that rely on local user data work immediately.
       const rawUser = localStorage.getItem('user');
       if (rawUser) {
         try {
@@ -274,7 +283,7 @@ export default function BusinessManagementPage() {
           parsed.businessCategoryName = created.categoryName ?? parsed.businessCategoryName;
           localStorage.setItem('user', JSON.stringify(parsed));
         } catch {
-          // no-op if local profile payload is malformed
+          // no-op
         }
       }
 
@@ -304,8 +313,6 @@ export default function BusinessManagementPage() {
         setBusiness(updated);
         setIsEditing(false);
         toast({ variant: "success", title: t('toast_update_success') });
-        
-        // Reload to get fresh evaluation
         await loadData();
       }
     } catch (error: any) {
@@ -343,8 +350,6 @@ export default function BusinessManagementPage() {
 
     try {
       setReEvaluating(true);
-      
-      // Call the dedicated re-evaluation endpoint
       const updated = await reEvaluateBusiness(business.id, token);
       
       if (updated) {
@@ -356,7 +361,6 @@ export default function BusinessManagementPage() {
         });
       }
     } catch (error: any) {
-      // Handle rate limit errors with a more user-friendly message
       if (error.code === 'RATE_LIMIT_EXCEEDED') {
         toast({ 
           variant: "destructive", 
@@ -375,7 +379,7 @@ export default function BusinessManagementPage() {
     }
   };
 
-  // Submit or re-submit for activation review (PENDING request triggers evaluation)
+  // Submit or re-submit for activation review
   const handleSubmitForActivation = async () => {
     if (!business) return;
     
@@ -393,7 +397,6 @@ export default function BusinessManagementPage() {
         description: result.advice,
       });
       
-      // Reload to get updated status
       await loadData();
     } catch (error: any) {
       toast({ variant: "error", title: t('toast_submit_failed'), description: error.message });
@@ -430,19 +433,16 @@ export default function BusinessManagementPage() {
     const token = getToken();
     if (!token) return;
 
-    // Validate file type
     if (!file.type.startsWith('image/')) {
       toast({ variant: "error", title: t('toast_invalid_file_type_title'), description: t('toast_invalid_file_type_desc') });
       return;
     }
 
-    // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
       toast({ variant: "error", title: t('toast_file_too_large_title'), description: t('toast_file_too_large_desc') });
       return;
     }
 
-    // Check image limit
     if (images.length >= 6) {
       toast({ variant: "error", title: t('toast_max_images_title'), description: t('toast_max_images_desc') });
       return;
@@ -457,14 +457,13 @@ export default function BusinessManagementPage() {
       toast({ variant: "error", title: t('toast_image_upload_failed'), description: error.message });
     } finally {
       setUploadingImage(false);
-      // Reset file input
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
     }
   };
 
-  // Drag and drop handlers for reordering
+  // Drag and drop handlers
   const handleDragStart = (index: number) => {
     setDraggedIndex(index);
   };
@@ -490,7 +489,6 @@ export default function BusinessManagementPage() {
     const token = getToken();
     if (!token) return;
 
-    // Reorder locally first for instant feedback
     const newImages = [...images];
     const [draggedItem] = newImages.splice(draggedIndex, 1);
     newImages.splice(dropIndex, 0, draggedItem);
@@ -498,13 +496,11 @@ export default function BusinessManagementPage() {
     setDraggedIndex(null);
     setDragOverIndex(null);
 
-    // Save new order to backend
     try {
       const imageIds = newImages.map(img => img.id);
       await reorderBusinessImages(business.id, imageIds, token);
       toast({ variant: "success", title: t('toast_images_reordered_title'), description: t('toast_images_reordered_desc') });
     } catch (error: any) {
-      // Revert on error
       const imagesData = await fetchOwnerBusinessImages(business.id, token);
       setImages(imagesData);
       toast({ variant: "error", title: t('toast_images_reorder_failed'), description: error.message });
@@ -701,6 +697,77 @@ export default function BusinessManagementPage() {
     imagesSummaryText = images.length >= 3 ? t('images_summary_many', params) : t('images_summary_few', params);
   }
 
+  let qrPanelContent: React.ReactNode = null;
+  if (business.status === 'ACTIVE') {
+    if (business.qrCodeUrl) {
+      qrPanelContent = (
+        // ↓ h-full + flex flex-col so this panel stretches to match the cover card
+        <div className="h-full flex flex-col rounded-[28px] border border-[#e6dcc1] bg-[#fdfbf6]/95 p-6 shadow-[0_12px_26px_rgba(34,26,5,0.08)]">
+          <div className="mb-4 flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/15 text-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.35)]">
+              <QrCode className="h-5 w-5" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-[#1a1a1a]">{t('qr_panel_title')}</h3>
+              <p className="text-xs text-[#5c5140]">{t('qr_panel_subtitle')}</p>
+            </div>
+          </div>
+
+          {/* QR image — constrained so it doesn't blow up the card height */}
+          <div className="mb-4 rounded-2xl border border-[#e6dcc1] bg-white p-3">
+            <img
+              src={business.qrCodeUrl}
+              alt={`${business.name} QR`}
+              className="aspect-square w-full max-h-60 mx-auto rounded-xl object-contain"
+            />
+          </div>
+
+          {business.qrUpdatedAt && (
+            <p className="mb-4 text-xs text-[#8a7b5d]">
+              {t('qr_panel_last_updated')}: {new Date(business.qrUpdatedAt).toLocaleString(locale)}
+            </p>
+          )}
+
+          {/* mt-auto pushes buttons to the bottom when the panel is taller than its content */}
+          <div className="mt-auto grid grid-cols-2 gap-2 ">
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-2/3 border-[#d8cda8] text-[#4f4638] h-16"
+              onClick={() => {
+                if (business.qrCodeUrl) {
+                  const slug = business.name.toLowerCase().trim().replaceAll(/[^a-z0-9]+/g, '-').replaceAll(/^-|-$/g, '');
+                  downloadImageFromUrl(business.qrCodeUrl, `${slug || 'business'}-qr.png`).catch(() => {
+                    toast({ variant: 'error', title: 'Download failed' });
+                  });
+                }
+              }}
+            >
+              <Download className="mr-1.5 h-3.5 w-3.5" />
+              {t('qr_panel_download')}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-2/3 border-[#d8cda8] text-[#4f4638] h-16"
+              onClick={() => setIsQrDialogOpen(true)}
+            >
+              <Share2 className="mr-1.5 h-3.5 w-3.5" />
+              {t('qr_panel_share')}
+            </Button>
+          </div>
+        </div>
+      );
+    } else {
+      qrPanelContent = (
+        <div className="rounded-[24px] border border-dashed border-[#d8cda8] bg-[#faf5e8] p-5 text-center">
+          <QrCode className="mx-auto mb-2 h-8 w-8 text-[#c0b28d]" />
+          <p className="text-sm text-[#5c5140]">{t('qr_panel_unavailable')}</p>
+        </div>
+      );
+    }
+  }
+
   return (
     <Layout>
       <div className="min-h-screen bg-[#f4efe1] text-[#1a1a1a]">
@@ -729,42 +796,49 @@ export default function BusinessManagementPage() {
               </div>
             </div>
 
-            <div className="col-span-12 lg:col-span-8 tactile-card overflow-hidden group relative rounded-[28px] mb-6 md:h-[500px] sm:h-[400px] h-[400px]">
-              <div className="absolute inset-0 z-0">
-                <img
-                  className="w-full h-full object-cover opacity-90 group-hover:scale-105 transition-transform duration-700"
-                  alt={`${business.name} cover`}
-                  src={business.firstImageUrl || 'https://lh3.googleusercontent.com/aida-public/AB6AXuDzp0cyJGT6cgbRp2U2ZlPupvjS6cv5-eZ_LFy6HusvSveY9LUK4atkEEzM2uX80pE6Y0HTvqfLQO3ZiQeTm-Mfz_ydb5yVcuy-c47uzOXze2geS48kTZi8gk61F_jz4nghrG2BUcvU6bcUPpxgM9dQdqFnZ6yq_Yz6vc_wYaPIaaH3e0SPhW9Udqwto_3G9-B7pD9xGhGkOs98YRBcezRd-3s81HSbSTSEu4AbF07L2pP_9MM1paa7IK7tLemboVnwThLMRlKpFC-N'}
-                />
-                <div className={`absolute inset-0 ${isArabic ? 'bg-gradient-to-l from-black/80 via-black/40 to-transparent' : 'bg-gradient-to-r from-black/80 via-black/40 to-transparent'}`} />
-              </div>
-              <div className="relative z-10 p-12 h-full flex flex-col justify-between text-white">
-                <div>
-                  <span className="inline-block px-4 py-1.5 rounded-full bg-[#476500] text-white text-caption-bold font-caption-bold mb-4">{businessManageStatusT(locale, business.status)}</span>
-                  <h1 className="font-h1 text-h1 mb-2">{business.name}</h1>
-                  <div className="flex items-center gap-2 text-white/80">
-                    <span className="material-symbols-outlined text-lg" data-icon="location_on">{t('location_on')}</span>
-                    <span className="font-body-md text-body-md">{business.location || t('field_not_set')}</span>
+            {/* ↓ Removed lg:items-start so both columns stretch to equal height */}
+            <div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-12">
+              <div className="lg:col-span-8 tactile-card overflow-hidden group relative rounded-[28px] md:h-[500px] sm:h-[400px] h-[400px]">
+                <div className="absolute inset-0 z-0">
+                  <img
+                    className="w-full h-full object-cover opacity-90 group-hover:scale-105 transition-transform duration-700"
+                    alt={`${business.name} cover`}
+                    src={business.firstImageUrl || 'https://lh3.googleusercontent.com/aida-public/AB6AXuDzp0cyJGT6cgbRp2U2ZlPupvjS6cv5-eZ_LFy6HusvSveY9LUK4atkEEzM2uX80pE6Y0HTvqfLQO3ZiQeTm-Mfz_ydb5yVcuy-c47uzOXze2geS48kTZi8gk61F_jz4nghrG2BUcvU6bcUPpxgM9dQdqFnZ6yq_Yz6vc_wYaPIaaH3e0SPhW9Udqwto_3G9-B7pD9xGhGkOs98YRBcezRd-3s81HSbSTSEu4AbF07L2pP_9MM1paa7IK7tLemboVnwThLMRlKpFC-N'}
+                  />
+                  <div className={`absolute inset-0 ${isArabic ? 'bg-gradient-to-l from-black/80 via-black/40 to-transparent' : 'bg-gradient-to-r from-black/80 via-black/40 to-transparent'}`} />
+                </div>
+                <div className="relative z-10 p-12 h-full flex flex-col justify-between text-white">
+                  <div>
+                    <span className="inline-block px-4 py-1.5 rounded-full bg-[#476500] text-white text-caption-bold font-caption-bold mb-4">{businessManageStatusT(locale, business.status)}</span>
+                    <h1 className="font-h1 text-h1 mb-2">{business.name}</h1>
+                    <div className="flex items-center gap-2 text-white/80">
+                      <span className="material-symbols-outlined text-lg" data-icon="location_on">{t('location_on')}</span>
+                      <span className="font-body-md text-body-md">{business.location || t('field_not_set')}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4 mt-8">
+                    <button
+                      type="button"
+                      onClick={handleSubmitForActivation}
+                      disabled={saving || !canSubmitForReview}
+                      className="bg-white text-[#344b00] px-8 py-4 rounded-2xl font-bold flex items-center gap-3 hover:shadow-xl active:scale-95 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                      <span>{canSubmitForReview ? (isPendingReview ? t('cta_resubmit_btn') : t('cta_submit_btn')) : t('status_active')}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => router.push(`/business/${createBusinessSlug(business.name, business.id)}`)}
+                      className="bg-white/10 backdrop-blur-md border border-white/20 text-white px-8 py-4 rounded-2xl font-bold hover:bg-white/20 active:scale-95 transition-all"
+                    >
+                      {t('btn_view_public_page')}
+                    </button>
                   </div>
                 </div>
-                <div className="flex items-center gap-4 mt-8">
-                  <button
-                    type="button"
-                    onClick={handleSubmitForActivation}
-                    disabled={saving || !canSubmitForReview}
-                    className="bg-white text-[#344b00] px-8 py-4 rounded-2xl font-bold flex items-center gap-3 hover:shadow-xl active:scale-95 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-                  >
-                    {/* <span className="material-symbols-outlined" data-icon="sensors">sensors</span> */}
-                    <span>{canSubmitForReview ? (isPendingReview ? t('cta_resubmit_btn') : t('cta_submit_btn')) : t('status_active')}</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => router.push(`/business/${createBusinessSlug(business.name, business.id)}`)}
-                    className="bg-white/10 backdrop-blur-md border border-white/20 text-white px-8 py-4 rounded-2xl font-bold hover:bg-white/20 active:scale-95 transition-all"
-                  >
-                    {t('btn_view_public_page')}
-                  </button>
-                </div>
+              </div>
+
+              {/* ↓ flex flex-col so the child QR panel can use h-full */}
+              <div className="lg:col-span-4 flex flex-col">
+                {qrPanelContent}
               </div>
             </div>
 
@@ -1341,11 +1415,18 @@ export default function BusinessManagementPage() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* Business QR Dialog */}
+        <BusinessQrDialog
+          open={isQrDialogOpen}
+          onOpenChange={setIsQrDialogOpen}
+          business={business ? { id: String(business.id), name: business.name, qrCodeUrl: business.qrCodeUrl, qrUpdatedAt: business.qrUpdatedAt } : null}
+        />
       </Layout>
     );
 }
 
-// Inline Score Badge Component - Shows score next to field label
+// Inline Score Badge Component
 function InlineScore({ 
   score, 
   label 
@@ -1374,7 +1455,7 @@ function InlineScore({
   );
 }
 
-// Inline Evaluation Component - Shows details and suggestions under a field
+// Inline Evaluation Component
 function InlineEvaluation({ 
   details, 
   suggestions 
@@ -1386,7 +1467,6 @@ function InlineEvaluation({
 
   return (
     <div className="mt-2 space-y-2">
-      {/* Details */}
       {details && (
         <div className="flex items-start gap-2 rounded-lg border border-[#e3d2ad] bg-[#f4ecd6] p-2.5 text-sm">
           <Info className="mt-0.5 h-4 w-4 shrink-0 text-[#7b6b4a]" />
@@ -1394,7 +1474,6 @@ function InlineEvaluation({
         </div>
       )}
       
-      {/* Suggestions */}
       {suggestions && (
         <div className="flex items-start gap-2 rounded-lg border border-accent/40 bg-accent/15 p-2.5">
           <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-accent" />

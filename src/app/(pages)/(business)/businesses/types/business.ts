@@ -4,6 +4,8 @@ export interface Business {
   description?: string;
   logo?: string;
   imageUrl?: string;
+  qrCodeUrl?: string;
+  qrUpdatedAt?: string;
   rating?: number | string;
   category?: string;
   location?: string;
@@ -11,7 +13,7 @@ export interface Business {
   email?: string;
   reviewCount?: number;
   createdAt?: string;
-  updatedAt?: string | null;
+  updatedAt?: string;
 }
 
 export type Category = string;

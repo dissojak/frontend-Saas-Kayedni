@@ -8,14 +8,16 @@ import { Input } from "@components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@components/ui/tabs";
 import { Calendar, Search, CheckCircle, UserCheck, XCircle } from "lucide-react";
-import { fetchBookingsForBusiness, updateBookingStatus } from "../../actions/backend";
+import { fetchBookingsForBusiness, updateBookingStatus, fetchBusinessById } from "../../actions/backend";
 import { useAuth } from "@/(pages)/(auth)/context/AuthContext";
 import { useLocale } from '@global/hooks/useLocale';
+import BusinessQrDialog from '@components/business/BusinessQrDialog';
 import {
   businessBookingsDateLocale,
   businessBookingsT,
   businessBookingStatusT,
 } from './i18n';
+import type { Business } from "../../businesses/types/business";
 
 // Import types from shared location
 import { Booking, ConfirmDialogState } from '../../../shared/bookings/types';
@@ -43,6 +45,8 @@ export default function BusinessBookingsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [businessId, setBusinessId] = useState<string | null>(null);
+  const [business, setBusiness] = useState<Business | null>(null);
+  const [isQrDialogOpen, setIsQrDialogOpen] = useState(false);
   
   // Use custom hooks
   const currentTime = useCurrentTime(30000);
@@ -71,10 +75,39 @@ export default function BusinessBookingsPage() {
     if (userData) {
       const user = JSON.parse(userData);
       if (user.businessId) {
-        setBusinessId(user.businessId);
+        setBusinessId(String(user.businessId));
       }
     }
   }, []);
+
+  useEffect(() => {
+    if (!businessId) {
+      setBusiness(null);
+      return;
+    }
+
+    let active = true;
+
+    const loadBusiness = async () => {
+      try {
+        const data = await fetchBusinessById(businessId);
+        if (active) {
+          setBusiness(data);
+        }
+      } catch (loadError) {
+        console.error('[Business Bookings] Error loading business:', loadError);
+        if (active) {
+          setBusiness(null);
+        }
+      }
+    };
+
+    void loadBusiness();
+
+    return () => {
+      active = false;
+    };
+  }, [businessId]);
 
   useEffect(() => {
     if (businessId) {
@@ -206,6 +239,45 @@ export default function BusinessBookingsPage() {
               completedCount={pastBookings.length}
             />
           </div>
+
+          {business && (
+            <div className="bg-card rounded-2xl border border-border shadow-sm p-5 sm:p-6">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">{businessBookingsT(locale, 'qr_panel_title')}</p>
+                  <h2 className="text-lg font-bold text-foreground">{business.name}</h2>
+                  <p className="text-sm text-muted-foreground max-w-2xl">{businessBookingsT(locale, 'qr_panel_desc')}</p>
+                  {business.qrUpdatedAt && (
+                    <p className="text-xs text-muted-foreground">{businessBookingsT(locale, 'qr_panel_updated')}: {new Date(business.qrUpdatedAt).toLocaleString(locale)}</p>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-3">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-11 rounded-xl px-5"
+                    onClick={() => setIsQrDialogOpen(true)}
+                  >
+                    {businessBookingsT(locale, 'qr_view')}
+                  </Button>
+                  <Button
+                    type="button"
+                    className="h-11 rounded-xl px-5"
+                    onClick={() => setIsQrDialogOpen(true)}
+                    disabled={!business.qrCodeUrl}
+                  >
+                    {businessBookingsT(locale, 'qr_share_business')}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <BusinessQrDialog
+            open={isQrDialogOpen}
+            onOpenChange={setIsQrDialogOpen}
+            business={business}
+          />
 
           <TelegramOnboardingPrompt
             audience="staff"

@@ -1,8 +1,7 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
 import { BookOpen, ExternalLink, Palette, Search } from 'lucide-react';
 import Layout from '@components/layout/Layout';
 import { Badge } from '@components/ui/badge';
@@ -60,7 +59,16 @@ function stepMatchesQuery(step: SearchableStep, query: string): boolean {
 
 export default function GuidePage() {
   const { locale } = useLocale();
-  const searchParams = useSearchParams();
+  const [routeCategorySlug, setRouteCategorySlug] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof globalThis === 'undefined' || !globalThis.location) {
+      return;
+    }
+
+    const params = new URLSearchParams(globalThis.location.search);
+    setRouteCategorySlug(params.get('category'));
+  }, []);
 
   const ownerCopy = getGuideCopy(locale);
   const bookingCopy = getBookingGuideCopy(locale);
@@ -68,7 +76,6 @@ export default function GuidePage() {
   const ownerSteps = useMemo(() => getGuideSteps(locale), [locale]);
   const bookingSteps = useMemo(() => getBookingGuideSteps(locale), [locale]);
 
-  const routeCategorySlug = searchParams.get('category');
   const activeCategoryName = useMemo(() => categoryNameFromSlug(routeCategorySlug), [routeCategorySlug]);
 
   const landingHref = useMemo(() => withCategoryQuery('/', routeCategorySlug), [routeCategorySlug]);

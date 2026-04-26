@@ -43,6 +43,8 @@ export interface BusinessResponse {
   evaluation?: BusinessEvaluation;
   firstImageUrl?: string;
   weekendDay?: string;
+  qrCodeUrl?: string;
+  qrUpdatedAt?: string;
 }
 
 export interface BusinessUpdateRequest {
@@ -439,6 +441,8 @@ export async function fetchBusinesses(): Promise<Business[]> {
       name: b.name,
       description: b.description || '',
       logo: b.firstImageUrl || b.imageUrl || b.logo || '/assets/placeholder.svg',
+      qrCodeUrl: b.qrCodeUrl,
+      qrUpdatedAt: b.qrUpdatedAt,
       rating: b.rating ?? null,
       reviewCount: b.reviewCount ?? 0,
       category: b.categoryName || b.category || '',
@@ -504,6 +508,8 @@ export async function fetchBusinessById(id: string): Promise<Business | null> {
       name: data.name,
       description: data.description || '',
       logo: data.firstImageUrl || data.imageUrl || data.logo || '/assets/placeholder.svg',
+      qrCodeUrl: data.qrCodeUrl,
+      qrUpdatedAt: data.qrUpdatedAt,
       rating: data.rating ?? null,
       reviewCount: data.reviewCount ?? 0,
       category: data.categoryName || data.category || '',
@@ -1514,7 +1520,7 @@ export async function createService(
           const errorData = JSON.parse(errorText);
           errorMessage = errorData.message || errorData.error || errorMessage;
         } catch {
-          errorMessage = errorText || errorMessage;
+          errorMessage = errorText;
         }
       }
       throw new Error(errorMessage);
