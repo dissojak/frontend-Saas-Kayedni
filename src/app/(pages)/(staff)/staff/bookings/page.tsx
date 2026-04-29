@@ -9,10 +9,11 @@ import { Input } from "@components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@components/ui/tabs";
 import { Calendar, Search, CheckCircle, UserCheck, XCircle, UserPlus, Clock, Bell } from "lucide-react";
-import { fetchBookingsForStaff, updateBookingStatus, cancelBooking, sendStaffReminderNow } from "../../../(business)/actions/backend";
+import { fetchBookingsForStaff, updateBookingStatus, cancelBooking, sendStaffReminderNow, fetchCurrentStaffInfo, fetchBusinessById } from "../../../(business)/actions/backend";
 import { useAuth } from "@/(pages)/(auth)/context/AuthContext";
 import { useLocale } from '@global/hooks/useLocale';
 import { useToast } from "@global/hooks/use-toast";
+import BusinessQrDialog from '@components/business/BusinessQrDialog';
 import { staffBookingsLocaleTag, staffBookingsT } from './i18n';
 
 // Import types from shared location
@@ -34,6 +35,7 @@ import {
 } from '../../../shared/bookings/components';
 import WalkInBooking from './WalkInBooking';
 import TelegramOnboardingPrompt from '@components/telegram/TelegramOnboardingPrompt';
+import type { Business } from "../../../(business)/businesses/types/business";
 
 export default function StaffBookingsPage() {
   const { user, token, logout } = useAuth();
@@ -45,6 +47,8 @@ export default function StaffBookingsPage() {
   const [error, setError] = useState<string | null>(null);
   const [sessionExpired, setSessionExpired] = useState(false);
   const [businessId, setBusinessId] = useState<number | null>(null);
+  const [business, setBusiness] = useState<Business | null>(null);
+  const [isQrDialogOpen, setIsQrDialogOpen] = useState(false);
   const [sendingReminderIds, setSendingReminderIds] = useState<Record<number, boolean>>({});
   const bootstrapFetchKeyRef = useRef<string | null>(null);
   
@@ -128,6 +132,62 @@ export default function StaffBookingsPage() {
       setLoading(false);
     }
   }, [loadBookings, token, user]);
+
+  useEffect(() => {
+    if (!token) {
+      return;
+    }
+
+    let active = true;
+
+    const loadStaffContext = async () => {
+      try {
+        const staffInfo = await fetchCurrentStaffInfo(token);
+        if (!active || !staffInfo?.businessId) {
+          return;
+        }
+
+        setBusinessId(staffInfo.businessId);
+      } catch (contextError) {
+        console.error('[Staff Bookings Page] Error loading staff context:', contextError);
+      }
+    };
+
+    void loadStaffContext();
+
+    return () => {
+      active = false;
+    };
+  }, [token]);
+
+  useEffect(() => {
+    if (!businessId) {
+      setBusiness(null);
+      return;
+    }
+
+    let active = true;
+
+    const loadBusiness = async () => {
+      try {
+        const data = await fetchBusinessById(String(businessId));
+        if (active) {
+          setBusiness(data);
+        }
+      } catch (loadError) {
+        console.error('[Staff Bookings Page] Error loading business:', loadError);
+        if (active) {
+          setBusiness(null);
+        }
+      }
+    };
+
+    void loadBusiness();
+
+    return () => {
+      active = false;
+    };
+  }, [businessId]);
 
   const handleStatusUpdate = async (bookingId: number, newStatus: string) => {
     if (!token) return;
@@ -281,6 +341,45 @@ export default function StaffBookingsPage() {
               completedCount={pastBookings.length}
             />
           </div>
+
+          {business && (
+            <div className="bg-card rounded-2xl border border-border shadow-sm p-5 sm:p-6">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">{staffBookingsT(locale, 'business_qr_panel_title')}</p>
+                  <h2 className="text-lg font-bold text-foreground">{business.name}</h2>
+                  <p className="text-sm text-muted-foreground max-w-2xl">{staffBookingsT(locale, 'business_qr_panel_desc')}</p>
+                  {business.qrUpdatedAt && (
+                    <p className="text-xs text-muted-foreground">{staffBookingsT(locale, 'business_qr_panel_updated')}: {new Date(business.qrUpdatedAt).toLocaleString(locale)}</p>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-3">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-11 rounded-xl px-5"
+                    onClick={() => setIsQrDialogOpen(true)}
+                  >
+                    {staffBookingsT(locale, 'business_qr_view')}
+                  </Button>
+                  <Button
+                    type="button"
+                    className="h-11 rounded-xl px-5"
+                    onClick={() => setIsQrDialogOpen(true)}
+                    disabled={!business.qrCodeUrl}
+                  >
+                    {staffBookingsT(locale, 'business_qr_share')}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <BusinessQrDialog
+            open={isQrDialogOpen}
+            onOpenChange={setIsQrDialogOpen}
+            business={business}
+          />
 
           <TelegramOnboardingPrompt
             audience="staff"

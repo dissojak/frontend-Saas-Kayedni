@@ -1,11 +1,12 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Layout from "@components/layout/Layout";
 import TimeOnPageTracker from "@components/tracking/TimeOnPageTracker";
 import ScrollDepthTracker from "@components/tracking/ScrollDepthTracker";
 
 import BusinessHeader from "./components/BusinessHeader";
+import BusinessQrDialog from "@components/business/BusinessQrDialog";
 import BookingFlow from "./components/BookingFlow";
 import BookingWarningStyles from "./components/BookingWarningStyles";
 import BusinessLoadingSkeleton from "./components/BusinessLoadingSkeleton";
@@ -16,6 +17,7 @@ import ReviewsModal from "./components/ReviewsModal";
 import { useBusinessDetailPageController } from "./hooks/useBusinessDetailPageController";
 
 const BusinessDetailPage = () => {
+  const [isQrDialogOpen, setIsQrDialogOpen] = useState(false);
   const {
     router,
     user,
@@ -75,6 +77,7 @@ const BusinessDetailPage = () => {
   }
 
   const showBusinessProfile = !isBookingMode;
+  const loginRedirectPath = `/login?redirect=${encodeURIComponent(globalThis.location.pathname)}`;
 
   return (
     <Layout>
@@ -82,7 +85,18 @@ const BusinessDetailPage = () => {
       <ScrollDepthTracker pageName="business_detail" />
 
       <div className="container mx-auto px-4 py-8 max-w-5xl">
-        <BusinessHeader business={business} onBook={() => setIsBookingMode(true)} />
+        <BusinessHeader
+          business={business}
+          onBook={() => setIsBookingMode(true)}
+          onShareBusiness={() => setIsQrDialogOpen(true)}
+          onShowQr={() => setIsQrDialogOpen(true)}
+        />
+
+        <BusinessQrDialog
+          open={isQrDialogOpen}
+          onOpenChange={setIsQrDialogOpen}
+          business={business}
+        />
 
         {showBusinessProfile ? (
           <BusinessProfileContent
@@ -95,7 +109,7 @@ const BusinessDetailPage = () => {
             user={user}
             onOpenReviews={() => setIsReviewsModalOpen(true)}
             onStartBooking={() => setIsBookingMode(true)}
-            onLoginToReview={() => router.push(`/login?redirect=${encodeURIComponent(globalThis.location.pathname)}`)}
+            onLoginToReview={() => router.push(loginRedirectPath)}
           />
         ) : (
           <BookingFlow

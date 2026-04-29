@@ -58,6 +58,12 @@ export type StaffKey =
   | 'quick_actions_performance_desc'
   | 'quick_actions_hide_charts'
   | 'quick_actions_view_charts'
+  | 'business_qr_panel_title'
+  | 'business_qr_panel_desc'
+  | 'business_qr_panel_updated'
+  | 'business_qr_view'
+  | 'business_qr_share'
+  | 'business_qr_unavailable'
   | 'services_section_title'
   | 'services_section_subtitle'
   | 'services_section_create_service'
@@ -135,6 +141,12 @@ const STAFF_DICTIONARY: Record<LocaleCode, Record<StaffKey, string>> = {
     quick_actions_performance_desc: '{rate}% completion rate • {total} total bookings',
     quick_actions_hide_charts: 'Hide charts',
     quick_actions_view_charts: 'View charts',
+    business_qr_panel_title: 'Business QR',
+    business_qr_panel_desc: 'Open the active business QR, print it, or share the link.',
+    business_qr_panel_updated: 'Last updated',
+    business_qr_view: 'View QR',
+    business_qr_share: 'Share Business',
+    business_qr_unavailable: 'QR not available yet.',
     services_section_title: 'Services Management',
     services_section_subtitle: 'Manage services you provide',
     services_section_create_service: 'Create Service',
@@ -212,6 +224,12 @@ const STAFF_DICTIONARY: Record<LocaleCode, Record<StaffKey, string>> = {
     quick_actions_performance_desc: '{rate}% de taux de completion • {total} reservations au total',
     quick_actions_hide_charts: 'Masquer les graphiques',
     quick_actions_view_charts: 'Voir les graphiques',
+    business_qr_panel_title: 'QR du business',
+    business_qr_panel_desc: 'Ouvrez le QR actif, imprimez-le ou partagez le lien.',
+    business_qr_panel_updated: 'Derniere mise a jour',
+    business_qr_view: 'Voir le QR',
+    business_qr_share: 'Partager le business',
+    business_qr_unavailable: 'QR pas encore disponible.',
     services_section_title: 'Gestion des services',
     services_section_subtitle: 'Gerez les services que vous proposez',
     services_section_create_service: 'Creer un service',
@@ -289,6 +307,12 @@ const STAFF_DICTIONARY: Record<LocaleCode, Record<StaffKey, string>> = {
     quick_actions_performance_desc: 'نسبة انجاز {rate}% • اجمالي الحجوزات {total}',
     quick_actions_hide_charts: 'اخفاء المخططات',
     quick_actions_view_charts: 'عرض المخططات',
+    business_qr_panel_title: 'رمز QR للنشاط',
+    business_qr_panel_desc: 'افتح رمز QR الحالي او اطبعه او شارك الرابط.',
+    business_qr_panel_updated: 'آخر تحديث',
+    business_qr_view: 'عرض QR',
+    business_qr_share: 'مشاركة النشاط',
+    business_qr_unavailable: 'رمز QR غير متاح بعد.',
     services_section_title: 'ادارة الخدمات',
     services_section_subtitle: 'ادارة الخدمات التي تقدمها',
     services_section_create_service: 'انشاء خدمة',

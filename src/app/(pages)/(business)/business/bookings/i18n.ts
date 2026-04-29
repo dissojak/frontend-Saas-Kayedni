@@ -6,6 +6,12 @@ export type BusinessBookingsKey =
   | 'error_retry'
   | 'error_load_bookings'
   | 'title'
+  | 'qr_panel_title'
+  | 'qr_panel_desc'
+  | 'qr_panel_updated'
+  | 'qr_view'
+  | 'qr_share_business'
+  | 'qr_unavailable'
   | 'today_schedule'
   | 'appointments_count'
   | 'no_appointments_today_title'
@@ -89,6 +95,12 @@ const BUSINESS_BOOKINGS_DICTIONARY: Record<LocaleCode, Record<BusinessBookingsKe
     error_retry: 'Try Again',
     error_load_bookings: 'Failed to load bookings. Please try again.',
     title: 'Business Bookings',
+    qr_panel_title: 'Business QR',
+    qr_panel_desc: 'Use the QR panel to share or print the active business link.',
+    qr_panel_updated: 'Last updated',
+    qr_view: 'View QR',
+    qr_share_business: 'Share Business',
+    qr_unavailable: 'QR not available yet.',
     today_schedule: "Today's Schedule",
     appointments_count: '{count} appointments',
     no_appointments_today_title: 'No appointments today',
@@ -171,6 +183,12 @@ const BUSINESS_BOOKINGS_DICTIONARY: Record<LocaleCode, Record<BusinessBookingsKe
     error_retry: 'Reessayer',
     error_load_bookings: 'Impossible de charger les reservations. Reessayez.',
     title: 'Reservations business',
+    qr_panel_title: 'QR du business',
+    qr_panel_desc: 'Utilisez le panneau QR pour partager ou imprimer le lien du business actif.',
+    qr_panel_updated: 'Derniere mise a jour',
+    qr_view: 'Voir le QR',
+    qr_share_business: 'Partager le business',
+    qr_unavailable: 'QR pas encore disponible.',
     today_schedule: 'Planning du jour',
     appointments_count: '{count} rendez-vous',
     no_appointments_today_title: 'Aucun rendez-vous aujourd\'hui',
@@ -253,6 +271,12 @@ const BUSINESS_BOOKINGS_DICTIONARY: Record<LocaleCode, Record<BusinessBookingsKe
     error_retry: 'حاول مجددا',
     error_load_bookings: 'تعذر تحميل الحجوزات. حاول مرة اخرى.',
     title: 'حجوزات المنشأة',
+    qr_panel_title: 'رمز QR للنشاط',
+    qr_panel_desc: 'استخدم لوحة QR لمشاركة او طباعة رابط النشاط الحالي.',
+    qr_panel_updated: 'آخر تحديث',
+    qr_view: 'عرض QR',
+    qr_share_business: 'مشاركة النشاط',
+    qr_unavailable: 'رمز QR غير متاح بعد.',
     today_schedule: 'جدول اليوم',
     appointments_count: '{count} مواعيد',
     no_appointments_today_title: 'لا توجد مواعيد اليوم',

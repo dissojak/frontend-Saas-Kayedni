@@ -203,10 +203,16 @@ export function BookingFlowGuideContent({
                     </div>
                   </div>
 
-                  {step.flowSteps && step.flowSteps.length > 0 ? (
+                  {(() => {
+                    const flowSteps = step.flowSteps ?? [];
+                    if (flowSteps.length === 0) {
+                      return null;
+                    }
+
+                    return (
                     <div className="mt-6 overflow-x-auto pb-2">
                       <div className="flex min-w-max items-stretch gap-3">
-                        {step.flowSteps.map((flowStep, index) => {
+                        {flowSteps.map((flowStep, index) => {
                           const screenPath = step.flowStepScreens?.[index];
 
                           return (
@@ -228,7 +234,7 @@ export function BookingFlowGuideContent({
                                   )}
                                 </div>
                               </div>
-                              {index < step.flowSteps.length - 1 ? (
+                              {index < flowSteps.length - 1 ? (
                                 <ArrowRight className="mt-[8.25rem] h-5 w-5 shrink-0 text-primary/75" />
                               ) : null}
                             </React.Fragment>
@@ -236,7 +242,8 @@ export function BookingFlowGuideContent({
                         })}
                       </div>
                     </div>
-                  ) : null}
+                    );
+                  })()}
 
                   {step.imagePaths.length > 0 ? (
                     <div

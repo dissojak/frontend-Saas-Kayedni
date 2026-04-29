@@ -5,6 +5,11 @@ export type BusinessDetailI18nKey =
   | 'review_singular'
   | 'review_plural'
   | 'book_appointment'
+  | 'share_business'
+  | 'view_qr'
+  | 'qr_panel_title'
+  | 'qr_panel_desc'
+  | 'qr_panel_unavailable'
   | 'business_not_found_title'
   | 'business_not_found_desc'
   | 'back_to_businesses'
@@ -72,6 +77,11 @@ const BUSINESS_DETAIL_DICTIONARY: Record<LocaleCode, Record<BusinessDetailI18nKe
     review_singular: 'review',
     review_plural: 'reviews',
     book_appointment: 'Book Appointment',
+    share_business: 'Share Business',
+    view_qr: 'View QR',
+    qr_panel_title: 'Business QR',
+    qr_panel_desc: 'Share the business link or open the QR panel for quick access.',
+    qr_panel_unavailable: 'QR is not available yet.',
     business_not_found_title: 'Business Not Found',
     business_not_found_desc: "The business you're looking for doesn't exist or has been removed.",
     back_to_businesses: 'Back to Businesses',
@@ -140,6 +150,11 @@ const BUSINESS_DETAIL_DICTIONARY: Record<LocaleCode, Record<BusinessDetailI18nKe
     review_singular: 'avis',
     review_plural: 'avis',
     book_appointment: 'Prendre rendez-vous',
+    share_business: 'Partager le business',
+    view_qr: 'Voir le QR',
+    qr_panel_title: 'QR du business',
+    qr_panel_desc: 'Partagez le lien du business ou ouvrez le panneau QR pour un acces rapide.',
+    qr_panel_unavailable: 'Le QR n est pas encore disponible.',
     business_not_found_title: 'Business introuvable',
     business_not_found_desc: 'Le business recherche n\'existe pas ou a ete supprime.',
     back_to_businesses: 'Retour aux business',
@@ -208,6 +223,11 @@ const BUSINESS_DETAIL_DICTIONARY: Record<LocaleCode, Record<BusinessDetailI18nKe
     review_singular: 'مراجعة',
     review_plural: 'مراجعات',
     book_appointment: 'احجز موعدا',
+    share_business: 'مشاركة النشاط',
+    view_qr: 'عرض QR',
+    qr_panel_title: 'رمز QR للنشاط',
+    qr_panel_desc: 'شارك رابط النشاط او افتح لوحة QR للوصول السريع.',
+    qr_panel_unavailable: 'رمز QR غير متاح بعد.',
     business_not_found_title: 'المنشاة غير موجودة',
     business_not_found_desc: 'المنشاة التي تبحث عنها غير موجودة او تمت ازالتها.',
     back_to_businesses: 'العودة الى المنشات',

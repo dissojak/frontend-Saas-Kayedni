@@ -12,6 +12,12 @@ export type StaffBookingsKey =
   | 'try_again'
   | 'log_in_again'
   | 'title'
+  | 'business_qr_panel_title'
+  | 'business_qr_panel_desc'
+  | 'business_qr_panel_updated'
+  | 'business_qr_view'
+  | 'business_qr_share'
+  | 'business_qr_unavailable'
   | 'walk_in_title'
   | 'walk_in_desc'
   | 'today_schedule_title'
@@ -124,6 +130,12 @@ const STAFF_BOOKINGS_DICTIONARY: Record<LocaleCode, Record<StaffBookingsKey, str
     try_again: 'Try again',
     log_in_again: 'Log in again',
     title: 'My bookings',
+    business_qr_panel_title: 'Business QR',
+    business_qr_panel_desc: 'Open the active business QR, print it, or share the link.',
+    business_qr_panel_updated: 'Last updated',
+    business_qr_view: 'View QR',
+    business_qr_share: 'Share Business',
+    business_qr_unavailable: 'QR not available yet.',
     walk_in_title: 'Walk-in client booking',
     walk_in_desc: 'Quickly book a service for walk-in clients. Select an existing client or create a new one.',
     today_schedule_title: "Today's schedule",
@@ -235,6 +247,12 @@ const STAFF_BOOKINGS_DICTIONARY: Record<LocaleCode, Record<StaffBookingsKey, str
     try_again: 'Reessayer',
     log_in_again: 'Se reconnecter',
     title: 'Mes reservations',
+    business_qr_panel_title: 'QR du business',
+    business_qr_panel_desc: 'Ouvrez le QR actif, imprimez-le ou partagez le lien.',
+    business_qr_panel_updated: 'Derniere mise a jour',
+    business_qr_view: 'Voir le QR',
+    business_qr_share: 'Partager le business',
+    business_qr_unavailable: 'QR pas encore disponible.',
     walk_in_title: 'Reservation client sans rendez-vous',
     walk_in_desc: 'Reserve rapidement un service pour les clients sans rendez-vous. Selectionnez un client existant ou creez-en un nouveau.',
     today_schedule_title: 'Planning du jour',
@@ -346,6 +364,12 @@ const STAFF_BOOKINGS_DICTIONARY: Record<LocaleCode, Record<StaffBookingsKey, str
     try_again: 'حاول مرة اخرى',
     log_in_again: 'سجل الدخول مجددا',
     title: 'حجوزاتي',
+      business_qr_panel_title: 'رمز QR للنشاط',
+      business_qr_panel_desc: 'افتح رمز QR الحالي او اطبعه او شارك الرابط.',
+      business_qr_panel_updated: 'آخر تحديث',
+      business_qr_view: 'عرض QR',
+      business_qr_share: 'مشاركة النشاط',
+      business_qr_unavailable: 'رمز QR غير متاح بعد.',
     walk_in_title: 'حجز عميل بدون موعد',
     walk_in_desc: 'احجز خدمة بسرعة للعملاء بدون موعد. اختر عميلا موجودا او انشئ عميلا جديدا.',
     today_schedule_title: 'جدول اليوم',
