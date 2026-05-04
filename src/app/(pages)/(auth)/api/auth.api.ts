@@ -30,6 +30,7 @@ export interface SignupRequestPayload {
       contactEmail?: string;
     };
   };
+  inviteKey?: string;
 }
 
 export interface LoginRequestPayload {
@@ -65,6 +66,37 @@ export async function signupAPI(payload: SignupRequestPayload): Promise<{ status
     return { status: response.status, data };
   } catch (error) {
     console.error('Signup API Error:', error);
+    throw error;
+  }
+}
+
+/**
+ * Validate invite key before signup
+ * POST /v1/auth/validate-invite-key
+ */
+export async function validateInviteKeyAPI(inviteKey: string): Promise<{ status: number; data?: any }> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/validate-invite-key`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ inviteKey }),
+    });
+
+    const text = await response.text();
+    let data: any = undefined;
+    if (text) {
+      try {
+        data = JSON.parse(text);
+      } catch (err) {
+        data = text;
+      }
+    }
+
+    return { status: response.status, data };
+  } catch (error) {
+    console.error('Validate Invite Key API Error:', error);
     throw error;
   }
 }
