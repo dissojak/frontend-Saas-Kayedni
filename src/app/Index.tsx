@@ -300,7 +300,7 @@ export default function Index() {
   useEffect(() => {
     let mounted = true;
     setTestimonialsLoading(true);
-    apiGet<Testimonial[]>("/v1/ratings/recent?limit=6", false)
+    apiGet<Testimonial[]>("/ratings/recent?limit=6", false)
       .then((data) => {
         if (!mounted) return;
         if (Array.isArray(data) && data.length >= 3) {
