@@ -23,7 +23,7 @@ export default function AdminControlPanel() {
 
       const userData = JSON.parse(storedUser);
       
-      if (userData.role !== 'admin') {
+      if (userData.role !== 'ADMIN') {
         router.push('/admin/login');
         return;
       }

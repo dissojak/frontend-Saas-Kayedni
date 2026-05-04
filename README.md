@@ -65,7 +65,7 @@ App runs at `http://localhost:3000` by default.
 
 - `NEXT_PUBLIC_API_URL`: Base URL used by most app API calls.
 - `NEXT_PUBLIC_API_BASE_URL`: Base URL used by shared API client helpers.
-- `NEXT_PUBLIC_AUTH_URL`: Auth-specific backend base URL.
+- `NEXT_PUBLIC_AUTH_URL`: Auth-specific backend base URL. Do not end it with a trailing slash.
 - `NEXT_PUBLIC_TRACKING_SERVICE_URL`: Tracking service host (Express tracking backend).
 - `NEXT_PUBLIC_TRACKING_API_KEY`: API key sent in `x-api-key` to tracking service.
 - `NEXT_PUBLIC_GA_MEASUREMENT_ID`: Optional GA4 property ID.
