@@ -6,7 +6,7 @@ export default function ActivatePage() {
   const [status, setStatus] = useState("Processing activation...");
 
   useEffect(() => {
-    const token = new URLSearchParams(window.location.search).get("token");
+    const token = new URLSearchParams(globalThis.location.search).get("token");
 
     if (!token) {
       setStatus("Missing activation token.");
