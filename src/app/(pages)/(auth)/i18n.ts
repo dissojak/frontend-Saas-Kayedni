@@ -153,6 +153,13 @@ export type AuthKey =
     | "error_register_phone_required_other"
     | "error_register_no_fallback_category"
     | "error_register_failed"
+    | "error_register_invite_required"
+    | "error_register_invite_format"
+    | "error_register_invite_invalid"
+    | "register_invite_key_label"
+    | "register_invite_key_placeholder"
+    | "register_validate_key"
+    | "register_invite_key_help"
     | "register_success_check_email";
 
 const MESSAGES: Record<LocaleCode, Record<AuthKey, string>> = {
@@ -309,6 +316,13 @@ const MESSAGES: Record<LocaleCode, Record<AuthKey, string>> = {
         error_register_phone_required_other: "Phone number is required for Other industry requests",
         error_register_no_fallback_category: "No fallback category is configured. Please contact support.",
         error_register_failed: "Registration failed",
+        error_register_invite_required: "An invite code is required to register as a business owner",
+        error_register_invite_format: "Invite code must be 6–8 digits",
+        error_register_invite_invalid: "Invite code is invalid or expired",
+        register_invite_key_label: "Invite code",
+        register_invite_key_placeholder: "Enter 6-8 digit invite code",
+        register_validate_key: "Validate",
+        register_invite_key_help: "If you don't have a code, contact an admin to request one.",
         register_success_check_email: "Registration successful. Please check your email to activate your account.",
     },
     fr: {
@@ -464,6 +478,13 @@ const MESSAGES: Record<LocaleCode, Record<AuthKey, string>> = {
         error_register_phone_required_other: "Le telephone est obligatoire pour les demandes de secteur",
         error_register_no_fallback_category: "Aucune categorie de secours n'est configuree. Contactez le support.",
         error_register_failed: "Echec de l'inscription",
+        error_register_invite_required: "Un code d'invitation est requis pour vous inscrire en tant que proprietaire",
+        error_register_invite_format: "Le code d'invitation doit contenir 6 a 8 chiffres",
+        error_register_invite_invalid: "Le code d'invitation est invalide ou a expire",
+        register_invite_key_label: "Code d'invitation",
+        register_invite_key_placeholder: "Entrez un code de 6-8 chiffres",
+        register_validate_key: "Valider",
+        register_invite_key_help: "Si vous n'avez pas de code, contactez un administrateur.",
         register_success_check_email: "Inscription reussie. Verifiez votre e-mail pour activer votre compte.",
     },
     ar: {
@@ -619,6 +640,13 @@ const MESSAGES: Record<LocaleCode, Record<AuthKey, string>> = {
         error_register_phone_required_other: "رقم الهاتف مطلوب عند طلب فئة جديدة",
         error_register_no_fallback_category: "لا توجد فئة بديلة مضبوطة حاليا. تواصل مع الدعم.",
         error_register_failed: "فشل التسجيل",
+        error_register_invite_required: "مطلوب رمز دعوة للتسجيل كصاحب عمل",
+        error_register_invite_format: "يجب ان يتكون رمز الدعوة من 6 الى 8 ارقام",
+        error_register_invite_invalid: "رمز الدعوة غير صالح او منتهي الصلاحية",
+        register_invite_key_label: "رمز الدعوة",
+        register_invite_key_placeholder: "ادخل رمز مكون من 6-8 ارقام",
+        register_validate_key: "تحقق",
+        register_invite_key_help: "اذا لم تمتلك رمزًا، تواصل مع الادارة لطلب واحد.",
         register_success_check_email: "تم التسجيل بنجاح. يرجى التحقق من بريدك الإلكتروني لتفعيل الحساب.",
     },
 };

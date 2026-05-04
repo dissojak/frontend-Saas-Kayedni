@@ -60,4 +60,8 @@ export interface RegisterViewProps extends BaseAuthViewProps {
   isOtherCategorySelected: boolean;
   categories: RegisterBusinessCategory[];
   intendedIndustryLabel?: string;
+  inviteKey: string;
+  setInviteKey: (v: string) => void;
+  inviteKeyValid: boolean;
+  validateInviteKey: () => Promise<boolean>;
 }
