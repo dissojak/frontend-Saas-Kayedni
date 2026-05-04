@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Shield, Users, Calendar, Settings, BarChart3, Bell } from 'lucide-react';
+import { Shield, Users, Calendar, Settings, BarChart3, Bell, KeyRound } from 'lucide-react';
 import { Button } from '@components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@components/ui/card';
 import { useLocale } from '@global/hooks/useLocale';
@@ -27,7 +27,7 @@ export default function AdminControlPanel() {
 
       const userData = JSON.parse(storedUser);
       
-      if (userData.role !== 'admin') {
+      if (userData.role !== 'ADMIN') {
         router.push('/admin/login');
         return;
       }
@@ -88,6 +88,12 @@ export default function AdminControlPanel() {
       href: '/admin/settings',
       icon: Settings,
       description: adminT(locale, 'system_settings_desc'),
+    },
+    {
+      title: 'Invite Keys',
+      href: '/admin/invite-keys',
+      icon: KeyRound,
+      description: 'Generate, copy, review usage, and revoke early-access keys',
     },
   ];
 
@@ -156,8 +162,8 @@ export default function AdminControlPanel() {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {stats.map((stat, index) => (
-            <Card key={index}>
+          {stats.map((stat) => (
+            <Card key={stat.title}>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -176,10 +182,10 @@ export default function AdminControlPanel() {
         {/* Quick Actions */}
         <div className="mb-8">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">{adminT(locale, 'quick_actions')}</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {quickActions.map((action, index) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            {quickActions.map((action) => (
               <Card 
-                key={index} 
+                key={action.title} 
                 className="cursor-pointer hover:shadow-lg transition-shadow"
                 onClick={() => router.push(action.href)}
               >
@@ -207,8 +213,8 @@ export default function AdminControlPanel() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {recentActivities.map((activity, index) => (
-                <div key={index} className="flex items-center justify-between py-3 border-b last:border-0">
+              {recentActivities.map((activity) => (
+                <div key={`${activity.action}-${activity.user}`} className="flex items-center justify-between py-3 border-b last:border-0">
                   <div>
                     <p className="font-medium text-gray-900">{activity.action}</p>
                     <p className="text-sm text-gray-600">{activity.user}</p>

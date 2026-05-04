@@ -5,7 +5,11 @@
 
 import type { BackendAuthResponse, BackendUserRole } from '../types';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_AUTH_URL || 'http://localhost:8088/api/v1/auth';
+function normalizeBaseUrl(url: string): string {
+  return url.replace(/\/+$/, '');
+}
+
+const API_BASE_URL = normalizeBaseUrl(process.env.NEXT_PUBLIC_AUTH_URL || 'http://localhost:8088/api/v1/auth');
 
 export interface SignupRequestPayload {
   name: string;

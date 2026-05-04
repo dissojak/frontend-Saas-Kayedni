@@ -65,6 +65,10 @@ export default function RegisterView({
   isOtherCategorySelected,
   categories,
   intendedIndustryLabel,
+  inviteKey,
+  setInviteKey,
+  inviteKeyValid,
+  validateInviteKey,
 }: Readonly<RegisterViewProps>) {
   const { locale } = useLocale();
   const tr = (key: Parameters<typeof authT>[1]) => authT(locale, key);
@@ -303,7 +307,7 @@ export default function RegisterView({
 
                     {/* Invite key gate: required before proceeding to business steps */}
                     {role === "BUSINESS_OWNER" && !inviteKeyValid && (
-                      <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4">
+                      <div className="mt-4 rounded-xl border-2 border-amber-300 bg-amber-50/95 p-4">
                         <div className="flex items-center gap-3">
                           <Label htmlFor="inviteKey" className="text-sm font-medium">{tr('register_invite_key_label')}</Label>
                         </div>
@@ -323,12 +327,17 @@ export default function RegisterView({
                             {tr('register_validate_key')}
                           </Button>
                         </div>
-                        <p className="mt-2 text-xs text-amber-700">{tr('register_invite_key_help')}</p>
-                        <AdminContactBanner />
+                        <p className="mt-2 text-sm text-amber-800 font-semibold">{tr('register_invite_key_help')}</p>
+                        <div className="mt-3">
+                          <AdminContactBanner />
+                        </div>
+                        <div className="mt-3 rounded-md border border-amber-100 bg-amber-25 p-3 text-sm text-amber-700 font-medium">
+                          {tr('error_register_invite_required')}
+                        </div>
                       </div>
                     )}
 
-                    {isStep1 && (
+                    {isStep1 && (role !== "BUSINESS_OWNER" || inviteKeyValid) && (
                       <>
                         <div className="space-y-2">
                           <Label htmlFor="name" className="text-sm font-medium">{tr("register_full_name")}</Label>
@@ -563,7 +572,7 @@ export default function RegisterView({
                         <Button
                           type="button"
                           onClick={goToNextStep}
-                          disabled={loading}
+                          disabled={loading || (isBusinessOwner && !inviteKeyValid && currentStep === 1)}
                           className="w-full h-12 rounded-full bg-[var(--color-primary)] text-white font-semibold shadow-lg shadow-[var(--color-primary)]/30 transition hover:-translate-y-0.5 hover:shadow-xl hover:shadow-[var(--color-primary)]/35 disabled:opacity-70"
                         >
                           {currentStep === 1 ? tr("register_continue_business_details") : tr("register_continue_optional_details")}
@@ -587,7 +596,7 @@ export default function RegisterView({
                           onClick={async () => {
                             await onSubmit(true);
                           }}
-                          disabled={loading}
+                          disabled={loading || (isBusinessOwner && !inviteKeyValid)}
                           className="w-full h-12 rounded-full bg-[var(--color-primary)] text-white font-semibold shadow-lg shadow-[var(--color-primary)]/30 transition hover:-translate-y-0.5 hover:shadow-xl hover:shadow-[var(--color-primary)]/35 disabled:opacity-70"
                         >
                           {getPrimaryActionLabel()}
