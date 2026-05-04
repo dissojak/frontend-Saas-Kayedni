@@ -1,14 +1,13 @@
 "use client"
 
-import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export default function ActivatePage() {
-  const searchParams = useSearchParams();
-  const token = searchParams?.get("token");
   const [status, setStatus] = useState("Processing activation...");
 
   useEffect(() => {
+    const token = new URLSearchParams(window.location.search).get("token");
+
     if (!token) {
       setStatus("Missing activation token.");
       return;
@@ -25,7 +24,7 @@ export default function ActivatePage() {
         }
       })
       .catch(() => setStatus("Network error while activating. Try again later."));
-  }, [token]);
+  }, []);
 
   return (
     <main className="min-h-screen flex items-center justify-center p-6">
