@@ -130,7 +130,7 @@ const BookingCheckoutPage = () => {
     const ensurePhone = async () => {
       try {
         if (user && !user.phone) {
-          const profile = await apiGet('/v1/auth/me', true);
+          const profile = await apiGet('/auth/me', true);
           const phone = profile?.phoneNumber ?? '';
           if (phone) {
             setDisplayUser({ ...user, phone });

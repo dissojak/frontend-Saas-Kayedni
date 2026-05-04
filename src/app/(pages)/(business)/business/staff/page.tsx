@@ -197,7 +197,7 @@ export default function BusinessStaffPage() {
     setIsAddingSelfAsStaff(true);
     try {
       const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
-      const response = await fetch(`${API_BASE_URL}/v1/businesses/${businessId}/staff/self`, {
+      const response = await fetch(`${API_BASE_URL}/businesses/${businessId}/staff/self`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -250,7 +250,7 @@ export default function BusinessStaffPage() {
     setIsAddingSelfAsStaff(true);
     try {
       const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
-      const response = await fetch(`${API_BASE_URL}/v1/businesses/${businessId}/staff/self`, {
+      const response = await fetch(`${API_BASE_URL}/businesses/${businessId}/staff/self`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',

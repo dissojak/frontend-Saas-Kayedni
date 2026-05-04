@@ -125,7 +125,7 @@ export function useAuthImplementation() {
 
     try {
       // Call backend to validate and log the switch
-      const response = await fetch(`${API_BASE_URL}/v1/auth/switch-context`, {
+      const response = await fetch(`${API_BASE_URL}/auth/switch-context`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

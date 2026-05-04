@@ -68,7 +68,7 @@ export default function useCheckout() {
       if (!clientId) {
         console.log('[useCheckout] Attempting to fetch clientId from /me endpoint');
         try {
-          const profile = await apiGet('/v1/auth/me', true);
+          const profile = await apiGet('/auth/me', true);
           clientId = Number(profile?.userId);
           console.log('[useCheckout] Got clientId from /me:', clientId);
         } catch (e) {
