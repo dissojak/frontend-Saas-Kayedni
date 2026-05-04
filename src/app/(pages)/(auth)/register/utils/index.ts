@@ -25,6 +25,7 @@ export async function callBackendRegister(payload: RegisterPayload): Promise<Aut
       password: payload.password,
       role: backendRole,
       business: payload.business,
+      inviteKey: (payload as any).inviteKey,
     });
 
     const status = backendResponse.status;

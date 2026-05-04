@@ -300,6 +300,32 @@ export default function RegisterView({
                       </button>
                     </div>
 
+                    {/* Invite key gate: required before proceeding to business steps */}
+                    {role === "BUSINESS_OWNER" && !inviteKeyValid && (
+                      <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4">
+                        <div className="flex items-center gap-3">
+                          <Label htmlFor="inviteKey" className="text-sm font-medium">{tr('register_invite_key_label')}</Label>
+                        </div>
+                        <div className="mt-2 flex gap-2">
+                          <Input
+                            id="inviteKey"
+                            value={inviteKey}
+                            onChange={(e) => setInviteKey(e.target.value)}
+                            placeholder={tr('register_invite_key_placeholder')}
+                            className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-slate-900"
+                          />
+                          <Button
+                            type="button"
+                            onClick={async () => { await validateInviteKey(); }}
+                            className="h-12 rounded-full bg-[var(--color-primary)] text-white"
+                          >
+                            {tr('register_validate_key')}
+                          </Button>
+                        </div>
+                        <p className="mt-2 text-xs text-amber-700">{tr('register_invite_key_help')}</p>
+                      </div>
+                    )}
+
                     {isStep1 && (
                       <>
                         <div className="space-y-2">

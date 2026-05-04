@@ -44,6 +44,8 @@ export function useRegister(defaultRole: UserRole = "CLIENT") {
   const [businessDescription, setBusinessDescription] = useState("");
   const [otherIndustryName, setOtherIndustryName] = useState("");
   const [otherIndustryDescription, setOtherIndustryDescription] = useState("");
+  const [inviteKey, setInviteKey] = useState("");
+  const [inviteKeyValid, setInviteKeyValid] = useState(false);
   const [categories, setCategories] = useState<BusinessCategoryOption[]>([]);
 
   const intendedCategorySlug = normalizeCategorySlug(searchParams.get("category"));
@@ -231,6 +233,13 @@ export function useRegister(defaultRole: UserRole = "CLIENT") {
     if (!validateBasicSignup()) {
       return;
     }
+    // For business owner flow, require invite key validation before entering business steps
+    if (role === "BUSINESS_OWNER") {
+      if (!inviteKeyValid) {
+        reportValidationError(tr("error_register_invite_required"), "inviteKey", "invite_key_not_valid");
+        return;
+      }
+    }
 
     setCurrentStep(2);
   };
@@ -268,6 +277,32 @@ export function useRegister(defaultRole: UserRole = "CLIENT") {
       if (isOtherCategorySelected) {
         setCurrentStep(4);
       }
+    }
+  };
+
+  const validateInviteKey = async (): Promise<boolean> => {
+    if (!inviteKey || !/^[0-9]{6,8}$/.test(inviteKey)) {
+      reportValidationError(tr("error_register_invite_format"), "inviteKey", "invite_key_invalid_format");
+      setInviteKeyValid(false);
+      return false;
+    }
+
+    try {
+      // Lazy import to avoid circular deps
+      const { validateInviteKeyAPI } = await import("@/(pages)/(auth)/api/auth.api");
+      const res = await validateInviteKeyAPI(inviteKey);
+      if (res.status >= 200 && res.status < 300 && res.data?.valid) {
+        setInviteKeyValid(true);
+        return true;
+      }
+      setInviteKeyValid(false);
+      setError(res.data?.message || tr("error_register_invite_invalid"));
+      return false;
+    } catch (err) {
+      setInviteKeyValid(false);
+      const msg = (err as Error)?.message ?? tr("error_register_invite_invalid");
+      setError(msg);
+      return false;
     }
   };
 
@@ -369,6 +404,7 @@ export function useRegister(defaultRole: UserRole = "CLIENT") {
                 : undefined,
             }
           : undefined,
+          inviteKey: role === "BUSINESS_OWNER" ? inviteKey : undefined,
       };
       const res = await callBackendRegister(payload);
       
@@ -474,5 +510,9 @@ export function useRegister(defaultRole: UserRole = "CLIENT") {
     categories,
     intendedIndustryLabel,
     onSubmit,
+    inviteKey,
+    setInviteKey,
+    inviteKeyValid,
+    validateInviteKey,
   } as const;
 }
