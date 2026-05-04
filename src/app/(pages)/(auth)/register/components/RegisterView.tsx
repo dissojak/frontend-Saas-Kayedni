@@ -20,6 +20,7 @@ import { useSearchParams } from "next/navigation";
 import { withCategoryQuery } from "@global/lib/slices";
 import { useLocale } from "@global/hooks/useLocale";
 import { authT } from "@/(pages)/(auth)/i18n";
+import AdminContactBanner from '@components/auth/AdminContactBanner';
 
 export default function RegisterView({
   name,
@@ -323,6 +324,7 @@ export default function RegisterView({
                           </Button>
                         </div>
                         <p className="mt-2 text-xs text-amber-700">{tr('register_invite_key_help')}</p>
+                        <AdminContactBanner />
                       </div>
                     )}
 
