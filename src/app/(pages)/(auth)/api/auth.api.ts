@@ -3,7 +3,7 @@
  * Handles all backend authentication API calls
  */
 
-import type { BackendAuthResponse, BackendUserRole } from '../types';
+import type { BackendAuthResponse, BackendUserRole, TwoFactorMethod } from '../types';
 
 function normalizeBaseUrl(url: string): string {
   return url.replace(/\/+$/, '');
@@ -42,6 +42,31 @@ export interface LoginRequestPayload {
   password: string;
 }
 
+export interface VerifyTwoFactorLoginPayload {
+  twoFactorToken: string;
+  code: string;
+  method?: TwoFactorMethod;
+}
+
+export interface TwoFactorCodePayload {
+  code: string;
+  method?: TwoFactorMethod;
+}
+
+export interface TwoFactorSendCodePayload {
+  method: Exclude<TwoFactorMethod, 'APP' | 'BACKUP_CODE'>;
+}
+
+export interface TwoFactorLoginSendCodePayload {
+  twoFactorToken: string;
+  method: Exclude<TwoFactorMethod, 'APP' | 'BACKUP_CODE'>;
+}
+
+export interface TwoFactorBackupCodesResponse {
+  backupCodes: string[];
+  message?: string;
+}
+
 /**
  * Signup - Register a new user
  * POST /api/v1/auth/signup
@@ -61,7 +86,7 @@ export async function signupAPI(payload: SignupRequestPayload): Promise<{ status
     if (text) {
       try {
         data = JSON.parse(text);
-      } catch (err) {
+      } catch {
         // non-JSON response
         data = text;
       }
@@ -93,7 +118,7 @@ export async function validateInviteKeyAPI(inviteKey: string): Promise<{ status:
     if (text) {
       try {
         data = JSON.parse(text);
-      } catch (err) {
+      } catch {
         data = text;
       }
     }
@@ -130,6 +155,151 @@ export async function loginAPI(payload: LoginRequestPayload): Promise<BackendAut
     console.error('Login API Error:', error);
     throw error;
   }
+}
+
+/**
+ * Verify two-factor login challenge and complete authentication.
+ * POST /api/v1/auth/verify-2fa
+ */
+export async function verifyTwoFactorLoginAPI(payload: VerifyTwoFactorLoginPayload): Promise<BackendAuthResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/verify-2fa`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Two-factor verification failed');
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Two-Factor Verification API Error:', error);
+    throw error;
+  }
+}
+
+export async function sendTwoFactorLoginCodeAPI(payload: TwoFactorLoginSendCodePayload): Promise<{ message: string }> {
+  const response = await fetch(`${API_BASE_URL}/verify-2fa/send-code`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.message || 'Failed to send two-factor verification code');
+  }
+  return data;
+}
+
+/**
+ * Setup two-factor authentication for the current user.
+ * POST /api/v1/auth/2fa/setup
+ */
+export async function setupTwoFactorAPI(accessToken: string): Promise<any> {
+  const response = await fetch(`${API_BASE_URL}/2fa/setup`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message || 'Failed to setup two-factor authentication');
+  }
+
+  return data;
+}
+
+/**
+ * Enable two-factor authentication after verifying the code.
+ * POST /api/v1/auth/2fa/enable
+ */
+export async function enableTwoFactorAPI(accessToken: string, payload: TwoFactorCodePayload): Promise<any> {
+  const response = await fetch(`${API_BASE_URL}/2fa/enable`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message || 'Failed to enable two-factor authentication');
+  }
+
+  return data;
+}
+
+/**
+ * Disable two-factor authentication after verifying the code.
+ * POST /api/v1/auth/2fa/disable
+ */
+export async function disableTwoFactorAPI(accessToken: string, payload: TwoFactorCodePayload): Promise<{ message: string }> {
+  const response = await fetch(`${API_BASE_URL}/2fa/disable`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message || 'Failed to disable two-factor authentication');
+  }
+
+  return data;
+}
+
+export async function sendTwoFactorSetupCodeAPI(accessToken: string, payload: TwoFactorSendCodePayload): Promise<{ message: string }> {
+  const response = await fetch(`${API_BASE_URL}/2fa/send-code`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.message || 'Failed to send setup verification code');
+  }
+  return data;
+}
+
+export async function regenerateBackupCodesAPI(accessToken: string, payload: TwoFactorCodePayload): Promise<TwoFactorBackupCodesResponse> {
+  const response = await fetch(`${API_BASE_URL}/2fa/backup-codes/regenerate`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.message || 'Failed to regenerate backup codes');
+  }
+  return data;
 }
 
 /**

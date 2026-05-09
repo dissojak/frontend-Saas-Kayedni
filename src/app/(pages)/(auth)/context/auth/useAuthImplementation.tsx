@@ -3,7 +3,8 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import type { AuthContextType, User } from './types';
 import { loadStoredUser, storeUser, loadStoredToken, loadStoredActiveMode, storeActiveMode } from './utils';
-import { login as backendLogin, register as backendRegister } from './actions';
+import { setAccessToken, setRefreshToken } from '../../utils/token.utils';
+import { register as backendRegister } from './actions';
 import { useRouter } from 'next/navigation';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8088/api/v1';
@@ -46,25 +47,31 @@ export function useAuthImplementation() {
     storeUser(nextUser);
   }, []);
 
-  const login = async (email: string, password: string, role: User['role']) => {
-    try {
-      const u = await backendLogin(email, password, role);
-      updateUser(u);
-      // Load token after login (it's stored by the apiPost function)
-      const newToken = loadStoredToken();
-      setToken(newToken);
-      
-      // Reset to owner mode on login (will switch if needed)
-      if (u.isAlsoStaff) {
-        setActiveMode('owner');
-        storeActiveMode('owner');
-      }
-      
-      return u;
-    } catch (err) {
-      console.error('Login failed', err);
-      throw err;
+  const login = async (
+    user: User,
+    accessToken?: string | null,
+    refreshToken?: string | null,
+  ) => {
+    updateUser(user);
+
+    if (accessToken) {
+      setAccessToken(accessToken);
+      setToken(accessToken);
+    } else {
+      const storedToken = loadStoredToken();
+      setToken(storedToken);
     }
+
+    if (refreshToken) {
+      setRefreshToken(refreshToken);
+    }
+
+    if (user.isAlsoStaff) {
+      setActiveMode('owner');
+      storeActiveMode('owner');
+    }
+
+    return user;
   };
 
   const register = async (name: string, email: string, password: string, role: User['role']) => {

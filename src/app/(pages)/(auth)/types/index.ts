@@ -4,6 +4,7 @@ import { User } from "../context/auth/types";
 export type BackendUserRole = 'CLIENT' | 'BUSINESS_OWNER' | 'STAFF' | 'ADMIN';
 // Frontend will now use the same uppercase role values as the backend
 export type UserRole = 'CLIENT' | 'BUSINESS_OWNER' | 'STAFF' | 'ADMIN';
+export type TwoFactorMethod = 'APP' | 'EMAIL' | 'SMS' | 'BACKUP_CODE';
 
 // Map frontend roles to backend roles (identity for most, kept explicit for clarity)
 export const roleMapping: Record<UserRole, BackendUserRole> = {
@@ -36,6 +37,10 @@ export interface BackendAuthResponse {
   email: string;
   role: BackendUserRole;
   message: string;
+  twoFactorEnabled?: boolean;
+  requiresTwoFactor?: boolean;
+  twoFactorToken?: string;
+  twoFactorMethods?: TwoFactorMethod[];
 }
 
 // Frontend Auth Response
@@ -44,6 +49,11 @@ export interface AuthResponse {
   message?: string;
   user?: User;
   error?: string;
+  requiresTwoFactor?: boolean;
+  twoFactorToken?: string;
+  twoFactorMethods?: TwoFactorMethod[];
+  accessToken?: string | null;
+  refreshToken?: string | null;
 }
 
 export interface BaseAuthViewProps {

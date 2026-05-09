@@ -1,7 +1,8 @@
 import { AuthResponse, reverseRoleMapping } from '../../types';
 import { LoginPayload } from '../types';
-import { loginAPI } from '../../api/auth.api';
+import { loginAPI, verifyTwoFactorLoginAPI } from '../../api/auth.api';
 import { setAccessToken, setRefreshToken } from '../../utils/token.utils';
+import { buildUserFromDb } from '../../context/auth/utils';
 
 /**
  * Call backend login endpoint with proper role mapping
@@ -13,6 +14,16 @@ export async function callBackendLogin(payload: LoginPayload): Promise<AuthRespo
       email: payload.email,
       password: payload.password,
     });
+
+    if (backendResponse.requiresTwoFactor && backendResponse.twoFactorToken) {
+      return {
+        success: false,
+        requiresTwoFactor: true,
+        twoFactorToken: backendResponse.twoFactorToken,
+        twoFactorMethods: backendResponse.twoFactorMethods,
+        message: backendResponse.message || 'Two-factor authentication required',
+      };
+    }
 
     // Check if account needs activation
     if (!backendResponse.token && backendResponse.message.includes('activate')) {
@@ -36,14 +47,16 @@ export async function callBackendLogin(payload: LoginPayload): Promise<AuthRespo
       return {
         success: true,
         message: backendResponse.message,
-        user: {
-          id: backendResponse.userId.toString(),
+        accessToken: backendResponse.token,
+        refreshToken: backendResponse.refreshToken,
+        user: buildUserFromDb({
+          id: backendResponse.userId,
           name: backendResponse.name,
           email: backendResponse.email,
           role: frontendRole,
           token: backendResponse.token,
           refreshToken: backendResponse.refreshToken || undefined,
-        },
+        }),
       };
     }
 
@@ -57,6 +70,51 @@ export async function callBackendLogin(payload: LoginPayload): Promise<AuthRespo
     return {
       success: false,
       message: error instanceof Error ? error.message : 'An error occurred during login',
+    };
+  }
+}
+
+export async function callBackendTwoFactorLogin(payload: {
+  twoFactorToken: string;
+  code: string;
+  method?: 'APP' | 'EMAIL' | 'SMS' | 'BACKUP_CODE';
+}): Promise<AuthResponse> {
+  try {
+    const backendResponse = await verifyTwoFactorLoginAPI(payload);
+
+    if (backendResponse.token) {
+      setAccessToken(backendResponse.token);
+      if (backendResponse.refreshToken) {
+        setRefreshToken(backendResponse.refreshToken);
+      }
+
+      const frontendRole = reverseRoleMapping[backendResponse.role];
+
+      return {
+        success: true,
+        message: backendResponse.message,
+        accessToken: backendResponse.token,
+        refreshToken: backendResponse.refreshToken,
+        user: buildUserFromDb({
+          id: backendResponse.userId,
+          name: backendResponse.name,
+          email: backendResponse.email,
+          role: frontendRole,
+          token: backendResponse.token,
+          refreshToken: backendResponse.refreshToken || undefined,
+        }),
+      };
+    }
+
+    return {
+      success: false,
+      message: backendResponse.message || 'Two-factor login failed',
+    };
+  } catch (error) {
+    console.error('Two-factor login error:', error);
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'An error occurred during two-factor login',
     };
   }
 }

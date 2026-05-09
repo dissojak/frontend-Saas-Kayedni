@@ -28,6 +28,23 @@ export type AuthKey =
     | "login_submit"
     | "login_quick_secure"
     | "login_no_account"
+    | "login_two_factor_verify_button"
+    | "login_two_factor_code_label"
+    | "login_two_factor_use_another_account"
+    | "login_two_factor_method_label"
+    | "login_two_factor_method_app"
+    | "login_two_factor_method_email"
+    | "login_two_factor_method_sms"
+    | "login_two_factor_method_backup"
+    | "login_two_factor_code_placeholder"
+    | "login_two_factor_backup_placeholder"
+    | "login_two_factor_send_code"
+    | "login_two_factor_send_code_loading"
+    | "login_two_factor_help_app"
+    | "login_two_factor_help_email"
+    | "login_two_factor_help_sms"
+    | "login_two_factor_help_backup"
+    | "login_two_factor_code_sent"
     | "register_hero_title"
     | "register_start_confidence"
     | "register_hero_desc"
@@ -191,6 +208,23 @@ const MESSAGES: Record<LocaleCode, Record<AuthKey, string>> = {
         login_submit: "Sign in",
         login_quick_secure: "Quick, responsive, and secure for every role.",
         login_no_account: "Don't have an account?",
+        login_two_factor_verify_button: "Verify code",
+        login_two_factor_code_label: "Two-factor code",
+        login_two_factor_use_another_account: "Use another account",
+        login_two_factor_method_label: "Verification method",
+        login_two_factor_method_app: "Authenticator app",
+        login_two_factor_method_email: "Email code",
+        login_two_factor_method_sms: "SMS code",
+        login_two_factor_method_backup: "Backup code",
+        login_two_factor_code_placeholder: "123456",
+        login_two_factor_backup_placeholder: "ABCD-1234",
+        login_two_factor_send_code: "Send code",
+        login_two_factor_send_code_loading: "Sending code...",
+        login_two_factor_help_app: "Enter the 6-digit code from your authenticator app.",
+        login_two_factor_help_email: "Request a code and enter the 6-digit code sent to your email.",
+        login_two_factor_help_sms: "Request a code and enter the 6-digit code sent to your phone.",
+        login_two_factor_help_backup: "Enter one of your backup codes. Each backup code can be used once.",
+        login_two_factor_code_sent: "Verification code sent successfully.",
         register_hero_title: "Launch your account in minutes",
         register_start_confidence: "Start with confidence.",
         register_hero_desc: "Personal users register in one step. Business owners follow 3 simple steps, with an extra industry request step only when needed.",
@@ -353,6 +387,23 @@ const MESSAGES: Record<LocaleCode, Record<AuthKey, string>> = {
         login_submit: "Se connecter",
         login_quick_secure: "Rapide, reactive et securisee pour chaque role.",
         login_no_account: "Vous n'avez pas de compte ?",
+        login_two_factor_verify_button: "Verifier le code",
+        login_two_factor_code_label: "Code de verification",
+        login_two_factor_use_another_account: "Utiliser un autre compte",
+        login_two_factor_method_label: "Methode de verification",
+        login_two_factor_method_app: "Application d'authentification",
+        login_two_factor_method_email: "Code par e-mail",
+        login_two_factor_method_sms: "Code par SMS",
+        login_two_factor_method_backup: "Code de secours",
+        login_two_factor_code_placeholder: "123456",
+        login_two_factor_backup_placeholder: "ABCD-1234",
+        login_two_factor_send_code: "Envoyer le code",
+        login_two_factor_send_code_loading: "Envoi du code...",
+        login_two_factor_help_app: "Entrez le code a 6 chiffres de votre application d'authentification.",
+        login_two_factor_help_email: "Demandez un code puis saisissez le code a 6 chiffres recu par e-mail.",
+        login_two_factor_help_sms: "Demandez un code puis saisissez le code a 6 chiffres recu par SMS.",
+        login_two_factor_help_backup: "Saisissez un de vos codes de secours. Chaque code ne peut etre utilise qu'une fois.",
+        login_two_factor_code_sent: "Code de verification envoye avec succes.",
         register_hero_title: "Lancez votre compte en quelques minutes",
         register_start_confidence: "Commencez en toute confiance.",
         register_hero_desc: "Les particuliers s'inscrivent en une etape. Les proprietaires suivent 3 etapes simples, avec une etape supplementaire uniquement si necessaire.",
@@ -515,6 +566,23 @@ const MESSAGES: Record<LocaleCode, Record<AuthKey, string>> = {
         login_submit: "تسجيل الدخول",
         login_quick_secure: "سريع وآمن لكل الحسابات.",
         login_no_account: "ليس لديك حساب؟",
+        login_two_factor_verify_button: "تحقق من الرمز",
+        login_two_factor_code_label: "رمز التحقق الثنائي",
+        login_two_factor_use_another_account: "استخدم حسابا آخر",
+        login_two_factor_method_label: "طريقة التحقق",
+        login_two_factor_method_app: "تطبيق المصادقة",
+        login_two_factor_method_email: "رمز البريد الالكتروني",
+        login_two_factor_method_sms: "رمز الرسائل القصيرة",
+        login_two_factor_method_backup: "رمز احتياطي",
+        login_two_factor_code_placeholder: "123456",
+        login_two_factor_backup_placeholder: "ABCD-1234",
+        login_two_factor_send_code: "ارسال الرمز",
+        login_two_factor_send_code_loading: "جار ارسال الرمز...",
+        login_two_factor_help_app: "ادخل الرمز المكون من 6 ارقام من تطبيق المصادقة.",
+        login_two_factor_help_email: "اطلب الرمز ثم ادخل الرمز المرسل إلى بريدك الالكتروني.",
+        login_two_factor_help_sms: "اطلب الرمز ثم ادخل الرمز المرسل إلى هاتفك.",
+        login_two_factor_help_backup: "ادخل أحد الرموز الاحتياطية. كل رمز احتياطي يُستخدم مرة واحدة.",
+        login_two_factor_code_sent: "تم ارسال رمز التحقق بنجاح.",
         register_hero_title: "أنشئ حسابك خلال دقائق",
         register_start_confidence: "ارتقِ بتجربتك نحو الأفضل.",
         register_hero_desc: "المستخدم الشخصي يسجل بخطوة واحدة. صاحب العمل يتبع 3 خطوات بسيطة مع خطوة اضافية فقط عند الحاجة.",

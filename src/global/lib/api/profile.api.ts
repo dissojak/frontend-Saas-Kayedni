@@ -12,6 +12,8 @@ export interface UserProfile {
   businessId?: number | null;
   businessName?: string | null;
   businessCategoryName?: string | null;
+  twoFactorEnabled?: boolean;
+  twoFactorMethods?: Array<'APP' | 'EMAIL' | 'SMS' | 'BACKUP_CODE'>;
 }
 
 export interface UpdateProfilePayload {
@@ -29,6 +31,18 @@ export interface ChangePasswordPayload {
 export interface ProfileImageResponse {
   url: string;
   publicId: string;
+}
+
+export interface TwoFactorSetupResponse {
+  enabled?: boolean;
+  secret?: string;
+  manualEntryKey?: string;
+  otpauthUri?: string;
+  qrCodeDataUrl?: string;
+  enabledMethods?: string[];
+  availableMethods?: string[];
+  backupCodes?: string[];
+  message?: string;
 }
 
 export async function fetchProfile(): Promise<UserProfile> {
@@ -52,3 +66,11 @@ export async function uploadProfileImage(file: File): Promise<ProfileImageRespon
     requiresAuth: true,
   });
 }
+
+export {
+  setupTwoFactorAPI,
+  enableTwoFactorAPI,
+  disableTwoFactorAPI,
+  sendTwoFactorSetupCodeAPI,
+  regenerateBackupCodesAPI,
+} from '@/(pages)/(auth)/api/auth.api';

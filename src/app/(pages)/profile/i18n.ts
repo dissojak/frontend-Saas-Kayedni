@@ -37,6 +37,32 @@ export type ProfileKey =
   | 'profile_completion'
   | 'profile_status'
   | 'profile_active'
+  | 'profile_2fa_title'
+  | 'profile_2fa_desc'
+  | 'profile_2fa_disable'
+  | 'profile_2fa_disabling'
+  | 'profile_2fa_setup'
+  | 'profile_2fa_preparing'
+  | 'profile_2fa_code_label'
+  | 'profile_2fa_status_label'
+  | 'profile_2fa_status_enabled'
+  | 'profile_2fa_status_disabled'
+  | 'profile_2fa_method_label'
+  | 'profile_2fa_method_app'
+  | 'profile_2fa_method_email'
+  | 'profile_2fa_method_sms'
+  | 'profile_2fa_method_backup'
+  | 'profile_2fa_send_code'
+  | 'profile_2fa_sending_code'
+  | 'profile_2fa_qr_help'
+  | 'profile_2fa_manual_key_label'
+  | 'profile_2fa_enable'
+  | 'profile_2fa_enabling'
+  | 'profile_2fa_active_note'
+  | 'profile_2fa_regenerate_backup'
+  | 'profile_2fa_regenerating_backup'
+  | 'profile_2fa_download_backup'
+  | 'profile_2fa_backup_note'
   | 'profile_toast_update_success_title'
   | 'profile_toast_update_success_desc'
   | 'profile_toast_update_failed_title'
@@ -48,7 +74,27 @@ export type ProfileKey =
   | 'profile_toast_photo_success_title'
   | 'profile_toast_photo_success_desc'
   | 'profile_toast_photo_failed_title'
-  | 'profile_toast_photo_failed_desc';
+  | 'profile_toast_photo_failed_desc'
+  | 'profile_toast_2fa_setup_ready_title'
+  | 'profile_toast_2fa_setup_ready_desc'
+  | 'profile_toast_2fa_setup_failed_title'
+  | 'profile_toast_2fa_setup_failed_desc'
+  | 'profile_toast_2fa_enabled_title'
+  | 'profile_toast_2fa_enabled_desc'
+  | 'profile_toast_2fa_enable_failed_title'
+  | 'profile_toast_2fa_enable_failed_desc'
+  | 'profile_toast_2fa_disabled_title'
+  | 'profile_toast_2fa_disabled_desc'
+  | 'profile_toast_2fa_disable_failed_title'
+  | 'profile_toast_2fa_disable_failed_desc'
+  | 'profile_toast_2fa_code_sent_title'
+  | 'profile_toast_2fa_code_sent_desc'
+  | 'profile_toast_2fa_code_send_failed_title'
+  | 'profile_toast_2fa_code_send_failed_desc'
+  | 'profile_toast_backup_codes_title'
+  | 'profile_toast_backup_codes_desc'
+  | 'profile_toast_backup_codes_failed_title'
+  | 'profile_toast_backup_codes_failed_desc';
 
 const PROFILE_DICTIONARY: Record<LocaleCode, Record<ProfileKey, string>> = {
   en: {
@@ -89,6 +135,32 @@ const PROFILE_DICTIONARY: Record<LocaleCode, Record<ProfileKey, string>> = {
     profile_completion: 'Completion',
     profile_status: 'Status',
     profile_active: 'Active',
+    profile_2fa_title: 'Two-factor authentication',
+    profile_2fa_desc: 'Enable one or more methods: app, email, SMS, and backup codes.',
+    profile_2fa_disable: 'Disable 2FA',
+    profile_2fa_disabling: 'Disabling...',
+    profile_2fa_setup: 'Set up 2FA',
+    profile_2fa_preparing: 'Preparing...',
+    profile_2fa_code_label: 'Verification code',
+    profile_2fa_status_label: 'Status',
+    profile_2fa_status_enabled: 'Enabled on this account',
+    profile_2fa_status_disabled: 'Currently disabled',
+    profile_2fa_method_label: 'Method',
+    profile_2fa_method_app: 'Authenticator app',
+    profile_2fa_method_email: 'Email code',
+    profile_2fa_method_sms: 'SMS code',
+    profile_2fa_method_backup: 'Backup code',
+    profile_2fa_send_code: 'Send code',
+    profile_2fa_sending_code: 'Sending...',
+    profile_2fa_qr_help: 'Scan this QR code in Google Authenticator, Authy, or another TOTP app, then enter the code.',
+    profile_2fa_manual_key_label: 'Manual entry key',
+    profile_2fa_enable: 'Enable method',
+    profile_2fa_enabling: 'Enabling...',
+    profile_2fa_active_note: 'Two-factor authentication is active. Use a current code to disable it or regenerate backup codes.',
+    profile_2fa_regenerate_backup: 'Regenerate backup codes',
+    profile_2fa_regenerating_backup: 'Regenerating...',
+    profile_2fa_download_backup: 'Download backup codes (.txt)',
+    profile_2fa_backup_note: 'Store backup codes in a safe place. Each code can be used one time only.',
     profile_toast_update_success_title: 'Profile updated successfully!',
     profile_toast_update_success_desc: 'Your changes have been saved securely.',
     profile_toast_update_failed_title: 'Update failed',
@@ -101,6 +173,26 @@ const PROFILE_DICTIONARY: Record<LocaleCode, Record<ProfileKey, string>> = {
     profile_toast_photo_success_desc: 'Your new profile picture has been saved successfully.',
     profile_toast_photo_failed_title: 'Upload failed',
     profile_toast_photo_failed_desc: 'Failed to upload image.',
+    profile_toast_2fa_setup_ready_title: '2FA setup is ready',
+    profile_toast_2fa_setup_ready_desc: 'Scan the QR code or pick another method.',
+    profile_toast_2fa_setup_failed_title: 'Unable to prepare 2FA',
+    profile_toast_2fa_setup_failed_desc: 'Please try again.',
+    profile_toast_2fa_enabled_title: '2FA enabled',
+    profile_toast_2fa_enabled_desc: 'Your selected method is now active.',
+    profile_toast_2fa_enable_failed_title: 'Enable 2FA failed',
+    profile_toast_2fa_enable_failed_desc: 'Enter a valid code and try again.',
+    profile_toast_2fa_disabled_title: '2FA disabled',
+    profile_toast_2fa_disabled_desc: 'Your account now uses password-only login.',
+    profile_toast_2fa_disable_failed_title: 'Disable 2FA failed',
+    profile_toast_2fa_disable_failed_desc: 'Enter a valid code and try again.',
+    profile_toast_2fa_code_sent_title: 'Code sent',
+    profile_toast_2fa_code_sent_desc: 'A verification code was sent successfully.',
+    profile_toast_2fa_code_send_failed_title: 'Failed to send code',
+    profile_toast_2fa_code_send_failed_desc: 'Unable to send verification code.',
+    profile_toast_backup_codes_title: 'Backup codes regenerated',
+    profile_toast_backup_codes_desc: 'Download and store them securely.',
+    profile_toast_backup_codes_failed_title: 'Backup codes failed',
+    profile_toast_backup_codes_failed_desc: 'Unable to regenerate backup codes.',
   },
   fr: {
     profile_default_name: 'Votre profil',
@@ -140,6 +232,32 @@ const PROFILE_DICTIONARY: Record<LocaleCode, Record<ProfileKey, string>> = {
     profile_completion: 'Completion',
     profile_status: 'Statut',
     profile_active: 'Actif',
+    profile_2fa_title: 'Authentification a deux facteurs',
+    profile_2fa_desc: 'Activez une ou plusieurs methodes : application, e-mail, SMS et codes de secours.',
+    profile_2fa_disable: 'Desactiver 2FA',
+    profile_2fa_disabling: 'Desactivation...',
+    profile_2fa_setup: 'Configurer 2FA',
+    profile_2fa_preparing: 'Preparation...',
+    profile_2fa_code_label: 'Code de verification',
+    profile_2fa_status_label: 'Statut',
+    profile_2fa_status_enabled: 'Active sur ce compte',
+    profile_2fa_status_disabled: 'Actuellement desactivee',
+    profile_2fa_method_label: 'Methode',
+    profile_2fa_method_app: 'Application d\'authentification',
+    profile_2fa_method_email: 'Code par e-mail',
+    profile_2fa_method_sms: 'Code par SMS',
+    profile_2fa_method_backup: 'Code de secours',
+    profile_2fa_send_code: 'Envoyer le code',
+    profile_2fa_sending_code: 'Envoi...',
+    profile_2fa_qr_help: 'Scannez ce QR code dans Google Authenticator, Authy ou une autre application TOTP, puis saisissez le code.',
+    profile_2fa_manual_key_label: 'Cle manuelle',
+    profile_2fa_enable: 'Activer la methode',
+    profile_2fa_enabling: 'Activation...',
+    profile_2fa_active_note: 'La double authentification est active. Utilisez un code valide pour la desactiver ou regenerer les codes de secours.',
+    profile_2fa_regenerate_backup: 'Regenerer les codes de secours',
+    profile_2fa_regenerating_backup: 'Regeneration...',
+    profile_2fa_download_backup: 'Telecharger les codes de secours (.txt)',
+    profile_2fa_backup_note: 'Conservez les codes de secours dans un endroit sur. Chaque code est utilisable une seule fois.',
     profile_toast_update_success_title: 'Profil mis a jour !',
     profile_toast_update_success_desc: 'Vos changements ont ete enregistres.',
     profile_toast_update_failed_title: 'Mise a jour echouee',
@@ -152,6 +270,26 @@ const PROFILE_DICTIONARY: Record<LocaleCode, Record<ProfileKey, string>> = {
     profile_toast_photo_success_desc: 'Votre nouvelle photo a bien ete enregistree.',
     profile_toast_photo_failed_title: 'Echec du televersement',
     profile_toast_photo_failed_desc: 'Impossible de televerser l\'image.',
+    profile_toast_2fa_setup_ready_title: 'Configuration 2FA prete',
+    profile_toast_2fa_setup_ready_desc: 'Scannez le QR code ou choisissez une autre methode.',
+    profile_toast_2fa_setup_failed_title: 'Impossible de preparer 2FA',
+    profile_toast_2fa_setup_failed_desc: 'Veuillez reessayer.',
+    profile_toast_2fa_enabled_title: '2FA activee',
+    profile_toast_2fa_enabled_desc: 'La methode selectionnee est maintenant active.',
+    profile_toast_2fa_enable_failed_title: 'Activation 2FA echouee',
+    profile_toast_2fa_enable_failed_desc: 'Saisissez un code valide et reessayez.',
+    profile_toast_2fa_disabled_title: '2FA desactivee',
+    profile_toast_2fa_disabled_desc: 'Votre compte utilise maintenant uniquement le mot de passe.',
+    profile_toast_2fa_disable_failed_title: 'Desactivation 2FA echouee',
+    profile_toast_2fa_disable_failed_desc: 'Saisissez un code valide et reessayez.',
+    profile_toast_2fa_code_sent_title: 'Code envoye',
+    profile_toast_2fa_code_sent_desc: 'Un code de verification a ete envoye avec succes.',
+    profile_toast_2fa_code_send_failed_title: 'Envoi du code echoue',
+    profile_toast_2fa_code_send_failed_desc: 'Impossible d\'envoyer le code de verification.',
+    profile_toast_backup_codes_title: 'Codes de secours regeneres',
+    profile_toast_backup_codes_desc: 'Telechargez-les et conservez-les en securite.',
+    profile_toast_backup_codes_failed_title: 'Echec des codes de secours',
+    profile_toast_backup_codes_failed_desc: 'Impossible de regenerer les codes de secours.',
   },
   ar: {
     profile_default_name: 'ملفك الشخصي',
@@ -191,6 +329,32 @@ const PROFILE_DICTIONARY: Record<LocaleCode, Record<ProfileKey, string>> = {
     profile_completion: 'الاكتمال',
     profile_status: 'الحالة',
     profile_active: 'نشط',
+    profile_2fa_title: 'المصادقة الثنائية',
+    profile_2fa_desc: 'فعّل طريقة واحدة أو اكثر: تطبيق المصادقة، البريد، الرسائل القصيرة، والرموز الاحتياطية.',
+    profile_2fa_disable: 'تعطيل المصادقة الثنائية',
+    profile_2fa_disabling: 'جار التعطيل...',
+    profile_2fa_setup: 'اعداد المصادقة الثنائية',
+    profile_2fa_preparing: 'جار التحضير...',
+    profile_2fa_code_label: 'رمز التحقق',
+    profile_2fa_status_label: 'الحالة',
+    profile_2fa_status_enabled: 'مفعلة على هذا الحساب',
+    profile_2fa_status_disabled: 'غير مفعلة حاليا',
+    profile_2fa_method_label: 'الطريقة',
+    profile_2fa_method_app: 'تطبيق المصادقة',
+    profile_2fa_method_email: 'رمز البريد الالكتروني',
+    profile_2fa_method_sms: 'رمز الرسائل القصيرة',
+    profile_2fa_method_backup: 'رمز احتياطي',
+    profile_2fa_send_code: 'ارسال الرمز',
+    profile_2fa_sending_code: 'جار الارسال...',
+    profile_2fa_qr_help: 'امسح رمز QR في Google Authenticator او Authy او أي تطبيق TOTP، ثم ادخل الرمز.',
+    profile_2fa_manual_key_label: 'مفتاح الادخال اليدوي',
+    profile_2fa_enable: 'تفعيل الطريقة',
+    profile_2fa_enabling: 'جار التفعيل...',
+    profile_2fa_active_note: 'المصادقة الثنائية مفعلة. استخدم رمزا صالحا للتعطيل او لاعادة توليد الرموز الاحتياطية.',
+    profile_2fa_regenerate_backup: 'اعادة توليد الرموز الاحتياطية',
+    profile_2fa_regenerating_backup: 'جار اعادة التوليد...',
+    profile_2fa_download_backup: 'تحميل الرموز الاحتياطية (.txt)',
+    profile_2fa_backup_note: 'احفظ الرموز الاحتياطية في مكان آمن. كل رمز يُستخدم مرة واحدة فقط.',
     profile_toast_update_success_title: 'تم تحديث الملف الشخصي!',
     profile_toast_update_success_desc: 'تم حفظ التغييرات بنجاح.',
     profile_toast_update_failed_title: 'فشل التحديث',
@@ -203,6 +367,26 @@ const PROFILE_DICTIONARY: Record<LocaleCode, Record<ProfileKey, string>> = {
     profile_toast_photo_success_desc: 'تم حفظ الصورة الجديدة بنجاح.',
     profile_toast_photo_failed_title: 'فشل الرفع',
     profile_toast_photo_failed_desc: 'تعذر رفع الصورة.',
+    profile_toast_2fa_setup_ready_title: 'اعداد المصادقة الثنائية جاهز',
+    profile_toast_2fa_setup_ready_desc: 'امسح رمز QR او اختر طريقة اخرى.',
+    profile_toast_2fa_setup_failed_title: 'تعذر تجهيز المصادقة الثنائية',
+    profile_toast_2fa_setup_failed_desc: 'يرجى المحاولة مرة اخرى.',
+    profile_toast_2fa_enabled_title: 'تم تفعيل المصادقة الثنائية',
+    profile_toast_2fa_enabled_desc: 'الطريقة المحددة مفعلة الآن.',
+    profile_toast_2fa_enable_failed_title: 'فشل تفعيل المصادقة الثنائية',
+    profile_toast_2fa_enable_failed_desc: 'ادخل رمزا صحيحا ثم حاول مجددا.',
+    profile_toast_2fa_disabled_title: 'تم تعطيل المصادقة الثنائية',
+    profile_toast_2fa_disabled_desc: 'سيتم تسجيل الدخول بكلمة المرور فقط.',
+    profile_toast_2fa_disable_failed_title: 'فشل تعطيل المصادقة الثنائية',
+    profile_toast_2fa_disable_failed_desc: 'ادخل رمزا صحيحا ثم حاول مجددا.',
+    profile_toast_2fa_code_sent_title: 'تم ارسال الرمز',
+    profile_toast_2fa_code_sent_desc: 'تم ارسال رمز التحقق بنجاح.',
+    profile_toast_2fa_code_send_failed_title: 'فشل ارسال الرمز',
+    profile_toast_2fa_code_send_failed_desc: 'تعذر ارسال رمز التحقق.',
+    profile_toast_backup_codes_title: 'تم توليد الرموز الاحتياطية',
+    profile_toast_backup_codes_desc: 'قم بتحميلها وحفظها في مكان آمن.',
+    profile_toast_backup_codes_failed_title: 'فشل الرموز الاحتياطية',
+    profile_toast_backup_codes_failed_desc: 'تعذر اعادة توليد الرموز الاحتياطية.',
   },
 };
 

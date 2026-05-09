@@ -14,22 +14,29 @@ import { buildUserFromDb } from '@/(pages)/(auth)/context/auth/utils';
 import {
   changePassword,
   fetchProfile,
+  setupTwoFactorAPI,
+  enableTwoFactorAPI,
+  disableTwoFactorAPI,
+  sendTwoFactorSetupCodeAPI,
+  regenerateBackupCodesAPI,
   type UserProfile,
   updateProfile,
   uploadProfileImage,
+  type TwoFactorSetupResponse,
 } from '@global/lib/api/profile.api';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Loader2, Save, Camera, Shield, User, Mail, Lock, Sparkles, Crown } from 'lucide-react';
+import { Loader2, Save, Camera, Shield, User, Mail, Lock, Sparkles, Crown, QrCode, Download } from 'lucide-react';
 import { useTracking } from '@global/hooks/useTracking';
 import TimeOnPageTracker from '@components/tracking/TimeOnPageTracker';
 import { useLocale } from '@global/hooks/useLocale';
 import { profileT } from './i18n';
+import type { TwoFactorMethod } from '@/(pages)/(auth)/types';
 
 export default function ProfilePage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const { isAuthenticated, updateUser, hydrated } = useAuth();
+  const { isAuthenticated, updateUser, hydrated, token } = useAuth();
   const { trackEvent } = useTracking();
   const { locale } = useLocale();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -40,6 +47,8 @@ export default function ProfilePage() {
     enabled: isAuthenticated,
     retry: false,
   });
+
+  const isTwoFactorEnabled = Boolean(profile?.twoFactorEnabled);
 
   // Sync profile to auth context when data loads
   useEffect(() => {
@@ -70,6 +79,10 @@ export default function ProfilePage() {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [twoFactorCode, setTwoFactorCode] = useState('');
+  const [twoFactorSetup, setTwoFactorSetup] = useState<TwoFactorSetupResponse | null>(null);
+  const [selectedTwoFactorMethod, setSelectedTwoFactorMethod] = useState<TwoFactorMethod>('APP');
+  const [latestBackupCodes, setLatestBackupCodes] = useState<string[]>([]);
 
   useEffect(() => {
     if (profile) {
@@ -86,6 +99,35 @@ export default function ProfilePage() {
     if (email) return email.charAt(0).toUpperCase();
     return 'U';
   }, [name, email]);
+
+  const methodOptions = useMemo<TwoFactorMethod[]>(() => {
+    const fromProfile = (profile?.twoFactorMethods || []) as TwoFactorMethod[];
+    const fromSetup = (twoFactorSetup?.availableMethods || []) as TwoFactorMethod[];
+    const merged = [...new Set<TwoFactorMethod>(['APP', ...fromProfile, ...fromSetup])];
+    return merged;
+  }, [profile?.twoFactorMethods, twoFactorSetup?.availableMethods]);
+
+  const downloadBackupCodesAsTxt = (codes: string[]) => {
+    if (!codes.length) return;
+    const content = [
+      'Kayedni Backup Codes',
+      `Generated: ${new Date().toISOString()}`,
+      '',
+      ...codes,
+      '',
+      'Each code can be used once.',
+    ].join('\n');
+
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'kayedni-backup-codes.txt';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  };
 
   const updateProfileMutation = useMutation({
     mutationFn: updateProfile,
@@ -137,6 +179,143 @@ export default function ProfilePage() {
         title: profileT(locale, 'profile_toast_password_failed_title'), 
         description: message, 
         variant: 'error' 
+      });
+    },
+  });
+
+  const setupTwoFactorMutation = useMutation({
+    mutationFn: async () => {
+      if (!token) {
+        throw new Error('Authentication token not available');
+      }
+      return setupTwoFactorAPI(token);
+    },
+    onSuccess: (data) => {
+      setTwoFactorSetup(data);
+      if (data.backupCodes?.length) {
+        setLatestBackupCodes(data.backupCodes);
+      }
+      setTwoFactorCode('');
+      toast({
+        title: profileT(locale, 'profile_toast_2fa_setup_ready_title'),
+        description: data.message || profileT(locale, 'profile_toast_2fa_setup_ready_desc'),
+        variant: 'success',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: profileT(locale, 'profile_toast_2fa_setup_failed_title'),
+        description: error?.message || profileT(locale, 'profile_toast_2fa_setup_failed_desc'),
+        variant: 'error',
+      });
+    },
+  });
+
+  const sendTwoFactorSetupCodeMutation = useMutation({
+    mutationFn: async () => {
+      if (!token) {
+        throw new Error('Authentication token not available');
+      }
+      if (selectedTwoFactorMethod !== 'EMAIL' && selectedTwoFactorMethod !== 'SMS') {
+        throw new Error('Method does not support sending codes');
+      }
+      return sendTwoFactorSetupCodeAPI(token, { method: selectedTwoFactorMethod });
+    },
+    onSuccess: (data) => {
+      toast({
+        title: profileT(locale, 'profile_toast_2fa_code_sent_title'),
+        description: data.message || profileT(locale, 'profile_toast_2fa_code_sent_desc'),
+        variant: 'success',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: profileT(locale, 'profile_toast_2fa_code_send_failed_title'),
+        description: error?.message || profileT(locale, 'profile_toast_2fa_code_send_failed_desc'),
+        variant: 'error',
+      });
+    },
+  });
+
+  const enableTwoFactorMutation = useMutation({
+    mutationFn: async () => {
+      if (!token) {
+        throw new Error('Authentication token not available');
+      }
+      return enableTwoFactorAPI(token, { code: twoFactorCode, method: selectedTwoFactorMethod });
+    },
+    onSuccess: (data: TwoFactorSetupResponse) => {
+      setTwoFactorSetup(null);
+      setTwoFactorCode('');
+      if (data.backupCodes?.length) {
+        setLatestBackupCodes(data.backupCodes);
+      }
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+      toast({
+        title: profileT(locale, 'profile_toast_2fa_enabled_title'),
+        description: profileT(locale, 'profile_toast_2fa_enabled_desc'),
+        variant: 'success',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: profileT(locale, 'profile_toast_2fa_enable_failed_title'),
+        description: error?.message || profileT(locale, 'profile_toast_2fa_enable_failed_desc'),
+        variant: 'error',
+      });
+    },
+  });
+
+  const disableTwoFactorMutation = useMutation({
+    mutationFn: async () => {
+      if (!token) {
+        throw new Error('Authentication token not available');
+      }
+      return disableTwoFactorAPI(token, { code: twoFactorCode, method: selectedTwoFactorMethod });
+    },
+    onSuccess: () => {
+      setTwoFactorSetup(null);
+      setTwoFactorCode('');
+      setLatestBackupCodes([]);
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+      toast({
+        title: profileT(locale, 'profile_toast_2fa_disabled_title'),
+        description: profileT(locale, 'profile_toast_2fa_disabled_desc'),
+        variant: 'success',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: profileT(locale, 'profile_toast_2fa_disable_failed_title'),
+        description: error?.message || profileT(locale, 'profile_toast_2fa_disable_failed_desc'),
+        variant: 'error',
+      });
+    },
+  });
+
+  const regenerateBackupCodesMutation = useMutation({
+    mutationFn: async () => {
+      if (!token) {
+        throw new Error('Authentication token not available');
+      }
+      return regenerateBackupCodesAPI(token, { code: twoFactorCode, method: selectedTwoFactorMethod });
+    },
+    onSuccess: (data) => {
+      setLatestBackupCodes(data.backupCodes || []);
+      toast({
+        title: profileT(locale, 'profile_toast_backup_codes_title'),
+        description: profileT(locale, 'profile_toast_backup_codes_desc'),
+        variant: 'success',
+      });
+      if (data.backupCodes?.length) {
+        downloadBackupCodesAsTxt(data.backupCodes);
+      }
+    },
+    onError: (error: any) => {
+      toast({
+        title: profileT(locale, 'profile_toast_backup_codes_failed_title'),
+        description: error?.message || profileT(locale, 'profile_toast_backup_codes_failed_desc'),
+        variant: 'error',
       });
     },
   });
@@ -363,6 +542,175 @@ export default function ProfilePage() {
                         />
                       </div>
                     </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Two-Factor Authentication Card */}
+              <div className="group relative">
+                <div className="absolute -inset-[1px] bg-gradient-to-r from-brand-teal/25 to-primary/25 rounded-2xl opacity-0 group-hover:opacity-100 transition duration-500 blur-sm" />
+                <Card className="relative border border-border/60 shadow-sm bg-card/50 backdrop-blur-xl rounded-2xl overflow-hidden">
+                  <CardHeader className="pb-4 border-b border-border/40">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-xl bg-brand-teal/10 text-brand-teal">
+                          <QrCode className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <CardTitle className="text-lg font-semibold text-foreground">{profileT(locale, 'profile_2fa_title')}</CardTitle>
+                          <p className="text-sm text-muted-foreground">
+                            {profileT(locale, 'profile_2fa_desc')}
+                          </p>
+                        </div>
+                      </div>
+                      {isTwoFactorEnabled ? (
+                        <Button
+                          onClick={() => disableTwoFactorMutation.mutate()}
+                          disabled={disableTwoFactorMutation.isPending || !token || !twoFactorCode}
+                          variant="outline"
+                          className="border-destructive/40 text-destructive hover:bg-destructive/5 transition-all hover:-translate-y-0.5"
+                        >
+                          {disableTwoFactorMutation.isPending ? profileT(locale, 'profile_2fa_disabling') : profileT(locale, 'profile_2fa_disable')}
+                        </Button>
+                      ) : (
+                        <Button
+                          onClick={() => setupTwoFactorMutation.mutate()}
+                          disabled={setupTwoFactorMutation.isPending || !token}
+                          className="bg-brand-teal hover:bg-brand-teal/90 text-white shadow-lg shadow-brand-teal/20 transition-all hover:-translate-y-0.5"
+                        >
+                          {setupTwoFactorMutation.isPending ? profileT(locale, 'profile_2fa_preparing') : profileT(locale, 'profile_2fa_setup')}
+                        </Button>
+                      )}
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-6 pt-6">
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="twoFactorMethod">{profileT(locale, 'profile_2fa_method_label')}</Label>
+                        <select
+                          id="twoFactorMethod"
+                          value={selectedTwoFactorMethod}
+                          onChange={(e) => setSelectedTwoFactorMethod(e.target.value as TwoFactorMethod)}
+                          className="h-12 w-full rounded-xl border border-border/60 bg-background/50 px-4 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal"
+                        >
+                          {methodOptions.map((method) => (
+                            <option key={method} value={method}>
+                              {method === 'APP' && profileT(locale, 'profile_2fa_method_app')}
+                              {method === 'EMAIL' && profileT(locale, 'profile_2fa_method_email')}
+                              {method === 'SMS' && profileT(locale, 'profile_2fa_method_sms')}
+                              {method === 'BACKUP_CODE' && profileT(locale, 'profile_2fa_method_backup')}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="twoFactorCode">{profileT(locale, 'profile_2fa_code_label')}</Label>
+                        <Input
+                          id="twoFactorCode"
+                          value={twoFactorCode}
+                          onChange={(e) => setTwoFactorCode(e.target.value)}
+                          placeholder={selectedTwoFactorMethod === 'BACKUP_CODE' ? 'ABCD-1234' : '123456'}
+                          inputMode={selectedTwoFactorMethod === 'BACKUP_CODE' ? 'text' : 'numeric'}
+                          autoComplete="one-time-code"
+                          className="h-12 border-input/60 focus-visible:ring-brand-teal bg-background/50"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>{profileT(locale, 'profile_2fa_status_label')}</Label>
+                        <div className="h-12 rounded-xl border border-border/60 bg-background/50 px-4 flex items-center text-sm text-muted-foreground">
+                          {profile?.twoFactorEnabled ? profileT(locale, 'profile_2fa_status_enabled') : profileT(locale, 'profile_2fa_status_disabled')}
+                        </div>
+                      </div>
+                    </div>
+
+                    {(selectedTwoFactorMethod === 'EMAIL' || selectedTwoFactorMethod === 'SMS') && (
+                      <Button
+                        onClick={() => sendTwoFactorSetupCodeMutation.mutate()}
+                        disabled={sendTwoFactorSetupCodeMutation.isPending || !token}
+                        variant="outline"
+                        className="border-brand-teal/40 text-brand-teal hover:bg-brand-teal/5"
+                      >
+                        {sendTwoFactorSetupCodeMutation.isPending
+                          ? profileT(locale, 'profile_2fa_sending_code')
+                          : profileT(locale, 'profile_2fa_send_code')}
+                      </Button>
+                    )}
+
+                    {!isTwoFactorEnabled && twoFactorSetup?.qrCodeDataUrl && (
+                      <div className="grid gap-4 lg:grid-cols-[220px_1fr] items-start">
+                        <div className="rounded-2xl border border-border/60 bg-background p-4 flex items-center justify-center">
+                          <img
+                            src={twoFactorSetup.qrCodeDataUrl}
+                            alt="Two-factor QR code"
+                            className="h-48 w-48 rounded-xl"
+                          />
+                        </div>
+                        <div className="space-y-3">
+                          <p className="text-sm text-muted-foreground">
+                            {profileT(locale, 'profile_2fa_qr_help')}
+                          </p>
+                          {twoFactorSetup.manualEntryKey && (
+                            <div className="rounded-xl border border-border/60 bg-background/70 p-3 text-sm">
+                              <p className="text-xs uppercase tracking-wide text-muted-foreground mb-1">{profileT(locale, 'profile_2fa_manual_key_label')}</p>
+                              <p className="font-mono break-all">{twoFactorSetup.manualEntryKey}</p>
+                            </div>
+                          )}
+                          <Button
+                            onClick={() => enableTwoFactorMutation.mutate()}
+                            disabled={enableTwoFactorMutation.isPending || !twoFactorCode}
+                            className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20 transition-all hover:-translate-y-0.5"
+                          >
+                            {enableTwoFactorMutation.isPending ? profileT(locale, 'profile_2fa_enabling') : profileT(locale, 'profile_2fa_enable')}
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {isTwoFactorEnabled && (
+                      <div className="flex flex-wrap gap-3">
+                        <Button
+                          onClick={() => enableTwoFactorMutation.mutate()}
+                          disabled={enableTwoFactorMutation.isPending || !twoFactorCode}
+                          className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                        >
+                          {enableTwoFactorMutation.isPending ? profileT(locale, 'profile_2fa_enabling') : profileT(locale, 'profile_2fa_enable')}
+                        </Button>
+                        <Button
+                          onClick={() => regenerateBackupCodesMutation.mutate()}
+                          disabled={regenerateBackupCodesMutation.isPending || !twoFactorCode}
+                          variant="outline"
+                        >
+                          {regenerateBackupCodesMutation.isPending
+                            ? profileT(locale, 'profile_2fa_regenerating_backup')
+                            : profileT(locale, 'profile_2fa_regenerate_backup')}
+                        </Button>
+                        <Button
+                          onClick={() => downloadBackupCodesAsTxt(latestBackupCodes)}
+                          disabled={!latestBackupCodes.length}
+                          variant="outline"
+                        >
+                          <Download className="h-4 w-4 mr-2" />
+                          {profileT(locale, 'profile_2fa_download_backup')}
+                        </Button>
+                      </div>
+                    )}
+
+                    {latestBackupCodes.length > 0 && (
+                      <div className="rounded-xl border border-border/60 bg-background/70 p-3 text-sm">
+                        <p className="mb-2 text-muted-foreground">{profileT(locale, 'profile_2fa_backup_note')}</p>
+                        <div className="grid grid-cols-2 gap-2 text-xs font-mono">
+                          {latestBackupCodes.map((code) => (
+                            <span key={code} className="rounded bg-muted px-2 py-1">{code}</span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {profile?.twoFactorEnabled && (
+                      <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-4 text-sm text-emerald-800 dark:text-emerald-200">
+                        {profileT(locale, 'profile_2fa_active_note')}
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </div>

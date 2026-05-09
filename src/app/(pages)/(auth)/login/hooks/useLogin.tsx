@@ -2,9 +2,10 @@
 
 import { useState } from 'react';
 import { useAuth } from '@/(pages)/(auth)/context/AuthContext';
-import { callBackendLogin } from '../utils/index';
+import { callBackendLogin, callBackendTwoFactorLogin } from '../utils/index';
+import { sendTwoFactorLoginCodeAPI } from '../../api/auth.api';
 import type { LoginPayload } from '../types/index';
-import { UserRole } from '../../types';
+import { TwoFactorMethod, UserRole } from '../../types';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTracking } from '@global/hooks/useTracking';
 import { logAuthEvent } from '@global/lib/authLogger';
@@ -23,56 +24,138 @@ export function useLogin() {
   const [role, setRole] = useState<UserRole>('CLIENT');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [twoFactorRequired, setTwoFactorRequired] = useState(false);
+  const [twoFactorToken, setTwoFactorToken] = useState<string | null>(null);
+  const [twoFactorCode, setTwoFactorCode] = useState('');
+  const [twoFactorNotice, setTwoFactorNotice] = useState<string | null>(null);
+  const [twoFactorMethods, setTwoFactorMethods] = useState<TwoFactorMethod[]>([]);
+  const [selectedTwoFactorMethod, setSelectedTwoFactorMethod] = useState<TwoFactorMethod>('APP');
+  const [sendingTwoFactorCode, setSendingTwoFactorCode] = useState(false);
+
+  const resetTwoFactor = () => {
+    setTwoFactorRequired(false);
+    setTwoFactorToken(null);
+    setTwoFactorCode('');
+    setTwoFactorNotice(null);
+    setTwoFactorMethods([]);
+    setSelectedTwoFactorMethod('APP');
+  };
+
+  const handleSuccessfulLogin = async (result: { user: Parameters<typeof auth.login>[0]; accessToken?: string | null; refreshToken?: string | null; }) => {
+    await auth.login(result.user, result.accessToken, result.refreshToken);
+
+    const redirectUrl = searchParams.get('redirect');
+    if (redirectUrl) {
+      router.push(redirectUrl);
+    } else {
+      router.push("/");
+    }
+  };
+
+  const handleTwoFactorStep = async () => {
+    if (!twoFactorToken) {
+      return;
+    }
+
+    trackEvent('login_attempt', { role, method: '2fa' });
+    logAuthEvent({ action: 'login_attempt', email, role, metadata: { stage: 'two_factor' } });
+
+    const result = await callBackendTwoFactorLogin({
+      twoFactorToken,
+      code: twoFactorCode,
+      method: selectedTwoFactorMethod,
+    });
+
+    if (result.success && result.user) {
+      await handleSuccessfulLogin(result);
+      trackEvent('login', { method: 'two_factor', role });
+      logAuthEvent({ action: 'login_success', success: true, email, role, metadata: { stage: 'two_factor' } });
+      return;
+    }
+
+    setError(result.message || tr('error_login_failed'));
+  };
+
+  const handlePasswordStep = async () => {
+    trackEvent('login_attempt', { role });
+    logAuthEvent({ action: 'login_attempt', email, role });
+
+    const payload: LoginPayload = { email, password, role };
+    const result = await callBackendLogin(payload);
+
+    if (result.requiresTwoFactor && result.twoFactorToken) {
+      const methods = (result.twoFactorMethods && result.twoFactorMethods.length > 0)
+        ? result.twoFactorMethods
+        : ['APP'];
+      setTwoFactorRequired(true);
+      setTwoFactorToken(result.twoFactorToken);
+      setTwoFactorNotice(result.message || tr('login_two_factor_code_label'));
+      setTwoFactorCode('');
+      setTwoFactorMethods(methods);
+      setSelectedTwoFactorMethod(methods[0]);
+      return;
+    }
+
+    if (result.success && result.user) {
+      await handleSuccessfulLogin(result);
+      trackEvent('login', { method: 'email', role });
+      logAuthEvent({ action: 'login_success', success: true, email, role });
+      return;
+    }
+
+    setError(result.message || tr('error_login_failed'));
+    trackEvent('login_failed', {
+      reason: result.message || 'invalid_credentials',
+      role,
+      error_type: 'invalid_credentials',
+    });
+    logAuthEvent({
+      action: 'login_failed',
+      success: false,
+      failReason: result.message || 'invalid_credentials',
+      failStage: 'api',
+      email,
+      role,
+      metadata: {
+        passwordLength: password.length,
+        passwordHasUpper: /[A-Z]/.test(password),
+        passwordHasDigit: /\d/.test(password),
+        passwordHasSpecial: /[^a-zA-Z0-9]/.test(password),
+        serverMessage: result.message || null,
+      },
+    });
+  };
+
+  const sendMethodCode = async () => {
+    if (!twoFactorToken || selectedTwoFactorMethod === 'APP' || selectedTwoFactorMethod === 'BACKUP_CODE') {
+      return;
+    }
+
+    setSendingTwoFactorCode(true);
+    setError(null);
+    try {
+      const response = await sendTwoFactorLoginCodeAPI({
+        twoFactorToken,
+        method: selectedTwoFactorMethod,
+      });
+      setTwoFactorNotice(response.message || tr('login_two_factor_code_sent'));
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : tr('error_login_failed');
+      setError(msg);
+    } finally {
+      setSendingTwoFactorCode(false);
+    }
+  };
 
   const submit = async () => {
     setError(null);
     setLoading(true);
-    trackEvent('login_attempt', { role });
-    // success is intentionally omitted — outcome is unknown at attempt time
-    logAuthEvent({ action: 'login_attempt', email, role });
     try {
-      const payload: LoginPayload = { email, password, role };
-      const result = await callBackendLogin(payload);
-      
-      if (result.success && result.user) {
-        // Login successful with backend
-        await auth.login(email, password, role);
-        trackEvent('login', { method: 'email', role });
-        logAuthEvent({ action: 'login_success', success: true, email, role });
-        
-        const redirectUrl = searchParams.get('redirect');
-        if (redirectUrl) {
-          router.push(redirectUrl);
-        } else {
-          router.push("/");
-        }
-        return;
+      if (twoFactorRequired) {
+        await handleTwoFactorStep();
+      } else {
+        await handlePasswordStep();
       }
-
-      // Login failed - show error message
-      setError(result.message || tr('error_login_failed'));
-      trackEvent('login_failed', {
-        reason: result.message || 'invalid_credentials',
-        role,
-        error_type: 'invalid_credentials',
-      });
-      logAuthEvent({
-        action: 'login_failed',
-        success: false,
-        failReason: result.message || 'invalid_credentials',
-        failStage: 'api',
-        email,
-        role,
-        metadata: {
-          // Password forensics: never store the value, only shape characteristics
-          // Useful to detect credential stuffing (long/complex) vs dumb brute-force (short/simple)
-          passwordLength: password.length,
-          passwordHasUpper: /[A-Z]/.test(password),
-          passwordHasDigit: /\d/.test(password),
-          passwordHasSpecial: /[^a-zA-Z0-9]/.test(password),
-          serverMessage: result.message || null,
-        },
-      });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       setError(msg);
@@ -110,6 +193,16 @@ export function useLogin() {
     setRole,
     loading,
     error,
+    twoFactorRequired,
+    twoFactorCode,
+    setTwoFactorCode,
+    twoFactorNotice,
+    twoFactorMethods,
+    selectedTwoFactorMethod,
+    setSelectedTwoFactorMethod,
+    onSendTwoFactorCode: sendMethodCode,
+    sendingTwoFactorCode,
+    onResetTwoFactor: resetTwoFactor,
     submit,
   } as const;
 }
