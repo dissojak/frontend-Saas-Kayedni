@@ -1,6 +1,8 @@
+/* eslint-disable react-refresh/only-export-components */
 import type { Metadata, ResolvingMetadata } from "next";
 import { fetchBusinessById } from "../../actions/backend";
 import { extractBusinessIdFromSlug } from "@global/lib/businessSlug";
+import { createPageMetadata, toCanonicalPath } from "@global/lib/seo";
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -8,7 +10,7 @@ type Props = {
 
 export async function generateMetadata(
   { params }: Props,
-  parent: ResolvingMetadata
+  _parent: ResolvingMetadata
 ): Promise<Metadata> {
   const resolvedParams = await params;
   const slug = resolvedParams.slug;
@@ -18,9 +20,12 @@ export async function generateMetadata(
     const business = await fetchBusinessById(id);
 
     if (!business) {
-      return {
-        title: "Business Not Found | Kayedni",
-      };
+      return createPageMetadata({
+        title: "Business Not Found",
+        description: "The business page you are looking for is not available.",
+        path: `/business/${slug}`,
+        noIndex: true,
+      });
     }
 
     const title = `${business.name} | Kayedni`;
@@ -29,8 +34,12 @@ export async function generateMetadata(
     const images = imageUrl ? [imageUrl] : [];
 
     return {
-      title,
-      description,
+      ...createPageMetadata({
+        title,
+        description,
+        path: `/business/${slug}`,
+        keywords: ["business profile", "reservation", "Tunisie"],
+      }),
       openGraph: {
         title,
         description,
@@ -44,18 +53,24 @@ export async function generateMetadata(
         description,
         images,
       },
+      alternates: {
+        canonical: toCanonicalPath(`/business/${slug}`),
+      },
     };
-  } catch (e) {
-    return {
-      title: "Business Not Found | Kayedni",
-    };
+  } catch {
+    return createPageMetadata({
+      title: "Business Not Found",
+      description: "The business page you are looking for is not available.",
+      path: `/business/${slug}`,
+      noIndex: true,
+    });
   }
 }
 
 export default function BusinessLayout({
   children,
-}: {
+}: Readonly<{
   children: React.ReactNode;
-}) {
+}>) {
   return <>{children}</>;
 }
