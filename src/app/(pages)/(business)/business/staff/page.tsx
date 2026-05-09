@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Layout from "@components/layout/Layout";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8088/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8088/api/v1';
 import { Card, CardContent } from "@components/ui/card";
 import { Button } from "@components/ui/button";
 import { Badge } from "@components/ui/badge";

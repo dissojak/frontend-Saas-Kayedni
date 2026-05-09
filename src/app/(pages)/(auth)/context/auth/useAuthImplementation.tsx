@@ -6,7 +6,7 @@ import { loadStoredUser, storeUser, loadStoredToken, loadStoredActiveMode, store
 import { login as backendLogin, register as backendRegister } from './actions';
 import { useRouter } from 'next/navigation';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8088/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8088/api/v1';
 
 function parseJwtExpMs(token: string | null): number | null {
   if (!token) return null;
