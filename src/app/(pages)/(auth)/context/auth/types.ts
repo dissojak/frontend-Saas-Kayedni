@@ -29,7 +29,11 @@ export interface AuthContextType {
   hydrated: boolean;
   // Active mode for users who are both BO and staff ('owner' | 'staff')
   activeMode: 'owner' | 'staff';
-  login: (email: string, password: string, role: UserRole) => Promise<User>;
+  login: (
+    user: User,
+    accessToken?: string | null,
+    refreshToken?: string | null,
+  ) => Promise<User>;
   logout: () => void;
   register: (name: string, email: string, password: string, role: UserRole) => Promise<User>;
   updateUser: (user: User | null) => void;

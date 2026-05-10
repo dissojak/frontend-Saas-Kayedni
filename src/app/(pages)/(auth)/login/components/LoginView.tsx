@@ -11,6 +11,7 @@ import { useSearchParams } from "next/navigation";
 import { withCategoryQuery } from "@global/lib/slices";
 import { useLocale } from "@global/hooks/useLocale";
 import { authT } from "@/(pages)/(auth)/i18n";
+import type { TwoFactorMethod } from '../../types';
 
 export default function LoginView({
   email,
@@ -21,6 +22,16 @@ export default function LoginView({
   setRole,
   loading,
   error,
+  twoFactorRequired,
+  twoFactorCode,
+  setTwoFactorCode,
+  twoFactorNotice,
+  twoFactorMethods,
+  selectedTwoFactorMethod,
+  setSelectedTwoFactorMethod,
+  onSendTwoFactorCode,
+  sendingTwoFactorCode,
+  onResetTwoFactor,
   onSubmit,
 }: Readonly<LoginViewProps>) {
   const { locale } = useLocale();
@@ -29,6 +40,12 @@ export default function LoginView({
   const categoryParam = searchParams.get("category");
   const registerHref = categoryParam ? withCategoryQuery("/register", categoryParam) : "/register";
   const forgotHref = categoryParam ? withCategoryQuery("/forgot-password", categoryParam) : "/forgot-password";
+  let submitLabel = tr("login_submit");
+  if (loading) {
+    submitLabel = tr("login_submitting");
+  } else if (twoFactorRequired) {
+    submitLabel = tr('login_two_factor_verify_button');
+  }
 
   return (
     <div className="text-slate-100 ">
@@ -101,6 +118,12 @@ export default function LoginView({
                 </div>
               )}
 
+              {twoFactorNotice && (
+                <div className="mb-4 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800 dark:border-blue-900/70 dark:bg-blue-900/30 dark:text-blue-100" role="status" aria-live="polite">
+                  {twoFactorNotice}
+                </div>
+              )}
+
               <form
                 onSubmit={async (e) => {
                   e.preventDefault();
@@ -121,35 +144,96 @@ export default function LoginView({
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="password" className="text-sm font-medium">{tr("login_password")}</Label>
-                    <Link 
-                      href={forgotHref}
-                      className="text-sm text-[var(--color-primary)] hover:underline"
-                      onClick={() => {
-                        if (email) {
-                          localStorage.setItem('kayedni_reset_email', email);
-                        }
-                      }}
-                    >
-                      {tr("login_forgot")}
-                    </Link>
+                {twoFactorRequired ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="twoFactorCode" className="text-sm font-medium">{tr('login_two_factor_code_label')}</Label>
+                      <button
+                        type="button"
+                        onClick={onResetTwoFactor}
+                        className="text-sm text-[var(--color-primary)] hover:underline"
+                      >
+                        {tr('login_two_factor_use_another_account')}
+                      </button>
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="twoFactorMethod" className="text-xs font-medium text-slate-600 dark:text-slate-300">{tr('login_two_factor_method_label')}</Label>
+                      <select
+                        id="twoFactorMethod"
+                        value={selectedTwoFactorMethod}
+                        onChange={(e) => setSelectedTwoFactorMethod(e.target.value as TwoFactorMethod)}
+                        className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-slate-900 shadow-sm transition focus:border-[var(--color-primary)] focus-visible:outline-none dark:border-slate-800 dark:bg-slate-900 dark:text-white"
+                      >
+                        {twoFactorMethods.map((method) => (
+                          <option key={method} value={method}>
+                            {method === 'APP' && tr('login_two_factor_method_app')}
+                            {method === 'EMAIL' && tr('login_two_factor_method_email')}
+                            {method === 'SMS' && tr('login_two_factor_method_sms')}
+                            {method === 'BACKUP_CODE' && tr('login_two_factor_method_backup')}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <Input
+                      id="twoFactorCode"
+                      value={twoFactorCode}
+                      onChange={(e) => setTwoFactorCode(e.target.value)}
+                      inputMode={selectedTwoFactorMethod === 'BACKUP_CODE' ? 'text' : 'numeric'}
+                      autoComplete="one-time-code"
+                      placeholder={selectedTwoFactorMethod === 'BACKUP_CODE' ? tr('login_two_factor_backup_placeholder') : tr('login_two_factor_code_placeholder')}
+                      required
+                      className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-slate-900 shadow-sm transition focus:border-[var(--color-primary)] focus-visible:ring-[var(--color-primary)] dark:border-slate-800 dark:bg-slate-900 dark:text-white"
+                    />
+                    {(selectedTwoFactorMethod === 'EMAIL' || selectedTwoFactorMethod === 'SMS') && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={onSendTwoFactorCode}
+                        disabled={sendingTwoFactorCode || loading}
+                        className="h-10 rounded-xl"
+                      >
+                        {sendingTwoFactorCode ? tr('login_two_factor_send_code_loading') : tr('login_two_factor_send_code')}
+                      </Button>
+                    )}
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      {selectedTwoFactorMethod === 'APP' && tr('login_two_factor_help_app')}
+                      {selectedTwoFactorMethod === 'EMAIL' && tr('login_two_factor_help_email')}
+                      {selectedTwoFactorMethod === 'SMS' && tr('login_two_factor_help_sms')}
+                      {selectedTwoFactorMethod === 'BACKUP_CODE' && tr('login_two_factor_help_backup')}
+                    </p>
                   </div>
-                  <Input
-                    id="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    type="password"
-                    placeholder="••••••••"
-                    required
-                    className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-slate-900 shadow-sm transition focus:border-[var(--color-primary)] focus-visible:ring-[var(--color-primary)] dark:border-slate-800 dark:bg-slate-900 dark:text-white"
-                  />
-                </div>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="password" className="text-sm font-medium">{tr("login_password")}</Label>
+                      <Link 
+                        href={forgotHref}
+                        className="text-sm text-[var(--color-primary)] hover:underline"
+                        onClick={() => {
+                          if (email) {
+                            localStorage.setItem('kayedni_reset_email', email);
+                          }
+                        }}
+                      >
+                        {tr("login_forgot")}
+                      </Link>
+                    </div>
+                    <Input
+                      id="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      type="password"
+                      placeholder="••••••••"
+                      required
+                      className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-slate-900 shadow-sm transition focus:border-[var(--color-primary)] focus-visible:ring-[var(--color-primary)] dark:border-slate-800 dark:bg-slate-900 dark:text-white"
+                    />
+                  </div>
+                )}
 
                 <input type="hidden" name="role" value={role} />
 
-                <div className="flex flex-wrap items-center gap-3 text-sm text-slate-600 dark:text-slate-300">
+                {!twoFactorRequired && (
+                  <div className="flex flex-wrap items-center gap-3 text-sm text-slate-600 dark:text-slate-300">
                   <span className="font-medium text-slate-800 dark:text-white">{tr("login_sign_in_as")}</span>
                   <button
                     type="button"
@@ -165,14 +249,15 @@ export default function LoginView({
                   >
                     {tr("login_role_business")}
                   </button>
-                </div>
+                  </div>
+                )}
 
                 <Button
                   type="submit"
                   disabled={loading}
                   className="w-full h-12 rounded-full bg-[var(--color-primary)] text-white font-semibold shadow-lg shadow-[var(--color-primary)]/30 transition hover:-translate-y-0.5 hover:shadow-xl hover:shadow-[var(--color-primary)]/35 disabled:opacity-70"
                 >
-                  {loading ? tr("login_submitting") : tr("login_submit")}
+                  {submitLabel}
                 </Button>
               </form>
 
