@@ -1,25 +1,25 @@
 import { User } from "../context/auth/types";
 
 // Backend uses uppercase roles: CLIENT, BUSINESS_OWNER, STAFF, ADMIN
-export type BackendUserRole = 'CLIENT' | 'BUSINESS_OWNER' | 'STAFF' | 'ADMIN';
+export type BackendUserRole = "CLIENT" | "BUSINESS_OWNER" | "STAFF" | "ADMIN";
 // Frontend will now use the same uppercase role values as the backend
-export type UserRole = 'CLIENT' | 'BUSINESS_OWNER' | 'STAFF' | 'ADMIN';
-export type TwoFactorMethod = 'APP' | 'EMAIL' | 'SMS' | 'BACKUP_CODE';
+export type UserRole = "CLIENT" | "BUSINESS_OWNER" | "STAFF" | "ADMIN";
+export type TwoFactorMethod = "APP" | "EMAIL" | "SMS" | "BACKUP_CODE";
 
 // Map frontend roles to backend roles (identity for most, kept explicit for clarity)
 export const roleMapping: Record<UserRole, BackendUserRole> = {
-  CLIENT: 'CLIENT',
-  BUSINESS_OWNER: 'BUSINESS_OWNER',
-  STAFF: 'STAFF',
-  ADMIN: 'ADMIN',
+  CLIENT: "CLIENT",
+  BUSINESS_OWNER: "BUSINESS_OWNER",
+  STAFF: "STAFF",
+  ADMIN: "ADMIN",
 };
 
 // Map backend roles to frontend roles (identity mapping)
 export const reverseRoleMapping: Record<BackendUserRole, UserRole> = {
-  CLIENT: 'CLIENT',
-  BUSINESS_OWNER: 'BUSINESS_OWNER',
-  STAFF: 'STAFF',
-  ADMIN: 'ADMIN',
+  CLIENT: "CLIENT",
+  BUSINESS_OWNER: "BUSINESS_OWNER",
+  STAFF: "STAFF",
+  ADMIN: "ADMIN",
 };
 
 export interface BaseAuthPayload {
@@ -35,8 +35,19 @@ export interface BackendAuthResponse {
   userId: number;
   name: string;
   email: string;
+  phone?: string;
+  avatar?: string;
   role: BackendUserRole;
   message: string;
+  // Business owner fields
+  hasBusiness?: boolean;
+  businessId?: number | null;
+  businessName?: string | null;
+  businessCategoryName?: string | null;
+  // BO acting as staff in their own business
+  isAlsoStaff?: boolean;
+  staffId?: number | null;
+  // 2FA fields
   twoFactorEnabled?: boolean;
   requiresTwoFactor?: boolean;
   twoFactorToken?: string;

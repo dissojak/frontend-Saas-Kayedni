@@ -1,8 +1,8 @@
-import { AuthResponse, reverseRoleMapping } from '../../types';
-import { LoginPayload } from '../types';
-import { loginAPI, verifyTwoFactorLoginAPI } from '../../api/auth.api';
-import { setAccessToken, setRefreshToken } from '../../utils/token.utils';
-import { buildUserFromDb } from '../../context/auth/utils';
+import { AuthResponse, reverseRoleMapping } from "../../types";
+import { LoginPayload } from "../types";
+import { loginAPI, verifyTwoFactorLoginAPI } from "../../api/auth.api";
+import { setAccessToken, setRefreshToken } from "../../utils/token.utils";
+import { buildUserFromDb } from "../../context/auth/utils";
 
 /**
  * Call backend login endpoint with proper role mapping
@@ -21,12 +21,12 @@ export async function callBackendLogin(payload: LoginPayload): Promise<AuthRespo
         requiresTwoFactor: true,
         twoFactorToken: backendResponse.twoFactorToken,
         twoFactorMethods: backendResponse.twoFactorMethods,
-        message: backendResponse.message || 'Two-factor authentication required',
+        message: backendResponse.message || "Two-factor authentication required",
       };
     }
 
     // Check if account needs activation
-    if (!backendResponse.token && backendResponse.message.includes('activate')) {
+    if (!backendResponse.token && backendResponse.message.includes("activate")) {
       return {
         success: false,
         message: backendResponse.message,
@@ -50,12 +50,22 @@ export async function callBackendLogin(payload: LoginPayload): Promise<AuthRespo
         accessToken: backendResponse.token,
         refreshToken: backendResponse.refreshToken,
         user: buildUserFromDb({
-          id: backendResponse.userId,
+          userId: backendResponse.userId,
           name: backendResponse.name,
           email: backendResponse.email,
+          phone: backendResponse.phone,
+          avatarUrl: backendResponse.avatar,
           role: frontendRole,
           token: backendResponse.token,
           refreshToken: backendResponse.refreshToken || undefined,
+          // Business owner fields from login response
+          hasBusiness: backendResponse.hasBusiness,
+          businessId:
+            backendResponse.businessId != null ? String(backendResponse.businessId) : undefined,
+          businessName: backendResponse.businessName ?? undefined,
+          businessCategoryName: backendResponse.businessCategoryName ?? undefined,
+          isAlsoStaff: backendResponse.isAlsoStaff,
+          staffId: backendResponse.staffId != null ? String(backendResponse.staffId) : undefined,
         }),
       };
     }
@@ -63,13 +73,13 @@ export async function callBackendLogin(payload: LoginPayload): Promise<AuthRespo
     // Fallback error
     return {
       success: false,
-      message: backendResponse.message || 'Login failed',
+      message: backendResponse.message || "Login failed",
     };
   } catch (error) {
-    console.error('Login error:', error);
+    console.error("Login error:", error);
     return {
       success: false,
-      message: error instanceof Error ? error.message : 'An error occurred during login',
+      message: error instanceof Error ? error.message : "An error occurred during login",
     };
   }
 }
@@ -77,7 +87,7 @@ export async function callBackendLogin(payload: LoginPayload): Promise<AuthRespo
 export async function callBackendTwoFactorLogin(payload: {
   twoFactorToken: string;
   code: string;
-  method?: 'APP' | 'EMAIL' | 'SMS' | 'BACKUP_CODE';
+  method?: "APP" | "EMAIL" | "SMS" | "BACKUP_CODE";
 }): Promise<AuthResponse> {
   try {
     const backendResponse = await verifyTwoFactorLoginAPI(payload);
@@ -96,25 +106,35 @@ export async function callBackendTwoFactorLogin(payload: {
         accessToken: backendResponse.token,
         refreshToken: backendResponse.refreshToken,
         user: buildUserFromDb({
-          id: backendResponse.userId,
+          userId: backendResponse.userId,
           name: backendResponse.name,
           email: backendResponse.email,
+          phone: backendResponse.phone,
+          avatarUrl: backendResponse.avatar,
           role: frontendRole,
           token: backendResponse.token,
           refreshToken: backendResponse.refreshToken || undefined,
+          // Business owner fields from 2FA login response
+          hasBusiness: backendResponse.hasBusiness,
+          businessId:
+            backendResponse.businessId != null ? String(backendResponse.businessId) : undefined,
+          businessName: backendResponse.businessName ?? undefined,
+          businessCategoryName: backendResponse.businessCategoryName ?? undefined,
+          isAlsoStaff: backendResponse.isAlsoStaff,
+          staffId: backendResponse.staffId != null ? String(backendResponse.staffId) : undefined,
         }),
       };
     }
 
     return {
       success: false,
-      message: backendResponse.message || 'Two-factor login failed',
+      message: backendResponse.message || "Two-factor login failed",
     };
   } catch (error) {
-    console.error('Two-factor login error:', error);
+    console.error("Two-factor login error:", error);
     return {
       success: false,
-      message: error instanceof Error ? error.message : 'An error occurred during two-factor login',
+      message: error instanceof Error ? error.message : "An error occurred during two-factor login",
     };
   }
 }
